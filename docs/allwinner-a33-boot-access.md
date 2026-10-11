@@ -25,6 +25,11 @@ structure in DRAM, then returned to FEL for the host to retrieve it. A normal
 board U-Boot image was not a substitute: attempts to expose storage through a
 full RAM-booted U-Boot did not enumerate a working USB disk on this unit.
 
+On a later USB-C-only PF1007L, a full RAM-booted mainline U-Boot **did** enumerate,
+after forcing USB OTG to peripheral and removing VBUS drive and ID detection. With
+`ums` patched to be read-only, that gave a full eMMC backup and a guarded write of the
+boot change below. See [root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md).
+
 The working helper configuration used A33 DRAM at 456 MHz, ZQ 15291 and MMC2
 PC pins with an 8-bit eMMC bus. Initial storage reads were checked at 400 kHz,
 then the same first 4 KiB was verified at 12 MHz before the bounded reading

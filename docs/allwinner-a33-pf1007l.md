@@ -10,7 +10,9 @@ root required a custom, board-specific RAM reader/writer and boot-ramdisk patch;
 the [boot access notes](allwinner-a33-boot-access.md) describe that work and its
 limits. That reader/writer is not included here. **The SD card alone does not
 enable ADB or root.** If your unit has no ADB, stop after the FEL checks rather
-than running the Android setup commands.
+than running the Android setup commands, or continue with
+[root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md), which replaces the
+custom reader/writer with published tools.
 
 **Security:** the AiMOR app runs root shell commands from a vendor server over an
 unencrypted connection. Read [aimor-remote-root-shell.md](aimor-remote-root-shell.md)
@@ -67,6 +69,12 @@ A boot ramdisk patch that sets `service.adb.tcp.port=5555` and starts `adbd` at 
 gives root ADB over Wi-Fi. With this property set, `adbd` does not use USB.
 After that, use `adb connect <frame-ip>:5555`.
 Replace `adb -d` with `adb -s <frame-ip>:5555` in all commands in this guide.
+
+A third PF1007L of this USB-C-only type (same firmware, same 30,535,680-sector eMMC)
+**did** show USB data: stock `1f3a:1000` and FEL `1f3a:efe8`. A USB-C to USB-C cable from
+a Mac gave nothing, not even power, but a USB-A to USB-C cable worked, through a hub
+port with a working USB 2.0 path. Try that before ruling out USB. See
+[root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md#1-get-usb-data-on-the-usb-c-only-unit).
 
 On the second unit, the MBR says that `UDISK` (`/data`, p1) ends at sector 30,633,984.
 The eMMC ends at sector 30,535,680. The kernel cuts p1 at the end of the disk.
@@ -208,6 +216,8 @@ To boot Android, disconnect both power sources, remove the FEL card, and reconne
 CPU-addressable memory; a Boot ROM or SRAM dump is not an eMMC/Android backup.
 The [boot access notes](allwinner-a33-boot-access.md) explain the missing storage
 reader and the patch that eventually enabled root ADB on the tested unit.
+[Root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md) continues from here
+with published tools: a read-only `ums` backup, then a guarded boot write.
 
 ## 3. Confirm root ADB before the Android setup
 
