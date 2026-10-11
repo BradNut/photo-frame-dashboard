@@ -8,11 +8,11 @@ This guide provides commands for identifying the device, entering stable FEL,
 and setting up an **already rooted** unit. The stock unit had no ADB. Getting
 root required a custom, board-specific RAM reader/writer and boot-ramdisk patch;
 the [boot access notes](allwinner-a33-boot-access.md) describe that work and its
-limits. That reader/writer is not included here. **The SD card alone does not
-enable ADB or root.** If your unit has no ADB, stop after the FEL checks rather
-than running the Android setup commands, or continue with
-[root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md), which replaces the
-custom reader/writer with published tools.
+limits. That reader/writer is not included here. **The FEL stub card alone does
+not enable ADB or root.** Two later routes use published tools instead:
+[root ADB with mainline U-Boot](allwinner-a33-mainline-uboot.md) over USB, and
+[root ADB over Wi-Fi from an SD card](allwinner-a33-sdcard-adb-wifi.md) without USB.
+To choose a route and test your unit first, see [pf1007l-start-here.md](pf1007l-start-here.md).
 
 **Security:** the AiMOR app runs root shell commands from a vendor server over an
 unencrypted connection. Read [aimor-remote-root-shell.md](aimor-remote-root-shell.md)

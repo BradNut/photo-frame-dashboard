@@ -29,10 +29,11 @@ Each is a record of **one unit**. Frames sold under the same name can have diffe
 and firmware. These are not universal flashing guides.
 
 An additional BIUFRAME-branded **PF1007L** was found with an **Allwinner A33**,
-Android 6.0.1 and AiMOR, rather than the Rockchip board above. See the
-[Allwinner PF1007L recovery and setup guide](docs/allwinner-a33-pf1007l.md) and
-[boot access notes](docs/allwinner-a33-boot-access.md). Identify the SoC before
-choosing tools: the Rockchip setup script does not apply to that unit.
+Android 6.0.1 and AiMOR, rather than the Rockchip board above. **If you have a PF1007L, start
+with [pf1007l-start-here.md](docs/pf1007l-start-here.md).** It has a test sequence that shows if
+your unit matches a tested one, and which route to root it. USB-C-only units need a **USB-A to
+USB-C** cable. Identify the SoC before choosing tools: the Rockchip setup script does not apply
+to that unit.
 
 ## For agents: start here
 
@@ -81,20 +82,17 @@ section unless the identity checks match exactly.
 - **Skylight 150-CAL (RK3566, Android 12):** there is no one-shot script. Start with
   [next-session.md](docs/next-session.md) for the current state, then
   [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
-  intentionally not published here. The doc describes where it is checked in the app, so you can
-  find it in your own unit's APK.
-- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
-  [allwinner-a33-pf1007l.md](docs/allwinner-a33-pf1007l.md). It covers hardware
-  identification, stable FEL through an SD card, and setup after root ADB is
-  available. The custom root-stage storage helper is not included; the
-  [boot access notes](docs/allwinner-a33-boot-access.md) explain the verified
-  patch and its limits. [Root ADB with mainline U-Boot](docs/allwinner-a33-mainline-uboot.md)
-  does the root stage with published tools instead, including on the USB-C-only unit.
+  intentionally not published here. T- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
+  [pf1007l-start-here.md](docs/pf1007l-start-here.md). It runs read-only tests first, then
+  chooses between two published root routes: USB with mainline U-Boot over FEL
+  ([allwinner-a33-mainline-uboot.md](docs/allwinner-a33-mainline-uboot.md)), or Wi-Fi ADB from
+  the SD card alone ([allwinner-a33-sdcard-adb-wifi.md](docs/allwinner-a33-sdcard-adb-wifi.md)).
+  Setup after root is in [allwinner-a33-pf1007l.md](docs/allwinner-a33-pf1007l.md).
+  On USB-C-only units, use a **USB-A to USB-C** cable: USB-C to USB-C gives no power or data.
   Do not run the Rockchip `apply` script on this board.
   The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
-  Without USB data, use [allwinner-a33-sdcard-adb-wifi.md](docs/allwinner-a33-sdcard-adb-wifi.md):
-  U-Boot on the SD card dumps the eMMC and writes a boot patch for root ADB over Wi-Fi with key
+ Wi-Fi with key
   authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
