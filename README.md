@@ -59,6 +59,44 @@ section unless the identity checks match exactly.
 8. **Write notes as you go.** Keep a per-device file in `docs/` like the two below, with
    observations kept separate from guesses.
 
+### Check for updates, and send back what you find
+
+Many people are working on these frames at the same time. New hardware variants, fixes and
+routes arrive as issues and pull requests, often before they are merged. Your local copy may be
+out of date.
+
+**Check before you start, and again before each write and at the start of each new session:**
+
+```sh
+git fetch origin && git log --oneline HEAD..origin/main   # new commits on main
+gh issue list --repo wesbos/photo-frame-dashboard --state all --limit 30
+gh pr list --repo wesbos/photo-frame-dashboard --state all --limit 30
+gh pr view <number> --repo wesbos/photo-frame-dashboard   # read anything about your device
+gh pr diff <number> --repo wesbos/photo-frame-dashboard
+```
+
+Without `gh`, use <https://github.com/wesbos/photo-frame-dashboard/issues> and
+<https://github.com/wesbos/photo-frame-dashboard/pulls>. Read open PRs about your device, not only
+merged docs. If newer information contradicts these docs, tell the owner and follow the newer
+information only after its checks pass on your unit. Unmerged PRs are less reviewed, so treat their
+scripts with extra care.
+
+**Send a pull request when you learn something new** about a device that is already documented or
+about a new one. Examples: a new board or firmware string, a different boot image hash, a cable or
+port that does or does not work, a step that failed, a better route, or a correction. Failed
+attempts are useful too.
+
+1. Check open issues and PRs first. If one already covers your finding, comment there instead.
+2. Create a branch, and add your observations to the device doc in `docs/`. For a new device,
+   create `docs/<device>.md`. Keep observations separate from guesses, and say which host OS and
+   which unit you used.
+3. Remove private data: serials, MAC addresses, Wi-Fi details, eMMC CIDs, tokens, whole-disk
+   hashes, dumps and vendor APKs. Firmware strings and boot image hashes are fine.
+4. Show the owner the diff, because the PR is published under their GitHub account. Then open it
+   with `gh pr create --repo wesbos/photo-frame-dashboard`.
+
+For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-your-unit).
+
 ### Phase map
 
 | Phase                        | What to read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
