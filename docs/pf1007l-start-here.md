@@ -57,6 +57,17 @@ Other things that hid USB data on unit C:
 
 ## Test sequence
 
+**Try for ADB in this order, and stop at the first that works:**
+
+1. **Stock ADB over USB** ([T3](#t3-usb-data-test)). No changes to the frame.
+2. **Stock ADB over the network** ([T3b](#t3b-network-adb-test)). No changes to the frame.
+3. **Boot patch written from an SD card** (T4 onward). Use this only if 1 and 2 both fail. It
+   writes to the frame's boot partition. Both patch routes need an SD card. Route U (USB) is
+   preferred over Route S (SD card only), because it takes a full backup and verifies it over USB.
+
+Ideally no one needs step 3. If your frame gives ADB at step 1 or 2,
+[report it](#report-your-unit): it would mean that some units ship with ADB already on.
+
 ### T1. Read the About screen (no tools)
 
 Settings → About. Record the model and firmware string.
@@ -94,9 +105,10 @@ adb devices -l
 
 | Result | Meaning | Next |
 | --- | --- | --- |
-| `adb devices` lists the frame | You already have ADB | Go to [T7](#t7-confirm-root-adb) |
-| `1f3a:1000` (product "Android"), no ADB | USB data works. This is the stock state | **Route U.** Go to T4 |
-| Nothing, after you try the checklist below | No USB data path | **Route S.** Go to T5 |
+| `adb devices` lists the frame as `device` | You have ADB over USB | Go to [T7](#t7-confirm-root-adb) |
+| `adb devices` lists the frame as `unauthorized` | ADB is on, but waits for approval on the screen | Accept the "Allow USB debugging" prompt on the frame. Units B and C have no SystemUI, so the prompt may never appear. Then continue at T3b and report it |
+| `1f3a:1000` (product "Android"), no ADB | USB data works. This is the stock state on all tested units | Go to T3b. If that fails, **Route U** (T4) |
+| Nothing, after you try the checklist below | No USB data path | Go to T3b. If that fails, **Route S** (T5) |
 
 Before you decide on "nothing", try each of these:
 
@@ -104,6 +116,32 @@ Before you decide on "nothing", try each of these:
 2. A USB-A port directly on the computer, and also a USB 2.0 hub.
 3. Unplug and replug the frame (on USB-C-only units the cable is the power switch).
 4. A different computer.
+
+### T3b. Network ADB test
+
+The tested units did not have network ADB on stock firmware. Port 5555 was closed on unit A. Test
+yours anyway: it is free, and it changes nothing on the frame.
+
+This test needs the frame on Wi-Fi. Then AiMOR connects to the vendor server, which can send it
+root commands (see [aimor-remote-root-shell.md](aimor-remote-root-shell.md)). If you can, first
+block outbound TCP port 7806 from the frame on your router. Keep the test short.
+
+Find the frame's IP address in your router's client list, or in Settings → About → Status on the
+frame. Then, from a computer on the same network:
+
+```sh
+nc -vz -w 3 <frame-ip> 5555        # Windows: Test-NetConnection <frame-ip> -Port 5555
+adb connect <frame-ip>:5555
+adb -s <frame-ip>:5555 shell id
+```
+
+| Result | Next |
+| --- | --- |
+| `uid=0(root)` or another `uid` | You have ADB over the network. Set a static IP for the frame, then go to [T7](#t7-confirm-root-adb) and use `adb -s <frame-ip>:5555` |
+| `unauthorized` | Accept the prompt on the frame if one appears, and report it |
+| Connection refused or timed out | No network ADB. Continue: **Route U** (T4) if T3 found `1f3a:1000`, otherwise **Route S** (T5) |
+
+Take the frame off Wi-Fi again until you finish [T8](#t8-lock-it-down-before-the-frame-stays-online).
 
 ### T4. Route U: FEL test (non-destructive to the frame)
 
@@ -251,7 +289,8 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
   This page summarizes PRs #2 to #5. A newer PR may cover your unit.
-- Run T1 to T6 in order. They are read-only for the frame's eMMC. T4 and T5 write only to a spare
+- Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
+  T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
 - Stop at the first failed pass condition, and print the [report](#report-your-unit).
 - Never edit a hash, size, sector or disk-name guard in a script to make it pass.
@@ -270,7 +309,8 @@ About model / firmware:
 AiMOR version:
 Ports (DC jack, or USB-C only):
 Cable and port that gave USB data (or none):
-T3 USB IDs seen:
+T3 USB IDs seen / adb devices output:
+T3b network ADB result (port 5555):
 T4 sunxi-fel version output (or skipped):
 T5 check-dump stage / chunks (or skipped):
 eMMC size in sectors:
