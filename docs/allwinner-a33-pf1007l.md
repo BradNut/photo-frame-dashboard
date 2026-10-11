@@ -12,6 +12,10 @@ limits. That reader/writer is not included here. **The SD card alone does not
 enable ADB or root.** If your unit has no ADB, stop after the FEL checks rather
 than running the Android setup commands.
 
+**Security:** the AiMOR app runs root shell commands from a vendor server over an
+unencrypted connection. Read [aimor-remote-root-shell.md](aimor-remote-root-shell.md)
+before you connect the frame to your network.
+
 Follow the [repository's backup, approval and privacy rules](../README.md#rules-we-learned-the-hard-way).
 Do not run `scripts/biuframe-setup.sh apply`, `rkdeveloptool`, Rockchip loaders,
 or Rockchip partition offsets on an Allwinner unit.
@@ -39,6 +43,36 @@ Record Settings → About before changing anything. On this unit:
 The board was opened to confirm markings. Opening it is not needed to read the
 About screen or try the SD recovery route. There is no verified disassembly
 procedure in this guide; do not pry off shields or short storage pins to enter FEL.
+
+### Second unit: USB-C only, no DC jack
+
+A second PF1007L has the same About-screen model and the same firmware string.
+Its hardware is different:
+
+| Item | First unit | Second unit |
+| --- | --- | --- |
+| Power | DC jack | No DC jack. Power comes through the USB-C port. |
+| Ports | DC jack, USB device/OTG port | One USB-C port, one TF (microSD) slot, one power/reset button |
+| USB data | `1f3a:1000` stock, `1f3a:efe8` in FEL | None. The port supplies power only. |
+| eMMC | Samsung `KLMAG2WEMB-B031` | Samsung `AGND3R`, 30,535,680 sectors |
+
+The second unit never shows a USB device on the host.
+This is true in stock Android, with the reset button, and in FEL from the stub card.
+The screen stays dark with the stub card, so the Boot ROM does read the TF slot.
+Thus, USB ADB and the `sunxi-fel` steps in section 2 do not apply to this unit.
+
+The TF slot is the only data path at boot.
+A U-Boot image on the SD card can read and write the eMMC without USB.
+A boot ramdisk patch that sets `service.adb.tcp.port=5555` and starts `adbd` at boot
+gives root ADB over Wi-Fi. With this property set, `adbd` does not use USB.
+After that, use `adb connect <frame-ip>:5555`.
+Replace `adb -d` with `adb -s <frame-ip>:5555` in all commands in this guide.
+
+On the second unit, the MBR says that `UDISK` (`/data`, p1) ends at sector 30,633,984.
+The eMMC ends at sector 30,535,680. The kernel cuts p1 at the end of the disk.
+Do not read past sector 30,535,680.
+
+The first unit, as tested:
 
 Use a USB **data** cable and the device/OTG port, with the normal DC supply:
 
@@ -274,7 +308,13 @@ adb -d shell pm disable com.efercro.os.aimor
 adb -d shell input keyevent KEYCODE_HOME
 ```
 
-Select Rootless Launcher as the Home default if prompted. The observed vendor
+Select Rootless Launcher as the Home default if prompted.
+Disabling AiMOR also closes its remote root shell connection.
+See [aimor-remote-root-shell.md](aimor-remote-root-shell.md).
+Also disable `com.DeviceTest`. It runs as the system user and has an unprotected receiver
+that enables or disables components of any package.
+
+The observed vendor
 updater was `com.yhk.qeota`, with an active download service. Check that package
 on your device before disabling it:
 

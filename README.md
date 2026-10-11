@@ -89,6 +89,8 @@ section unless the identity checks match exactly.
   available. The custom root-stage storage helper is not included; the
   [boot access notes](docs/allwinner-a33-boot-access.md) explain the verified
   patch and its limits. Do not run the Rockchip `apply` script on this board.
+  The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
+  read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
