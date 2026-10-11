@@ -6,19 +6,31 @@
 
 If you are coming from reddit or youtube, you can purchase almost any photo frame from amazon. This is the one, I used: [https://amzn.to/4zneGNM](https://amzn.to/4zneGNM) (amazon aff link)
 
-Notes and scripts from getting full control of two locked-down Android displays: getting ADB,
+Notes and scripts from getting full control of locked-down Android displays: getting ADB,
 backing up the firmware, getting root, removing the vendor app, and running our own launcher,
 browser and kiosk app.
 
-|                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame                     |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------ |
-| SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   |
-| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                |
-| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 |
-| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       |
-| Backup             | Rockusb loader, with a patched RAM helper to read past 32 MiB  | `dd` over ADB as root                            |
-| Root               | Added `/force_debuggable` to the boot ramdisk, then `adb root` | Ships with SuperSU `su`                          |
-| End result         | Lawnchair launcher, USB Wi-Fi dongle (onboard radio is dead)   | Firefox, launcher, WebView 106, custom kiosk app |
+**Which frame do you have?** Frames sold under the same name, even the same Amazon listing, can
+have different boards. Check Settings → About before you follow any guide:
+
+- Firmware string contains **`A33`** and **`PF1007L`**, home app is **AiMOR**: you have the
+  Allwinner **PF1007L**. Many viewers of the video got this one. Start with
+  [pf1007l-start-here.md](docs/pf1007l-start-here.md).
+- Rockchip board, USB name `Synergy 10X1`, ADB prompt on screen: you have the frame from the video.
+  Start with [biuframe-setup-guide.md](docs/biuframe-setup-guide.md).
+- Anything else: see [For agents: start here](#for-agents-start-here), and please
+  [send in what you find](#check-for-updates-and-send-back-what-you-find).
+
+|                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   | Allwinner A33, Android 6.0.1, AiMOR home app                                         |
+| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                | `1f3a:1000` (mass storage only) → `1f3a:1002` (ADB, after the boot patch)            |
+| Cable              | Not recorded                                                   | USB-C. The first cable gave nothing, the second worked | USB-C-only units need a **USB-A to USB-C** cable. USB-C to USB-C gives no power or data |
+| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 | No                                                                                  |
+| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       | Patched the boot ramdisk from U-Boot, over USB (FEL) or from the SD card alone       |
+| Backup             | Rockusb loader, with a patched RAM helper to read past 32 MiB  | `dd` over ADB as root                            | Read-only U-Boot `ums` disk, or U-Boot dump to the SD card                           |
+| Root               | Added `/force_debuggable` to the boot ramdisk, then `adb root` | Ships with SuperSU `su`                          | Stock build is debuggable: ADB shell is root once `adbd` runs                        |
+| End result         | Lawnchair launcher, USB Wi-Fi dongle (onboard radio is dead)   | Firefox, launcher, WebView 106, custom kiosk app | Launcher, WebView 106, kiosk app. Vendor app has a remote root shell: disable it     |
 
 [`dashboard/`](dashboard) is the family dashboard we run on the BIUFRAME (it uses mock data).
 It is a Vite web app deployed to Cloudflare Workers, plus `dashboard/kiosk/`: a small full-screen
@@ -28,12 +40,10 @@ exit to the launcher.
 Each is a record of **one unit**. Frames sold under the same name can have different boards
 and firmware. These are not universal flashing guides.
 
-An additional BIUFRAME-branded **PF1007L** was found with an **Allwinner A33**,
-Android 6.0.1 and AiMOR, rather than the Rockchip board above. **If you have a PF1007L, start
-with [pf1007l-start-here.md](docs/pf1007l-start-here.md).** It has a test sequence that shows if
-your unit matches a tested one, and which route to root it. USB-C-only units need a **USB-A to
-USB-C** cable. Identify the SoC before choosing tools: the Rockchip setup script does not apply
-to that unit.
+The PF1007L has been tested on three units by three owners. Its docs combine their findings.
+The vendor app on it accepts root shell commands from the vendor's server, so read
+[aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before it goes online. Do not run
+the Rockchip setup script on it.
 
 ## For agents: start here
 
