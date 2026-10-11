@@ -91,6 +91,9 @@ section unless the identity checks match exactly.
   patch and its limits. Do not run the Rockchip `apply` script on this board.
   The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
+  Without USB data, use [allwinner-a33-sdcard-adb-wifi.md](docs/allwinner-a33-sdcard-adb-wifi.md):
+  U-Boot on the SD card dumps the eMMC and writes a boot patch for root ADB over Wi-Fi with key
+  authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
