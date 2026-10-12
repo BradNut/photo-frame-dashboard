@@ -37,6 +37,10 @@ write, a verified backup comes first, and dumps stay private.
 Unit B and unit C have the same firmware and eMMC size. Unit C's USB worked only after a cable
 change, so Unit B's "no USB data" may have been a cable problem too. That has not been tested.
 
+Units E and F run a firmware string ending in `OS-PF1009.0.20260417` on the 30,777,344-sector eMMC,
+with a new boot image hash. Both were rooted with Route U from macOS through a bus-powered hub:
+see [pf1007l-pf1009-20260417.md](pf1007l-pf1009-20260417.md).
+
 ## The USB-A to USB-C rule
 
 On USB-C-only units, **use a USB-A to USB-C data cable**. Plug it into a USB-A port, or into a
