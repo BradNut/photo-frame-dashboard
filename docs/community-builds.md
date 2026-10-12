@@ -11,7 +11,6 @@ Built one? Add it in a pull request (one row, a link to your post, and optionall
 
 | Build&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Who |
 | --- | --- |
-| [Frame build](https://x.com/ryanvogel/status/2109465379093262577) | [@ryanvogel](https://x.com/ryanvogel) |
 | <img src="images/community/RhysSullivan-04.jpg" width="200" alt="Build by @RhysSullivan"><br>[Frame running an Executor v2 metrics dashboard; offering them to YC founders](https://x.com/RhysSullivan/status/2109459855383941423) | [@RhysSullivan](https://x.com/RhysSullivan) |
 | <img src="images/community/alanb-05.jpg" width="200" alt="Build by @alanb"><br>[Native Android client/server app instead of a browser dashboard](https://x.com/alanb/status/2109581321584668735) | [@alanb](https://x.com/alanb) |
 | <img src="images/community/tushargugnani-10.jpg" width="200" alt="Build by @tushargugnani"><br>[Chess puzzles, web analytics, home camera view, video streaming](https://x.com/tushargugnani/status/2109659313421853176) | [@tushargugnani](https://x.com/tushargugnani) |
