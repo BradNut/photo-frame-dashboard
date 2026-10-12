@@ -4,9 +4,17 @@
 
 ▶️ **Watch the video: [https://youtu.be/ZLycoUMltNI](https://youtu.be/ZLycoUMltNI)**
 
-If you are coming from reddit or youtube, you can purchase almost any photo frame from amazon. This is the one, I used: [https://amzn.to/4zneGNM](https://amzn.to/4zneGNM) (amazon aff link).
-**Heads up:** that listing now often ships a different board, the Allwinner **PF1007L**, which takes more work to unlock.
-See the [device index](docs/devices.md) for every frame reported so far, with photos and where owners bought them.
+<a href="https://amzn.to/4zneGNM"><img src="docs/images/devices/B0GHR65YYX.jpg" width="110" alt="10.1&quot; frame from the video (now often ships the PF1007L)" title="10.1&quot; frame from the video (now often ships the PF1007L)"></a>
+<a href="https://amzn.to/4B38DQ0"><img src="docs/images/devices/B0FSZ86HTM.jpg" width="110" alt="Runxion 10.1&quot; Frameo" title="Runxion 10.1&quot; Frameo"></a>
+<a href="https://amzn.to/4zwU6e0"><img src="docs/images/devices/B0GCCFPHZ4.jpg" width="110" alt="15.6&quot; Frameo" title="15.6&quot; Frameo"></a>
+<a href="https://www.amazon.com/dp/B0CQN2PKQR?tag=webo080-20"><img src="docs/images/devices/B0CQN2PKQR.jpg" width="110" alt="Pastigio FRAME156 15.6&quot; Frameo" title="Pastigio FRAME156 15.6&quot; Frameo"></a>
+<a href="https://www.amazon.com/dp/B0D8J5PNFH?tag=webo080-20"><img src="docs/images/devices/B0D8J5PNFH.jpg" width="110" alt="Dragon Touch Modern10 Charm" title="Dragon Touch Modern10 Charm"></a>
+<a href="https://www.amazon.com/dp/B0C9V811L6?tag=webo080-20"><img src="docs/images/devices/B0C9V811L6.jpg" width="110" alt="Skylight Calendar 15&quot;" title="Skylight Calendar 15&quot;"></a>
+<a href="https://www.amazon.es/dp/B0GGB7LWX8"><img src="docs/images/devices/B0GGB7LWX8.jpg" width="110" alt="Humblestead 10.1&quot; (Amazon Spain, PF1007L)" title="Humblestead 10.1&quot; (Amazon Spain, PF1007L)"></a>
+<a href="https://www.amazon.ca/dp/B0H4W1YPHH"><img src="docs/images/devices/B0H4W1YPHH.jpg" width="110" alt="Anna Bella 10.1&quot; (Amazon Canada, PF1007L)" title="Anna Bella 10.1&quot; (Amazon Canada, PF1007L)"></a>
+
+Frames confirmed to work (Amazon affiliate links). See the **[device index](docs/devices.md)** for every
+frame, which board it has, and where to start.
 
 Notes and scripts from getting full control of locked-down Android displays: getting ADB,
 backing up the firmware, getting root, removing the vendor app, and running our own launcher,
