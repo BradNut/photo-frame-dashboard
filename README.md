@@ -4,7 +4,9 @@
 
 ▶️ **Watch the video: [https://youtu.be/ZLycoUMltNI](https://youtu.be/ZLycoUMltNI)**
 
-If you are coming from reddit or youtube, you can purchase almost any photo frame from amazon. This is the one, I used: [https://amzn.to/4zneGNM](https://amzn.to/4zneGNM) (amazon aff link)
+If you are coming from reddit or youtube, you can purchase almost any photo frame from amazon. This is the one, I used: [https://amzn.to/4zneGNM](https://amzn.to/4zneGNM) (amazon aff link).
+**Heads up:** that listing now often ships a different board, the Allwinner **PF1007L**, which takes more work to unlock.
+See the [device index](docs/devices.md) for every frame reported so far, with photos and where owners bought them.
 
 Notes and scripts from getting full control of locked-down Android displays: getting ADB,
 backing up the firmware, getting root, removing the vendor app, and running our own launcher,
