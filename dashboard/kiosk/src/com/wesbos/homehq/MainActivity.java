@@ -26,6 +26,7 @@ public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
   static final String DEFAULT_URL = "https://home-dashboard.wesbos.workers.dev/";
   static final long EXIT_HOLD_MS = 1500;
+  static final long RETRY_MS = 5000;
   static final float EXIT_SLOP_PX = 60;
 
   private WebView web;
@@ -61,7 +62,21 @@ public class MainActivity extends Activity {
     s.setDomStorageEnabled(true);
     s.setUseWideViewPort(true);
     s.setMediaPlaybackRequiresUserGesture(false);
-    web.setWebViewClient(new WebViewClient()); // keep navigation inside the kiosk
+    // Keep navigation inside the kiosk. When the kiosk starts at boot before Wi-Fi is up, the
+    // first load fails and would stay on the error page, so retry failed main-frame loads.
+    web.setWebViewClient(new WebViewClient() {
+      @Override
+      @SuppressWarnings("deprecation")
+      public void onReceivedError(final WebView view, int code, String desc, final String failingUrl) {
+        Log.w(TAG, "Load failed (" + desc + "), retrying in " + RETRY_MS + " ms");
+        handler.postDelayed(new Runnable() {
+          @Override
+          public void run() {
+            view.loadUrl(failingUrl);
+          }
+        }, RETRY_MS);
+      }
+    });
     setContentView(web);
 
     String url = getIntent().getDataString();
