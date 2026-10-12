@@ -47,6 +47,13 @@ unchanged. In the read-only `ums` U-Boot, unit D reset itself about 16 minutes i
 continuous read, twice (once on a hub, once on a rear port), right after `emmc-macos.py` pass 1
 finished. The cause is unknown. The independent re-read was done in two halves from fresh boots
 instead.
+**This one-sector edit is not a published route.** It depends on that exact sector's bytes,
+which differed on another unit (#16). Some April units also set the same property in
+`/data/property/persist.sys.usb.config`, which overrides `build.prop`. Use the boot-patch routes below.
+
+Units E and F run a firmware string ending in `OS-PF1009.0.20260417` on the 30,777,344-sector eMMC,
+with a new boot image hash. Both were rooted with Route U from macOS through a bus-powered hub:
+see [pf1007l-pf1009-20260417.md](pf1007l-pf1009-20260417.md).
 
 ## The USB-A to USB-C rule
 
