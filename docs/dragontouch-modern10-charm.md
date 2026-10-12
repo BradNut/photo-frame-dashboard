@@ -143,6 +143,9 @@ The frame fetches the hosted site directly over Wi-Fi; the Mac does not need to 
   and choose **VPhoto**. The installed apps can remain available for another trial.
 - VPhoto and its updater remain installed and enabled. They were not audited for remote
   commands; the AiMOR findings from another model should not be attributed to VPhoto.
+  The [Joyhong JT101F-I02](joyhong-jt101f-i02.md) has the same platform (`astar_ococci`) and the
+  same updater, `com.waophoto.fota`. There it is privileged, with `INSTALL_PACKAGES` and
+  `REBOOT`. Consider `pm disable com.waophoto.fota` before the frame stays online.
 - No system WebView replacement, CA-root changes, swap setup, boot patch or direct firmware
   writes were performed. The stock screen timeout was retained.
 - Automatic dashboard startup after reboot, offline use, long-term stability and firmware

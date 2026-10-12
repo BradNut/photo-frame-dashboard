@@ -46,7 +46,12 @@ Exact RAM package, Wi-Fi chipset, and display panel part number are not confirme
    not appear.
 3. Installed **Terminal Emulator for Android 1.0.70** from a FAT32 SD card using
    **Settings → Storage & USB**. The APK came from the
-   [author's download page](https://jackpal.github.io/Android-Terminal-Emulator/).
+   [author's download page](https://jackpal.github.io/Android-Terminal-Emulator/); its hash was
+   not recorded. The F-Droid archive build
+   ([`jackpal.androidterm_72.apk`](https://f-droid.org/archive/jackpal.androidterm_72.apk),
+   1.0.70-rebuild) has SHA-256
+   `95095176ca3fa421102352ecaea0fffb6d13527db023967a7cfa280f7bc05cb5`. Use that build and check
+   the hash before installing.
    Running `su -c id` in the terminal returned `uid=0(root)`.
 4. Put a local helper, `f.sh`, on that SD card and ran it with `su`. The root shell
    could read the card at `/mnt/media_rw/<SD-UUID>/f.sh`. This helper backed up

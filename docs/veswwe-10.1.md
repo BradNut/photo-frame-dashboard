@@ -40,11 +40,9 @@ been configured.
 - The About screen shows anonymous analytics sharing enabled. Its peer ID is
   omitted from these public notes; the original photo must not be published
   without redacting it.
-- Investigation host is macOS; `gh` is available, but `adb` is not currently on
-  the shell's PATH or in the usual Android SDK platform-tools locations checked.
 - Following the suggested Frameo beta-menu route, owner reported USB ADB
-  available. Host confirmed an authorized `DP100` connection; exact toggles and
-  authorization prompts used still need owner confirmation.
+  available. Host confirmed an authorized `DP100` connection; the exact toggles and
+  authorization prompts used were not recorded.
 - `adb shell` is UID 2000; `su -c id` returns UID 0. SELinux is permissive.
   No boot patch or system APK modification was needed; approved app changes
   and their verification are recorded below.
@@ -178,7 +176,8 @@ Rootless Pixel Launcher 3.9.1 from F-Droid: SHA-256
 `7fa44d560dc4577374d45176220de2c0b00a71e09d6d148cdea4e0a52d38404a`,
 matching the repo's pin. Its APK signature verifies and minimum API is 21.
 
-Firefox 157.0.1 from Mozilla's official Fenix archive: SHA-256
+Firefox 157.0.1 from Mozilla's official Fenix archive
+(`https://archive.mozilla.org/pub/fenix/releases/157.0.1/android/`, `armeabi-v7a` build): SHA-256
 `a7682f654e0573413fbc0049267b7b2b483eb3406a7e4372a8ddad829c00f51c`.
 Its APK signature verifies, minimum API is 26, and ABI is `armeabi-v7a`.
 Signing certificate SHA-256 is
@@ -297,7 +296,6 @@ or access method for this VESWWE frame.
   also describes enabling the Frameo Beta Program as a route to ADB.
   Owner subsequently reported working USB ADB after this suggestion.
 
-## Evidence and contribution policy
 
 ### Network hand-off
 
@@ -313,11 +311,3 @@ A local dashboard server can retrieve external photos/calendar/weather data
 while the frame accesses only that server. Such an integration is future work;
 the completed test used a local page over USB, not those account integrations.
 
-Keep raw diagnostics, firmware backups, serials, MAC addresses, network details
-and tokens in the ignored `diagnostics/` and `backups/` directories. Public notes
-should record firmware strings, reproducible steps, failures, backup validation,
-and the undo procedure and readback verification for each eventual change.
-
-Follow the repository's identity checks and verified-backup requirements before
-device modifications. Prepare the final sanitized diff for review before
-publishing the upstream PR.

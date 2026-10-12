@@ -94,7 +94,7 @@ Restore would need Rockchip loader mode and `rkdeveloptool`; neither has been tr
 | 3 Loader mode | Not needed so far. Not tested. |
 | 4 Back up | Done and verified (see Backup). Restore path untested. |
 | 5 Root | Shipped `su` works. |
-| 6 Make it useful | Pending: kiosk build and install. |
+| 6 Make it useful | Done: kiosk installed and set as the Home app (see Changes made). The kiosk in this repo has no HOME intent filter; that was a local change, not included. |
 | 7 Networking | Onboard Wi-Fi works. |
 | 8 Vendor updates | Pending: disable `com.muxintu.app.mxota` before relying on the frame. |
 | 9 Security hand-off | Pending. |
@@ -104,8 +104,11 @@ Restore would need Rockchip loader mode and `rkdeveloptool`; neither has been tr
 - Whether `/system` can be remounted read-write the way the BIUFRAME steps assume, given `veritymode=enforcing`.
 - Whether Frameo re-launches itself over a third-party HOME or kiosk app.
 - Whether Frameo's cloud or the OTA app can replace system files on their own.
-- This host also runs SuperDisplay, whose bundled ADB v40 fights the current platform-tools
-  server (v41) for the device. Stop its service while working on the frame.
+
+## Host note
+
+This host also runs SuperDisplay, whose bundled ADB v40 fights the current platform-tools
+server (v41) for the device. Stop its service while working on the frame.
 
 ## Changes made to the frame (2026-10-09 to 10-10)
 
@@ -129,5 +132,5 @@ found; this does not rule out a fitted but unpowered sensor. Not pursued further
 
 - `su` gives root with no prompt and no manager app, so any app installed on this frame can take root. Install nothing untrusted.
 - Android 8.1 with a 2020-11 security patch; SELinux is permissive. Keep the frame on a guest or IoT network.
-- ADB over USB is the only management path. Network ADB (5555) is open on the Wi-Fi address since 2026-10-10.
+- Management was done over USB ADB. Network ADB (5555) was also found open on the Wi-Fi address on 2026-10-10; how it was enabled was not recorded. Until it is closed, anything on the network can reach ADB, so keep the frame on an isolated network.
 

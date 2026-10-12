@@ -19,9 +19,8 @@ have different boards. Check Settings → About before you follow any guide:
   network. The SD card boot patch is the last resort.
 - Rockchip board, USB name `Synergy 10X1`, ADB prompt on screen: you have the frame from the video.
   Start with [biuframe-setup-guide.md](docs/biuframe-setup-guide.md).
-- Uhale **SI006**, Spreadtrum hardware `sp7731g_1h10`: see the
-  [SI006 setup notes](docs/si006-uhale.md). Root USB ADB, a verified firmware backup,
-  WebView 106, and the dashboard are working on one unit.
+- Another brand (Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and more): check the
+  [device index](docs/devices.md).
 - Anything else: see [For agents: start here](#for-agents-start-here), and please
   [send in what you find](#check-for-updates-and-send-back-what-you-find).
 
@@ -146,6 +145,7 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
   Do not run the Rockchip `apply` script on this board.
   The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
+- **Other tested frames:** see the [device index](docs/devices.md).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 

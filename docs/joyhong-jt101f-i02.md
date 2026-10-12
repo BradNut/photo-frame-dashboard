@@ -57,6 +57,7 @@ Guess, not verified: the USB-C port feeds only the PMIC's AC input and its data 
 - **ADB does not check keys.** A host with a freshly generated key, never seen by the frame, got a
   root shell at once over Wi-Fi, and no prompt appeared on the screen. In practice, anything on the
   same network can get a root shell on this frame.
+  Keep it on an isolated or guest network, and never on a network shared with untrusted devices.
 - `adbd` serves one TCP client at a time. A second host shows the frame as `offline` until the first
   disconnects. This is easy to mistake for an authorization prompt.
 - Listening TCP ports: only `5555` (adbd) and `127.0.0.1:5037`.
@@ -206,7 +207,9 @@ The first image at power-on is `bootlogo.bmp` on the `bootloader` partition (FAT
 It is 800x1280, 24-bit, bottom-up, with the artwork rotated 90° counter-clockwise because the panel is portrait.
 The same partition also holds `bat/`, `font24.sft`, `font32.sft` and `magic.bin`. They were left alone.
 
-It was replaced with a same-size image that uses the original 54-byte header unchanged. Method:
+It was replaced with a same-size image that uses the original 54-byte header unchanged.
+**Copy the original `bootlogo.bmp` off the frame first.** A bad write to this partition can stop the
+frame from booting. Method:
 
 ```sh
 mkdir -p /data/local/tmp/bl
@@ -215,8 +218,7 @@ cp /data/local/tmp/new-bootlogo.bmp /data/local/tmp/bl/bootlogo.bmp && sync && u
 ```
 
 Read back after `drop_caches` from a read-only mount, the MD5 matches, and the frame booted normally
-afterwards. The owner confirmed that the new splash shows the right way up at power-on. Keep a copy of the original
-`bootlogo.bmp`.
+afterwards. The owner confirmed that the new splash shows the right way up at power-on.
 
 ## Report
 
