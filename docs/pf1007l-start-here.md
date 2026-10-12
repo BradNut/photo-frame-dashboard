@@ -19,6 +19,7 @@ Detailed guides behind this page:
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL scripts) |
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
+| [pf1007l-windows-20260529-report.md](pf1007l-windows-20260529-report.md) | May PF1007 unit: Windows/WSL, 1-bit legacy eMMC access, certificate fix and confirmed hosted dashboard startup |
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
