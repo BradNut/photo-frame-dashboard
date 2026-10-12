@@ -23,52 +23,50 @@ Detailed guides behind this page:
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
 
-## Known units
+## Known firmware and units
 
-| | Unit A | Unit B | Unit C | Unit D |
-| --- | --- | --- | --- | --- |
-| Source | [#2](https://github.com/wesbos/photo-frame-dashboard/pull/2) | [#3](https://github.com/wesbos/photo-frame-dashboard/pull/3), [#5](https://github.com/wesbos/photo-frame-dashboard/pull/5) | [#4](https://github.com/wesbos/photo-frame-dashboard/pull/4) | This PR |
-| Power and ports | DC jack + USB OTG port | USB-C only, TF slot, button | USB-C only, TF slot, button | USB-C only, TF slot, button |
-| eMMC | Samsung `KLMAG2WEMB-B031` | Samsung `AGND3R`, 30,535,680 sectors | 30,535,680 sectors | 30,777,344 sectors |
-| USB data | Yes | Not seen | Yes, **USB-A to USB-C cable only** | Yes, A-to-C data cable, rear motherboard port. Box cable gave nothing |
-| Firmware | `YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260113` | same | same | `…20260410` (build fingerprint `…/20260410:eng/test-keys`) |
-| Boot image | 15,886,336 bytes at sector 172032 | same, SHA-256 `d71c313d…` | same sectors | same sectors, SHA-256 `8ffc2a7d…` (same as [#8](https://github.com/wesbos/photo-frame-dashboard/issues/8)) |
-| Host | Linux | Windows + WSL | macOS (Apple silicon) | Linux (CachyOS) |
-| Root route | Custom FEL reader/writer (not published) | **Route S** | **Route U** | Route U backup, then [#6](https://github.com/wesbos/photo-frame-dashboard/pull/6)'s one-sector `build.prop` edit |
+More than 20 owners have reported PF1007L units. The firmware string on the About screen is the
+best first clue, but it does not settle everything: units with the same firmware and boot image
+differ in eMMC size and in whether ADB ships on.
 
-Unit B and unit C have the same firmware and eMMC size. Unit C's USB worked only after a cable
-change, so Unit B's "no USB data" may have been a cable problem too. That has not been tested.
+| Firmware string ends with | Reports | eMMC sectors | Boot SHA-256, first 8 (sector 172032, 31,028 sectors) | Stock ADB | What worked |
+| --- | --- | --- | --- | --- | --- |
+| `321-OS-AIMOR.0.20260113` | units A, B, C; #6, #12, #18, #19 | 30,535,680 or 30,777,344 | `d71c313d` | No | Route U, Route S |
+| `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
+| `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
+| `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
+| `FL-AIMOR-OS.0.20260519` | #24, #36 | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route S only by editing its hash guard (do not) |
+| `V10-1680.0.20260529` | #8, #16, [#28](pf1007l-macos-20260529-report.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16 and #28 | Nothing needed (#8); Route U |
 
-Unit D shipped with ADB **off** (`1f3a:1000`, network port 5555 refused) although #8's unit,
-with the same firmware date, eMMC size and boot hash, had it on. On unit D the only switch was
-`persist.sys.usb.config=mass_storage` in `/system/build.prop` (nothing in `/data/property`).
-Its sector 399221 was byte-identical to #6's `sector-orig.bin`. A guarded U-Boot script
-(the Route U binary, `crc32 -v` on both payloads and `cmp.b` against the stock sector before
-`mmc write`) changed only that sector. After boot: `1f3a:1001`, `uid=0(root)`, boot image
-unchanged. In the read-only `ums` U-Boot, unit D reset itself about 16 minutes into a
-continuous read, twice (once on a hub, once on a rear port), right after `emmc-macos.py` pass 1
-finished. The cause is unknown. The independent re-read was done in two halves from fresh boots
-instead.
-**This one-sector edit is not a published route.** It depends on that exact sector's bytes,
-which differed on another unit (#16). Some April units also set the same property in
-`/data/property/persist.sys.usb.config`, which overrides `build.prop`. Use the boot-patch routes below.
+Numbers are GitHub issues and pull requests. Units A to C are from the first three guides:
+[allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) (A, DC jack and Linux, rooted with a custom
+tool), [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) (B) and
+[allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) (C).
 
-Units E and F run a firmware string ending in `OS-PF1009.0.20260417` on the 30,777,344-sector eMMC,
-with a new boot image hash. Both were rooted with Route U from macOS through a bus-powered hub:
-see [pf1007l-pf1009-20260417.md](pf1007l-pf1009-20260417.md).
+What this tells you:
 
-An additional [May 2026 macOS report](pf1007l-macos-20260529-report.md) has the same
-firmware string and boot-image hash as [issue #8](https://github.com/wesbos/photo-frame-dashboard/issues/8),
-but a smaller eMMC and **stock ADB off**, rather than on. The boot patch worked after
-a local U-Boot START STOP correction stabilized USB storage. Check actual ADB and each
-unit's storage layout; the firmware date and boot hash alone do not establish its USB state.
+- **Test ADB first** (T3, T3b). Some units ship with root ADB on, even with the same firmware and
+  boot image as units that don't.
+- **Two eMMC sizes.** The larger 30,777,344-sector eMMC is now the common one. It is behind most
+  of the U-Boot `ums` problems, see [U-Boot settings](#u-boot-settings-that-fixed-ums-problems).
+- **Route U** checks the boot image's structure, not a fixed hash, so it has worked on every
+  firmware it was tried on (all but `20260416`). **Route S** accepts only the January boot image.
+- Unit D was rooted with a one-sector `build.prop` edit (#6, #13). **It is not a published route.**
+  That sector differed on another unit, and some April units override it from
+  `/data/property/persist.sys.usb.config`.
+
+Hardware notes from several units (#6, #13): the Wi-Fi chip is an AIC8800 with no stored MAC
+address, so the MAC and the DHCP address change at each boot (set a static IP). Stock firmware
+listens on TCP 8086, AiMOR's paired file service, not ADB. AiMOR's `vuid_cert.txt` is a device
+credential: keep it out of anything you publish.
 
 ## The USB-A to USB-C rule
 
 On USB-C-only units, **use a USB-A to USB-C data cable**. Plug it into a USB-A port, or into a
 USB-A port on a hub or adapter.
 
-A USB-C to USB-C cable gave unit C **no power and no data**. The frame appears to lack the USB-C CC
+Most reports agree. A USB-C to USB-C cable gave unit C **no power and no data**. The frame appears
+to lack the USB-C CC
 pull-down resistors. Without them, a USB-C host or charger never detects the frame and never turns
 on power. The same likely applies to USB-C chargers. For normal use, power the frame from a USB-A
 charger with an A-to-C cable.
@@ -78,7 +76,10 @@ records intermittent C-to-C enumeration through a hub, with A-to-C as its stable
 path. Treat the cable recommendation as a reliable starting point, rather than proof
 that C-to-C can never carry data. CC wiring was not measured in that session.
 
-Other things that hid USB data on unit C:
+**Power:** several units dropped off USB through bus-powered hubs and monitor hubs, mostly during
+long backups. A direct port on the computer, or a powered hub, fixed it (#16, #18, #24).
+
+Other things that hid USB data:
 
 - **A charge-only cable.** Use a cable that you know carries data, for example one that works
   with a phone.
@@ -92,27 +93,25 @@ Other things that hid USB data on unit C:
 
 1. **Stock ADB over USB** ([T3](#t3-usb-data-test)). No changes to the frame.
 2. **Stock ADB over the network** ([T3b](#t3b-network-adb-test)). No changes to the frame.
-3. **Exact April `20260410` firmware:** consider [temporary AiMOR-channel ADB](#t3c-april-firmware-temporary-aimor-channel-adb).
-   This changes runtime ADB state and needs owner approval; it does not write a boot image.
-4. **Boot patch written from an SD card** (T4 onward). Use this only if stock ADB fails and the
-   applicable temporary route is unavailable. It
+3. **Temporary ADB through the AiMOR connection** ([T3c](#t3c-temporary-adb-through-the-aimor-connection)).
+   No write to the frame, but it needs the frame online and gives open root ADB until the next
+   reboot. Tested on April `20260410` firmware.
+4. **Boot patch written from an SD card** (T4 onward). Use this only if 1 to 3 fail. It
    writes to the frame's boot partition. Both patch routes need an SD card. Route U (USB) is
    preferred over Route S (SD card only), because it takes a full backup and verifies it over USB.
 
-Ideally no one needs a boot patch. If your frame gives ADB at step 1 or 2,
-[report it](#report-your-unit): it would mean that some units ship with ADB already on.
+Ideally no one needs a boot patch. Some units do ship with ADB on (#8), so
+[report it](#report-your-unit) if yours does.
 
 ### T1. Read the About screen (no tools)
 
 Settings → About. Record the model and firmware string.
 
-**Pass:** the model is `PF1007L` and the firmware is
-`YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260113`.
+**Pass:** the model is `PF1007L` and the firmware string ends with one of the versions in
+[the firmware table](#known-firmware-and-units).
 
-- `A33` in the firmware string with a different date or build: the routes may still work, but your
+- `A33` in the firmware string with a version not in the table: the routes may still work, but your
   unit is untested. Continue with the read-only tests only, and report your results.
-  The exact `20260410` firmware has a separately tested [temporary access route](pf1007l-20260410-network-adb.md);
-  that report does not change the January boot-image compatibility gate below.
 - Not A33 (for example a Rockchip `rk312x` firmware): this page does not apply. See the
   [BIUFRAME guide](biuframe-setup-guide.md).
 
@@ -158,8 +157,8 @@ Before you decide on "nothing", try each of these:
 
 ### T3b. Network ADB test
 
-The tested units did not have network ADB on stock firmware. Port 5555 was closed on unit A. Test
-yours anyway: it is free, and it changes nothing on the frame.
+No PF1007L report so far had network ADB on stock firmware. Other A33 frames did (see the
+[device index](devices.md)). Test yours anyway: it is free, and it changes nothing on the frame.
 
 This test needs the frame on Wi-Fi. Then AiMOR connects to the vendor server, which can send it
 root commands (see [aimor-remote-root-shell.md](aimor-remote-root-shell.md)). If you can, first
@@ -178,11 +177,11 @@ adb -s <frame-ip>:5555 shell id
 | --- | --- |
 | `uid=0(root)` or another `uid` | You have ADB over the network. Set a static IP for the frame, then go to [T7](#t7-confirm-root-adb) and use `adb -s <frame-ip>:5555` |
 | `unauthorized` | Accept the prompt on the frame if one appears, and report it |
-| Connection refused or timed out | No stock network ADB. For exact April `20260410` firmware, see T3c. Otherwise: **Route U** (T4) if T3 found `1f3a:1000`, or **Route S** (T5) |
+| Connection refused or timed out | No stock network ADB. Try T3c, then **Route U** (T4) if T3 found `1f3a:1000`, or **Route S** (T5) |
 
 Take the frame off Wi-Fi again until you finish [T8](#t8-lock-it-down-before-the-frame-stays-online).
 
-### T3c. April firmware: temporary AiMOR-channel ADB
+### T3c. Temporary ADB through the AiMOR connection
 
 One `PF1007L / AiMOR 6.0.78 / 20260410` unit obtained root ADB through a temporary
 DNS redirect of `imsconnect.efercro.com` and one vendor command. See the
@@ -220,6 +219,10 @@ diagnostics/sunxi-tools/sunxi-fel version
 
 **Pass:** the USB ID is `1f3a:efe8` and the output contains `soc=00001667(A33)`.
 
+If the eMMC disk never appears, disappears during the backup, or the frame resets, see
+[U-Boot settings that fixed ums problems](#u-boot-settings-that-fixed-ums-problems).
+`emmc-macos.py backup-resume` continues a backup after a dropout.
+
 Then continue with the [U-Boot guide](allwinner-a33-mainline-uboot.md) sections 3 and 4. They build
 a U-Boot with USB mass-storage writes removed. Its native `mmc write` command still exists
 for the separately approved guarded patch. It exposes the eMMC to the host as a **read-only** disk, and you
@@ -248,7 +251,8 @@ to `1f`) are `ok`.
 If no `a33-status.txt` appears on the card at all, U-Boot did not run. Stop and report it.
 
 Hosts: the card-writing script (`fel-sdcard.py`) is **Windows-only**. The U-Boot build needs Linux
-or WSL. A macOS card-writing script does not exist yet.
+or WSL. A macOS port is proposed in [#14](https://github.com/wesbos/photo-frame-dashboard/pull/14)
+but not merged yet.
 
 ### T6. Compatibility gate: is your boot image the tested one?
 
@@ -269,22 +273,46 @@ On Linux, `sha256sum` replaces `shasum -a 256`. Route S also prints this hash as
 | --- | --- |
 | Partition starts (sectors) | env 139264, **boot 172032**, system 237568, recovery 2400256 |
 | Boot image | `ANDROID!` header, 2048-byte page, 15,886,336 bytes |
-| Boot image SHA-256 (unit B) | `d71c313ddaa4693948acb20af7740ccb56c88bf9376746a47fce2d00c14fc6a4` |
-| eMMC size, USB-C units | 30,535,680 sectors (15,634,268,160 bytes) |
+| Boot image SHA-256 | January: `d71c313ddaa4693948acb20af7740ccb56c88bf9376746a47fce2d00c14fc6a4`. Others: the first 8 digits in [the firmware table](#known-firmware-and-units) |
+| eMMC size | 30,535,680 sectors (15,634,268,160 bytes) or 30,777,344 sectors (15,758,000,128 bytes) |
 
 `check-dump.py` and `emmc-macos.py` print the partition table. `boot-patch.py` (Route U) refuses a
 sector that is not a partition start.
 
-**Pass:** the boot starts at 172032 and the SHA-256 matches. Then the patch has been tested on
-your exact boot image.
+**Pass:** the boot starts at 172032 and the SHA-256 matches a row of the firmware table. Then a
+patch has been tested on your exact boot image. The May `20260519` image has a different ramdisk
+slot; `boot-patch.py` reads the slot from your image, so its write ranges differ from the ones below.
 
 **On mismatch:**
 
-- **Route S** refuses to continue. `build-write.sh` accepts only that SHA-256. Do not edit it.
-  Report the hash.
+- **Route S** refuses to continue. `build-write.sh` accepts only the January SHA-256. Do not edit
+  it. Report the hash, and use Route U if your frame has USB data.
 - **Route U** checks the structure, not a fixed hash. It requires the exact stock USB init action,
   a ramdisk that fits, and only the expected header bytes changed. A different hash is
   **untested**. Report it, and ask in an issue before you write.
+
+## U-Boot settings that fixed ums problems
+
+The repository's Route U build (`scripts/a33-uboot/`) runs the eMMC at full speed on an 8-bit bus.
+That worked on units B and C (30,535,680 sectors). On the larger 30,777,344-sector eMMC, many owners
+saw the `ums` disk never appear, disappear partway through a backup, or the frame reset. These
+changes fixed it for them. **They are not in the repository's build yet**, so each one is a local
+change to the U-Boot source, and its reports are the reference.
+
+| Symptom | What fixed it | Reports |
+| --- | --- | --- |
+| Read errors, `ums` drops, slow or failing backup | eMMC **4-bit at 26 MHz**, or 8-bit at 25 MHz | #16, #18, #24, #27, #29, #6 (8-bit high speed hung) |
+| The disk disappears when the computer sends "eject" or "stop" | Ignore START STOP UNIT unless it is a real unload: [patch](patches/pf1007l-v2025.10-start-stop.patch) | #28, #16, #24 |
+| Drops through a bus-powered hub | Direct port or powered hub; low-power build (`CONFIG_SUNXI_NO_PMIC=y`, CPU at 408 MHz) | #16, #24, #29 |
+| Single read errors | Retry each read up to 8 times | #24 |
+| Route S dump fails on May `20260519` | eMMC at 12 MHz | #24 comment |
+| DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL | #6 |
+| Frame resets 45 to 50 s after U-Boot starts | **Unsolved.** Possibly the START STOP eject or power | #19 |
+| `ums` never enumerates on May `20260519` | **Unsolved.** Try the 4-bit build and the START STOP patch | #36 |
+| Frame resets about 16 minutes into a continuous read | **Unsolved.** Resumable backup works around it | #13 |
+
+`build-uboot.sh` checks where the SPL code ends. Builds with the low-power changes pad the SPL with
+`0xFF`, which that check misreads, so #16 and #29 bypassed it. Do not bypass it for any other reason.
 
 ### Write the patch (owner approval for this specific write)
 
@@ -314,8 +342,9 @@ adb -d shell getprop ro.build.fingerprint
 adb -d shell getprop sys.boot_completed  # 1
 ```
 
-**Pass:** `uid=0(root)` and the fingerprint
-`AEEZO/astar_m86_8723cs/astar-m86_8723cs:6.0.1/MOB30R/20260113:eng/test-keys`.
+**Pass:** `uid=0(root)`, and a fingerprint like
+`AEEZO/astar_m86_8723cs/astar-m86_8723cs:6.0.1/MOB30R/20260113:eng/test-keys` with your firmware's
+date in place of `20260113`.
 
 Route S: set a static IP on the frame. The Wi-Fi MAC changes at each boot, so the DHCP address
 changes too.
@@ -347,17 +376,18 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 - `adb reboot` hangs on many units (one rebooted cleanly). Plan to power-cycle instead.
 - After the WebView 106 swap, a hub-powered unit may need one boot with Wi-Fi off (dexopt).
 - If the clock shows 1969, run `settings put global auto_time 1`.
+- `/system/xbin/su` is setuid root with no prompt (#24), so any app on the frame can get root.
+  Install nothing untrusted.
 
 ## For agents
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
-  The original unit table summarizes PRs #2 to #5; linked reports cover newer units.
-  A newer PR may cover your unit.
+  The firmware table was last updated on 2026-10-12. A newer report may cover your unit.
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
-- Optional T3c is a runtime change, requires approval for its exact command, and applies
-  only to the separately verified April firmware. It does not bypass T6 for either boot-patch route.
+- T3c is a runtime change. It needs approval for its exact command and the frame online, and it
+  does not replace T6 for either boot-patch route.
 - Stop at the first failed pass condition, and print the [report](#report-your-unit).
 - Never edit a hash, size, sector or disk-name guard in a script to make it pass.
 - For a May-style Route U experiment, use the [agent handoff checklist](pf1007l-macos-20260529-report.md#handoff-checklist-for-another-agent).
