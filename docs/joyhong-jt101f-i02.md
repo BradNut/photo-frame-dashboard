@@ -138,7 +138,7 @@ All over network ADB, after the backup above. Each step has an undo.
 | --- | --- | --- |
 | Disable the vendor updater | `pm disable com.waophoto.fota` | `pm enable com.waophoto.fota` |
 | Install the kiosk from [`dashboard/kiosk`](../dashboard/kiosk) | `adb install -r homehq.apk` | `pm uninstall com.wesbos.homehq` |
-| Make the kiosk the only Home app | `pm disable net.frameo.frame` | `pm enable net.frameo.frame` |
+| Make the kiosk the Home app | `pm disable net.frameo.frame` (later removed, see below) | `pm enable net.frameo.frame` |
 
 The kiosk used here was built with three local changes:
 
@@ -152,10 +152,71 @@ The kiosk used here was built with three local changes:
   failing URL, and only one retry is pending at a time. With that build, the dashboard loaded on its own
   after a cold boot, once the clock had synced.
 
-Known issue: the dashboard's mock photos from `fastly.picsum.photos` fail with SSL error 3
-(untrusted), because the 2016 CA store on this firmware does not have the root CA they chain to. The photo tile
-stays black. The [BIUFRAME guide](biuframe-setup-guide.md) covers adding CA roots. That step was
-not done on this unit.
+### Certificate store
+
+The stock store (`/system/etc/security/cacerts`, 157 roots from 2016) has no Let's Encrypt roots. The
+dashboard's mock photos from `fastly.picsum.photos` (chain: YR2 → Root YR → ISRG Root X1) failed with SSL
+error 3 (untrusted), and the photo tile stayed black. The dashboard itself (Cloudflare) verified against
+both stores.
+
+There is no updatable CA package on Android 6. The CA APEX arrived in Android 14. The store was replaced
+with the AOSP one from [`platform/system/ca-certificates`](https://android.googlesource.com/platform/system/ca-certificates)
+at `45c7f199cb11b08f6d1ae2b75da25e53140a0c7d` (2025-02-10). It uses the same `<subject_hash_old>.0` PEM format:
+
+- 149 files. Every one parses, and every filename matches `openssl x509 -subject_hash_old`. One is expired.
+- `6187b673.0` (ISRG Root X1) and `8794b4e3.0` (ISRG Root X2) fingerprints match the ones pinned in
+  `scripts/biuframe-setup.sh`.
+- Compared with stock: 91 files removed, 82 added.
+- Before installing, `openssl s_client -CAfile` against each store, on the host: `home-dashboard.wesbos.workers.dev` OK with both,
+  `fastly.picsum.photos` fails with stock (code 20) and is OK with AOSP.
+
+```sh
+# staged in /data/local/tmp/cacerts.new, then as root:
+cd /system/etc/security && mount -o remount,rw /system
+cp -r /data/local/tmp/cacerts.new cacerts.new
+chown -R 0:0 cacerts.new && chmod 0755 cacerts.new && chmod 0644 cacerts.new/*
+chcon -R u:object_r:system_file:s0 cacerts.new
+mv cacerts cacerts.stock && mv cacerts.new cacerts
+sync && mount -o remount,ro /system
+```
+
+After a reboot, the on-device MD5s match the AOSP files, and there were no SSL errors in the kiosk log.
+The photo tile loads. Undo: swap `cacerts.stock` back into place.
+
+### Removing Frameo and vendor apps
+
+Each file was copied to the host before deletion, and its MD5 on the device matched the copy:
+
+| Removed | Notes |
+| --- | --- |
+| `net.frameo.frame` | `pm uninstall` removed the `/data/app` update and data. Then the system copy `/system/priv-app/CloudPhotoFrame.apk` (64 MB) was deleted. |
+| `/system/priv-app/Fota` | `com.waophoto.fota` |
+| `/system/priv-app/Test` | `com.joyhong.test` and its `lib/arm` RenderScript libraries |
+| `/system/media/bootanimation.zip` | Frameo boot animation. Android falls back to the stock "android" animation. |
+
+After a reboot, none of these packages are listed. `com.android.systemui` was re-enabled
+(`pm enable com.android.systemui`), so the status bar and navigation bar are back. Rootless Launcher 3.9.1
+(F-Droid, SHA-256 as in [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md)) was installed as a second
+Home app, so the kiosk's two-finger exit has somewhere to go. The first boot with two Home apps shows the
+chooser. Picking the kiosk with "Always" stuck across later reboots.
+
+### Boot splash
+
+The first image at power-on is `bootlogo.bmp` on the `bootloader` partition (FAT16), and it shows the Frameo logo.
+It is 800x1280, 24-bit, bottom-up, with the artwork rotated 90° counter-clockwise because the panel is portrait.
+The same partition also holds `bat/`, `font24.sft`, `font32.sft` and `magic.bin`. They were left alone.
+
+It was replaced with a same-size image that uses the original 54-byte header unchanged. Method:
+
+```sh
+mkdir -p /data/local/tmp/bl
+mount -t vfat -o rw /dev/block/by-name/bootloader /data/local/tmp/bl
+cp /data/local/tmp/new-bootlogo.bmp /data/local/tmp/bl/bootlogo.bmp && sync && umount /data/local/tmp/bl
+```
+
+Read back after `drop_caches` from a read-only mount, the MD5 matches, and the frame booted normally
+afterwards. Whether the bootloader shows the new image the right way up was not confirmed from here. Keep a copy of the
+original `bootlogo.bmp`.
 
 ## Report
 
