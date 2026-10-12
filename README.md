@@ -143,6 +143,9 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
  Wi-Fi with key
   authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
+- **Joyhong JT101F-I02 (Frameo, Allwinner A33, Android 6.0.1):** root ADB is on over Wi-Fi out
+  of the box (`adb connect <ip>:5555`), with no key check, so anything on the network has root. USB-C
+  showed no data. See [joyhong-jt101f-i02.md](docs/joyhong-jt101f-i02.md).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
