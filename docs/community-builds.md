@@ -28,7 +28,7 @@ Built one? Add it in a pull request (one row, a link to your post, and optionall
 | <img src="images/community/_charlie632-33.jpg" width="200" alt="Build by @_charlie632"><br>[Amazon Mexico frame (Digital Photo Frame 102k) working](https://x.com/_charlie632/status/2109493591911309523) | [@_charlie632](https://x.com/_charlie632) |
 | <img src="images/community/pmikolajczuk89-35.jpg" width="200" alt="Build by @pmikolajczuk89"><br>[Rooted a Frameo 114k with no USB ADB and published instructions on GitHub](https://x.com/pmikolajczuk89/status/2109460981923656022) | [@pmikolajczuk89](https://x.com/pmikolajczuk89) |
 | <img src="images/community/cpenned-34.jpg" width="200" alt="Build by @cpenned"><br>[Frame working within an hour of the video](https://x.com/cpenned/status/2108554770827084031)<br>[It works, and now the family wants one too](https://x.com/cpenned/status/2109302416269295694) | [@cpenned](https://x.com/cpenned) |
-| <img src="images/community/xenappblog-17.jpg" width="200" alt="Build by @xenappblog"><br>[BotFrame dashboard built before the frame arrived; scans products from an iPhone](https://x.com/xenappblog/status/2109382318901359049)<br>[BotFrame dashboard built before the frame arrived; scans products from iPhone](https://x.com/xenappblog/status/2109299007705207212) | [@xenappblog](https://x.com/xenappblog) |
+| <img src="images/community/xenappblog-17.jpg" width="200" alt="Build by @xenappblog"><br>[BotFrame arrived](https://x.com/xenappblog/status/2109382318901359049)<br>[BotFrame dashboard built before the frame arrived; scans products from iPhone](https://x.com/xenappblog/status/2109299007705207212) | [@xenappblog](https://x.com/xenappblog) |
 | [Late-night v1, built with Claude](https://x.com/peterramsing/status/2109169838577070098) | [@peterramsing](https://x.com/peterramsing) |
 | <img src="images/community/ShaikhAliAkbar-09.jpg" width="200" alt="Build by @ShaikhAliAkbar"><br>[Smart-home dashboard with air-quality monitor](https://x.com/ShaikhAliAkbar/status/2109179706683838474) | [@ShaikhAliAkbar](https://x.com/ShaikhAliAkbar) |
 | <img src="images/community/JesseWaites-11.jpg" width="200" alt="Build by @JesseWaites"><br>[Star Trek TNG LCARS interface on a hacked Amazon photo frame](https://x.com/JesseWaites/status/2109394924265144483) | [@JesseWaites](https://x.com/JesseWaites) |
@@ -42,14 +42,3 @@ Built one? Add it in a pull request (one row, a link to your post, and optionall
 | [Frame conversion build, compared to the HP TouchPad fire sale](https://x.com/artificialmusik/status/2109029107082342685) | [@artificialmusik](https://x.com/artificialmusik) |
 | <img src="images/community/nearbycoder-16.jpg" width="200" alt="Build by @nearbycoder"><br>[$50 frame working; tuning speed and the address bar](https://x.com/nearbycoder/status/2108674711332798652) | [@nearbycoder](https://x.com/nearbycoder) |
 | [Office display build inspired by the video](https://x.com/TasonJorres/status/2108583886162985052) | [@TasonJorres](https://x.com/TasonJorres) |
-
-## Other hardware
-
-Not a hacked frame, but the same idea: e-ink boards, a Raspberry Pi and a monitor in a frame.
-
-| Build&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Who |
-| --- | --- |
-| [Raspberry Pi + display + frame build so the kids can play games](https://x.com/sarah_edo/status/2109051120719220905) | [@sarah_edo](https://x.com/sarah_edo) |
-| <img src="images/community/JayRob8888-01.jpg" width="200" alt="Build by @JayRob8888"><br>[E-ink board from Amazon with magnets, mounted on the fridge](https://x.com/JayRob8888/status/2108564285962203590) | [@JayRob8888](https://x.com/JayRob8888) |
-| <img src="images/community/Designer023-21.jpg" width="200" alt="Build by @Designer023"><br>[TRMNL e-ink showing a Home Assistant dashboard as PNG](https://x.com/Designer023/status/2108607835399479547) | [@Designer023](https://x.com/Designer023) |
-| <img src="images/community/jscheel-27.jpg" width="200" alt="Build by @jscheel"><br>[Earlier DIY: thin USB monitor in a frame running cog/wpe on a Pi](https://x.com/jscheel/status/2108603959602807160) | [@jscheel](https://x.com/jscheel) |

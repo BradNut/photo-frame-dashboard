@@ -16,7 +16,7 @@
 Frames confirmed to work (Amazon affiliate links). See the **[device index](docs/devices.md)** for every
 frame, which board it has, and where to start.
 
-**[Community builds](docs/community-builds.md):** 35 people have shared what they built: LCARS
+**[Community builds](docs/community-builds.md):** 31 people have shared their hacked frames: LCARS
 interfaces, retro weather channels, chess puzzles, Linux on a frame, family dashboards and more.
 
 <a href="docs/community-builds.md"><img src="docs/images/community/JesseWaites-11.jpg" height="90" alt="Star Trek LCARS interface" title="Star Trek LCARS interface"></a>
