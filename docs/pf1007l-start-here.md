@@ -284,6 +284,9 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
   certificate or use a local proxy.
 - WebView 106 lacks `oklch()`, `color-mix()`, CSS nesting and `:has()`. Tailwind v4 colours break.
 - The time zone ships as `America/New_York`.
+- Never `adb reboot`: shutdown hangs. Power-cycle instead.
+- After the WebView 106 swap, a hub-powered unit may need one boot with Wi-Fi off (dexopt).
+- If the clock shows 1969, run `settings put global auto_time 1`.
 
 ## For agents
 

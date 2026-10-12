@@ -217,6 +217,28 @@ Observations from the setup in the PF1007L guide (launcher, WebView 106, kiosk):
   Viewport 1280×800, `devicePixelRatio` 1.
 - **Time zone.** It shipped as `America/New_York`. `adb shell service call alarm 3 s16 <Area/City>`
   changes it.
+- **Two more units (2026-10-11, Linux host, FEL eMMC reads/writes of the boot partition).**
+  Both had byte-identical boot partitions (31028 sectors at LBA 172032), so one patched
+  image served both. Notes from bringing them to WebView 106 + kiosk-as-Home over network ADB:
+  - **Do not `adb reboot` or `setprop sys.powerctl reboot`.** On both units shutdown hung:
+    ADB accepted the command, then the frame stopped answering shell commands (ping and
+    port 5555 still up) until it was unplugged. Power-cycle instead. On a hub,
+    `uhubctl -l <hub> -p <port> -a off`, wait 8 s, `-a on` worked cleanly and touched nothing else.
+  - **First boot after the WebView 106 swap froze a hub-powered unit** about 26 s in, right
+    after `Running dexopt ... webview.apk` and `insmod aic8800_fdrv.ko`. Booting once with
+    Wi-Fi off (`wifi_on` set to `0` in `/data/system/users/0/settings_global.xml` during the
+    short ADB window, then power-cycle) let dexopt finish. `svc wifi enable` afterwards, and
+    later boots with Wi-Fi on were fine. The wall-powered unit did not need this.
+  - **Clock stuck at 1969.** One unit had `settings get global auto_time` = `null`, so it never
+    took network time and the dashboard showed Wednesday, December 31.
+    `settings put global auto_time 1` fixed it. Check this before blaming the page.
+  - **Random MAC each boot.** Adding `MAC_ADDR=` to
+    `/system/vendor/modules/aic_userconfig_8800dc.txt` is read by the driver but ignored
+    (only txpwr and xtal settings are parsed), and a one-shot `ip link set wlan0 address` did
+    not stick. PR #6's looping `frame-fixmac.sh` is the approach to try for DHCP reservations.
+    Otherwise find frames by serial: scan port 5555, then `getprop ro.serialno`.
+  - Wi-Fi ADB (`persist.adb.tcp.port 5555`) survived every power cycle, but
+    `svc wifi disable` / `enable` killed the listener until the next boot.
 - **Speaker.** The A33 `audiocodec` drives a working speaker. The kiosk's
   `setMediaPlaybackRequiresUserGesture(false)` lets a page autoplay audio. No microphone
   feature is declared.
