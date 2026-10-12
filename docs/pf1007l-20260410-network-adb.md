@@ -21,6 +21,7 @@ back up your own unit before installing packages or changing system files.
 | Android model / hardware | `AEEZO` / `sun8i` (Allwinner A33 family) |
 | Firmware | `YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260410` |
 | AiMOR | `com.efercro.os.aimor`, 6.0.78 (code 78) |
+| Launcher APK SHA-256 | `abc4e274940e21729de7b9dbaf1f7969efdf427955d0c4881a319611942fb65d` (matches PR #3's January APK) |
 | Android / display | 6.0.1, API 23 / 1280 × 800, density 160 |
 | Stock WebView | 44.0.2403.119 |
 | Ports | USB-C only, TF slot, button |
@@ -67,6 +68,14 @@ The command sets only a runtime port property and restarts `adbd`. It does not
 install keys, change authentication settings, or persist the port across boots.
 Root ADB connected without an authorization prompt on this unit. This is root
 access on the network; keep the session short and limited to your own frame.
+
+On 2026-10-12, a host SHA-256 check of the captured launcher APK confirmed the
+hash in the table matches the January APK reported in PR #3. The APK contains
+no DEX files; its executable code is stored separately in
+`oat/arm/launcher_aimor.odex`. APK equality corroborates the earlier finding but
+does not prove that the optimized code or complete firmware is identical.
+The command path was independently inspected in this unit's optimized code
+and then verified by the successful live temporary-ADB session above.
 
 ## 3. Enable temporary Wi-Fi ADB
 
@@ -174,6 +183,7 @@ temporary ADB even if the replacement software still works.
 ```text
 About model / firmware: PF1007L / YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260410
 AiMOR version: 6.0.78 (code 78)
+Launcher APK SHA-256: abc4e274940e21729de7b9dbaf1f7969efdf427955d0c4881a319611942fb65d (independently checked; matches PR #3)
 Ports (DC jack, or USB-C only): USB-C only, TF slot, button
 Cable and port that gave USB data (or none): A-to-C data path verified with a phone; transient FEL on Mac, no usable normal Android USB ADB
 T3 USB IDs seen / adb devices output: transient 1f3a:efe8; adb list empty
