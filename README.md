@@ -131,7 +131,9 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
 - **Skylight 150-CAL (RK3566, Android 12):** there is no one-shot script. Start with
   [next-session.md](docs/next-session.md) for the current state, then
   [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
-  intentionally not published here. T- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
+  intentionally not published here. The doc describes where it is checked in the app, so you can
+  find it in your own unit's APK.
+- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
   [pf1007l-start-here.md](docs/pf1007l-start-here.md). It runs read-only tests first, then
   chooses between two published root routes: USB with mainline U-Boot over FEL
   ([allwinner-a33-mainline-uboot.md](docs/allwinner-a33-mainline-uboot.md)), or Wi-Fi ADB from
@@ -141,8 +143,6 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
   Do not run the Rockchip `apply` script on this board.
   The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
- Wi-Fi with key
-  authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
