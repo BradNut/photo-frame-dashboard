@@ -143,6 +143,10 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
  Wi-Fi with key
   authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
+- **VESWWE DP100 (Frameo, RK3326, Android 8.1, NAND):** stock USB ADB was available after the
+  Frameo beta-menu route; shipped `su` and `adb root` work. Its logical NAND and `KRNL` boot
+  format differ from the eMMC units above. See [the unit report](docs/veswwe-10.1.md) for the
+  verified backup, browser setup and a floating Home button for its zero-height navigation bar.
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
