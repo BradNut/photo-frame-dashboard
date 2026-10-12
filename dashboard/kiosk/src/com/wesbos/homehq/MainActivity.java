@@ -21,14 +21,17 @@ import android.webkit.WebViewClient;
  * Full-screen kiosk WebView for the Home HQ wall tablet.
  * - Immersive mode hides the status + navigation bars (true 1280x800).
  * - Controls: hold two fingers still on the screen for 1.5s for launcher/settings/reload.
+ * - Registered as a Home app: pick it as the default Home and it starts at boot.
  * - Remote debugging is OFF unless launched with the debug extra (every app on this device
  *   gets root, so the devtools socket should only exist while actively debugging):
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
  * - Launch with a URL: adb shell am start -a android.intent.action.VIEW -d <url> -n com.wesbos.homehq/.MainActivity
+ *   The URL is saved and used on every later start (including boot) until another URL is given.
  */
 public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
   static final String DEFAULT_URL = "https://home-dashboard.wesbos.workers.dev/";
+  static final String PREF_URL = "url";
   static final long EXIT_HOLD_MS = 1500;
   static final long RETRY_MS = 5000;
   static final float EXIT_SLOP_PX = 60;
@@ -93,7 +96,14 @@ public class MainActivity extends Activity {
     setContentView(web);
 
     String url = getIntent().getDataString();
-    web.loadUrl(url != null ? url : DEFAULT_URL);
+    if (url != null) saveUrl(url);
+    else url = getSharedPreferences("kiosk", 0).getString(PREF_URL, DEFAULT_URL);
+    web.loadUrl(url);
+  }
+
+  /** Remembers the dashboard URL, so a boot as the Home app opens it again. */
+  private void saveUrl(String url) {
+    getSharedPreferences("kiosk", 0).edit().putString(PREF_URL, url).commit();
   }
 
   @Override
@@ -116,6 +126,7 @@ public class MainActivity extends Activity {
     applyDebugFlag(intent);
     String url = intent.getDataString();
     if (url != null) {
+      saveUrl(url);
       handler.removeCallbacks(retry);
       web.loadUrl(url);
     }

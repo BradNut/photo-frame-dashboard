@@ -32,8 +32,34 @@ other way back. If needed, return to the kiosk with:
 adb shell am start -n com.wesbos.homehq/.MainActivity
 ```
 
-This service supplies navigation controls; it does not change the default Home
-app or automatically launch the dashboard at boot.
+This service supplies navigation controls only. To start the dashboard at boot,
+make Home HQ the default Home app (below).
+
+## Start at boot as the Home app
+
+Home HQ is registered as a Home app. Android 6 has no command to set the default
+Home, so pick it on the frame once. Keep another launcher installed (for example
+Rootless Launcher) so **Open launcher** has somewhere to go.
+
+```sh
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME
+```
+
+On the frame, tap **Home HQ**, then **Always**. Check that it was saved:
+
+```sh
+adb shell 'grep -A2 "<preferred-activities" /data/system/users/0/package-restrictions.xml'
+```
+
+The kiosk saves the last URL it was given and opens it at every boot:
+
+```sh
+adb shell 'am start -a android.intent.action.VIEW -d "http://192.168.1.20:8080/" -n com.wesbos.homehq/.MainActivity'
+```
+
+Any URL you open this way, including one used while testing, replaces the saved
+URL. If the frame boots before Wi-Fi is up, the kiosk retries every 5 seconds
+until the page loads.
 
 ## Build and install
 
@@ -46,3 +72,7 @@ adb install -r kiosk/build/homehq.apk
 
 The kiosk loads the existing hosted dashboard over the frame's Wi-Fi. A USB
 connection is only needed for installation or diagnostics, not normal use.
+
+To build your own dashboard for a PF1007L frame, see
+[building-for-the-frame.md](../../docs/building-for-the-frame.md): what WebView 106 supports,
+what to avoid, and how to test on the frame.
