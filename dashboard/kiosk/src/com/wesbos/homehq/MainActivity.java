@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,6 +27,9 @@ import android.webkit.WebViewClient;
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
  * - Launch with a URL: adb shell am start -a android.intent.action.VIEW -d <url> -n com.wesbos.homehq/.MainActivity
  * - Set the saved URL, used on every later launch: adb shell am start -n com.wesbos.homehq/.MainActivity --es url <url>
+ * - Offer the kiosk as a Home app (--ez home false undoes it), then pick it:
+ *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez home true
+ *     adb shell cmd package set-home-activity com.wesbos.homehq/.Home
  */
 public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
@@ -72,6 +76,7 @@ public class MainActivity extends Activity {
   protected void onCreate(Bundle state) {
     super.onCreate(state);
     applyDebugFlag(getIntent());
+    applyHomeFlag(getIntent());
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         | WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -117,6 +122,7 @@ public class MainActivity extends Activity {
     super.onNewIntent(intent);
     setIntent(intent);
     applyDebugFlag(intent);
+    applyHomeFlag(intent);
     String url = urlFrom(intent);
     if (url != null) {
       handler.removeCallbacks(retry);
@@ -160,6 +166,16 @@ public class MainActivity extends Activity {
     boolean debug = intent != null && intent.getBooleanExtra("debug", false);
     WebView.setWebContentsDebuggingEnabled(debug);
     Log.i(TAG, "WebView remote debugging " + (debug ? "ON" : "off"));
+  }
+
+  /** Turns the Home alias on or off. The shell can't enable a component of a release app. */
+  private void applyHomeFlag(Intent intent) {
+    if (intent == null || !intent.hasExtra("home")) return;
+    boolean home = intent.getBooleanExtra("home", false);
+    getPackageManager().setComponentEnabledSetting(new ComponentName(this, getPackageName() + ".Home"),
+        home ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+        PackageManager.DONT_KILL_APP);
+    Log.i(TAG, "Home alias " + (home ? "on" : "off"));
   }
 
   /** Watches for the two-finger exit hold; all touches still go to the page. */
