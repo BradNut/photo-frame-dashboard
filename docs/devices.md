@@ -17,16 +17,17 @@ links. Missing yours? See the README's
 | | VESWWE DP100 10.1" (Frameo) | Rockchip RK3326 (S101 board), Android 8.1, NAND | Frameo beta menu, USB | Shipped `su` and `adb root` | [veswwe-10.1.md](veswwe-10.1.md) | Not recorded |
 | | Uhale SI006 | Spreadtrum `sp7731g_1h10`, Android 6.0 | No. Hidden Settings, then `unauthorized` | Terminal app `su`, then host key added to `adb_keys` | [si006-uhale.md](si006-uhale.md) | Not recorded |
 
-## Frames we link to that nobody has reported yet
+## More frames confirmed working
 
-Popular listings with no unit report so far, so the board inside is unknown. If you have one, run
-the read-only checks (About screen, `adb devices`, port 5555) and
-[send in what you find](../README.md#check-for-updates-and-send-back-what-you-find).
+These listings are confirmed to work. There is no write-up in this repo yet, so the board and the
+exact steps are not documented here. If you have one, please
+[send in your notes](../README.md#check-for-updates-and-send-back-what-you-find): the About-screen
+firmware string, how you got ADB, and anything that differed.
 
 | | Listing | Notes |
 | --- | --- | --- |
-| <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="100" alt="Runxion 10.1 inch Frameo frame"></a> | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) (Amazon affiliate link) | Frameo app. Other Frameo frames so far have been Rockchip RK3326 or Allwinner A33 |
-| <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="100" alt="15.6 inch Frameo frame"></a> | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) (Amazon affiliate link) | Frameo app. The listing doesn't show a brand. Its title matches the Pastigio 15.6" listings, but that is not confirmed |
+| <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="100" alt="Runxion 10.1 inch Frameo frame"></a> | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) (Amazon affiliate link) | Confirmed working. Frameo app |
+| <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="100" alt="15.6 inch Frameo frame"></a> | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) (Amazon affiliate link) | Confirmed working. Frameo app |
 
 ## Patterns so far
 
