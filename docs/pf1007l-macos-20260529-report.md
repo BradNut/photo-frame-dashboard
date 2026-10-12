@@ -180,6 +180,9 @@ the pinned U-Boot source and applies `scripts/a33-uboot/pf1007l-uboot.patch`.
 Inspect that source's diff before adding a local correction; stop if it already has
 other experimental board changes. Use a separate output directory:
 
+Save this as a script and run it with `bash`. Pasted into an interactive shell, `set -eu`
+closes the terminal on the first error.
+
 ```sh
 set -eu
 scripts/a33-uboot/build-uboot.sh

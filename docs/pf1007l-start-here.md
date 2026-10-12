@@ -226,7 +226,7 @@ for the separately approved guarded patch. It exposes the eMMC to the host as a 
 take a full backup. Go to T6 with that backup.
 
 To use this route on Linux, run the FEL steps from the PF1007L guide. `emmc-macos.py` also
-runs on Linux: pass the whole disk name, for example `sudo python3 -I scripts/a33-uboot/emmc-macos.py backup sdb 15758000128`.
+runs on Linux: pass the whole disk name, for example `sudo python3 -I scripts/a33-uboot/emmc-macos.py backup sdb <exact-bytes from lsblk -b>`.
 
 ### T5. Route S: SD boot and eMMC dump test (read-only on the frame)
 
@@ -344,7 +344,7 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
   certificate or use a local proxy.
 - WebView 106 lacks `oklch()`, `color-mix()`, CSS nesting and `:has()`. Tailwind v4 colours break.
 - The time zone ships as `America/New_York`.
-- Never `adb reboot`: shutdown hangs. Power-cycle instead.
+- `adb reboot` hangs on many units (one rebooted cleanly). Plan to power-cycle instead.
 - After the WebView 106 swap, a hub-powered unit may need one boot with Wi-Fi off (dexopt).
 - If the clock shows 1969, run `settings put global auto_time 1`.
 

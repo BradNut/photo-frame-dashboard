@@ -269,14 +269,15 @@ Observations from the setup in the PF1007L guide (launcher, WebView 106, kiosk):
 - **Two more units (2026-10-11, Linux host, FEL eMMC reads/writes of the boot partition).**
   Both had byte-identical boot partitions (31028 sectors at LBA 172032), so one patched
   image served both. Notes from bringing them to WebView 106 + kiosk-as-Home over network ADB:
-  - **Do not `adb reboot` or `setprop sys.powerctl reboot`.** On both units shutdown hung:
+  - **Avoid `adb reboot` and `setprop sys.powerctl reboot`.** On both units shutdown hung
+    (other reports agree, though one unit rebooted cleanly):
     ADB accepted the command, then the frame stopped answering shell commands (ping and
     port 5555 still up) until it was unplugged. Power-cycle instead. On a hub,
     `uhubctl -l <hub> -p <port> -a off`, wait 8 s, `-a on` worked cleanly and touched nothing else.
   - **First boot after the WebView 106 swap froze a hub-powered unit** about 26 s in, right
     after `Running dexopt ... webview.apk` and `insmod aic8800_fdrv.ko`. Booting once with
-    Wi-Fi off (`wifi_on` set to `0` in `/data/system/users/0/settings_global.xml` during the
-    short ADB window, then power-cycle) let dexopt finish. `svc wifi enable` afterwards, and
+    Wi-Fi off (`svc wifi disable` during the short ADB window, then power-cycle; the owner
+    set `wifi_on` to `0` in `settings_global.xml` directly, which is riskier) let dexopt finish. `svc wifi enable` afterwards, and
     later boots with Wi-Fi on were fine. The wall-powered unit did not need this.
   - **Clock stuck at 1969.** One unit had `settings get global auto_time` = `null`, so it never
     took network time and the dashboard showed Wednesday, December 31.

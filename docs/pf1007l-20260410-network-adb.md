@@ -79,6 +79,11 @@ and then verified by the successful live temporary-ADB session above.
 
 ## 3. Enable temporary Wi-Fi ADB
 
+> **While this access is active, port 5555 is root ADB with no key check, open to every device on
+> your network.** Do it on a network you control, keep the session short, finish the lock-down in
+> [aimor-remote-root-shell.md](aimor-remote-root-shell.md) section 8 in the same session, and reboot
+> the frame to close the port when you are done.
+
 Use these steps only on a frame you own or have permission to administer. Python 3 and Android platform tools (`adb`) are required. The helpers use only the Python standard library. Start with a working AiMOR home screen and normal wall-supply power. A disabled AiMOR package cannot make this connection. If you already replaced Home, re-enable it through your working launcher's Android Settings first.
 
 1. Record the frame's current IP, the Mac's LAN IP, and the existing DNS settings. Keep any device backup, credentials and identifiers private. Define the current addresses in each terminal; the following values are examples:

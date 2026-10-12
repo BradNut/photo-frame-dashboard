@@ -44,6 +44,18 @@ md5sum backups/boot-screens/*
 
 The MD5 values of the copies must be the same as the values on the frame.
 
+Also back up the whole `bootloader` partition. Its FAT is not consistent with the partition size
+(see section 4), so a file copy alone may not be enough to undo a bad write:
+
+```sh
+adb exec-out 'dd if=/dev/block/mmcblk0p2 bs=65536 2>/dev/null' > backups/boot-screens/bootloader-p2.img
+adb shell 'md5sum /dev/block/mmcblk0p2'
+md5sum backups/boot-screens/bootloader-p2.img
+```
+
+Check that `mmcblk0p2` is the bootloader partition on your unit first (`ls -l /dev/block/by-name`).
+The two MD5 values must match.
+
 ## 3. Make the logo files
 
 You need Python 3 with Pillow. Start with a landscape image of 1280 × 800 pixels.
