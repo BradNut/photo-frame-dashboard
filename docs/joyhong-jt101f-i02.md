@@ -215,8 +215,8 @@ cp /data/local/tmp/new-bootlogo.bmp /data/local/tmp/bl/bootlogo.bmp && sync && u
 ```
 
 Read back after `drop_caches` from a read-only mount, the MD5 matches, and the frame booted normally
-afterwards. Whether the bootloader shows the new image the right way up was not confirmed from here. Keep a copy of the
-original `bootlogo.bmp`.
+afterwards. The owner confirmed that the new splash shows the right way up at power-on. Keep a copy of the original
+`bootlogo.bmp`.
 
 ## Report
 
