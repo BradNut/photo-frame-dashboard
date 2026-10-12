@@ -20,6 +20,19 @@ welcome. Missing yours? See the README's
 | <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="120" alt="Runxion 10.1 inch Frameo frame"></a><br>Runxion 10.1" (Frameo) | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) |
 | <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="120" alt="15.6 inch Frameo frame"></a><br>15.6" Frameo | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) |
 
+## Details: the first three frames
+
+|                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   | Allwinner A33, Android 6.0.1, AiMOR home app                                         |
+| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                | `1f3a:1000` (mass storage only); `1f3a:1001` / `1002` with ADB, depending on unit and route |
+| Cable              | Not recorded                                                   | USB-C. The first cable gave nothing, the second worked | USB-C-only units need a **USB-A to USB-C** cable. USB-C to USB-C gives no power or data.<br>The cable in the box is likely power only. It does not carry data. Use another cable that already allows data transfer. |
+| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 | Varies: some units ship with root ADB on, even with the same firmware as units that don't |
+| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       | Stock on some units; temporary ADB through AiMOR; or a boot patch from U-Boot over USB (FEL) or the SD card |
+| Backup             | Rockusb loader, with a patched RAM helper to read past 32 MiB  | `dd` over ADB as root                            | Read-only U-Boot `ums` disk, or U-Boot dump to the SD card                           |
+| Root               | Added `/force_debuggable` to the boot ramdisk, then `adb root` | Ships with SuperSU `su`                          | Stock build is debuggable: ADB shell is root once `adbd` runs                        |
+| End result         | Lawnchair launcher, USB Wi-Fi dongle (onboard radio is dead)   | Firefox, launcher, WebView 106, custom kiosk app | Launcher, WebView 106, kiosk app. Vendor app has a remote root shell: disable it     |
+
 ## Patterns so far
 
 - **Frameo frames** often have an ADB toggle under Settings → About → Beta Program.

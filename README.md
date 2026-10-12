@@ -16,54 +16,39 @@
 Frames confirmed to work (Amazon affiliate links). See the **[device index](docs/devices.md)** for every
 frame, which board it has, and where to start.
 
-Notes and scripts from getting full control of locked-down Android displays: getting ADB,
+Notes and scripts from getting full control of locked-down Android photo frames: getting ADB,
 backing up the firmware, getting root, removing the vendor app, and running our own launcher,
-browser and kiosk app.
+browser and kiosk app. These are records of the units their owners tested, not universal flashing
+guides.
 
-**Which frame do you have?** Frames sold under the same name, even the same Amazon listing, can
-have different boards. Check Settings → About before you follow any guide:
+## Which frame do you have?
 
-- Firmware string contains **`A33`** and **`PF1007L`**, home app is **AiMOR**: you have the
-  Allwinner **PF1007L**. Many viewers of the video got this one. Start with
-  [pf1007l-start-here.md](docs/pf1007l-start-here.md). Try ADB over USB first, then over the
-  network. The SD card boot patch is the last resort.
-- Rockchip board, USB name `Synergy 10X1`, ADB prompt on screen: you have the frame from the video.
-  Start with [biuframe-setup-guide.md](docs/biuframe-setup-guide.md).
-- Another brand (Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and more): check the
+Frames sold under the same name, even the same Amazon listing, can have different boards. Check
+Settings → About before you follow any guide:
+
+- **PF1007L / AiMOR** (firmware string contains `A33` and `PF1007L`): Allwinner A33. Many viewers of
+  the video got this one. Use a **USB-A to USB-C** data cable; USB-C to USB-C gives no power or data.
+  Start with [pf1007l-start-here.md](docs/pf1007l-start-here.md). It tests
+  ADB over USB, then the network, and only then a boot patch. Its vendor app accepts root shell
+  commands from the vendor's server, so read that page before the frame goes online.
+- **BIUFRAME / Synergy 10X1** (Rockchip RK3126, ADB prompt on screen): the frame in the video. Follow
+  [biuframe-setup-guide.md](docs/biuframe-setup-guide.md). `scripts/biuframe-setup.sh check`
+  changes nothing and confirms the hardware matches; `backup` and `apply` do the rest.
+- **Skylight Calendar 150-CAL** (Rockchip RK3566): start with [next-session.md](docs/next-session.md),
+  then [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
+  intentionally not published; the doc shows where the app checks it.
+- **Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and others:** see the
   [device index](docs/devices.md).
-- Anything else: see [For agents: start here](#for-agents-start-here), and please
+- **Something else:** work through the [phase map](#phase-map), create `docs/<device>.md`, and
   [send in what you find](#check-for-updates-and-send-back-what-you-find).
 
-**PF1007L / AiMOR 6.0.78 / firmware `20260410`:** a later macOS test obtained
-[temporary root ADB through AiMOR](docs/pf1007l-20260410-network-adb.md), without
-flashing a boot image. The connection ends at reboot.
+## The dashboard
 
-|                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   | Allwinner A33, Android 6.0.1, AiMOR home app                                         |
-| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                | `1f3a:1000` (mass storage only); `1f3a:1001` / `1002` with ADB, depending on unit and route |
-| Cable              | Not recorded                                                   | USB-C. The first cable gave nothing, the second worked | USB-C-only units need a **USB-A to USB-C** cable. USB-C to USB-C gives no power or data.<br>The cable in the box is likely power only. It does not carry data. Use another cable that already allows data transfer. |
-| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 | Varies: some units ship with root ADB on, even with the same firmware as units that don't |
-| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       | Stock on some units; temporary ADB through AiMOR; or a boot patch from U-Boot over USB (FEL) or the SD card |
-| Backup             | Rockusb loader, with a patched RAM helper to read past 32 MiB  | `dd` over ADB as root                            | Read-only U-Boot `ums` disk, or U-Boot dump to the SD card                           |
-| Root               | Added `/force_debuggable` to the boot ramdisk, then `adb root` | Ships with SuperSU `su`                          | Stock build is debuggable: ADB shell is root once `adbd` runs                        |
-| End result         | Lawnchair launcher, USB Wi-Fi dongle (onboard radio is dead)   | Firefox, launcher, WebView 106, custom kiosk app | Launcher, WebView 106, kiosk app. Vendor app has a remote root shell: disable it     |
-
-[`dashboard/`](dashboard) is the family dashboard we run on the BIUFRAME (it uses mock data).
-It is a Vite web app deployed to Cloudflare Workers, plus `dashboard/kiosk/`: a small full-screen
-WebView Android app, built without Gradle, that shows it. Hold two fingers still for 1.5 s to
-open a menu for the launcher, Android settings, and reloading the dashboard.
-On frames without system navigation, optional floating **Back** and **Dashboard**
-buttons provide a way back from Settings. See the [kiosk navigation guide](dashboard/kiosk/README.md).
-
-Each is a record of **one unit**. Frames sold under the same name can have different boards
-and firmware. These are not universal flashing guides.
-
-The PF1007L has reports from more than 20 owners across six firmware versions. Its start page combines
-them into one test sequence.
-The vendor app on it accepts root shell commands from the vendor's server, so read
-[aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before it goes online. Do not run
-the Rockchip setup script on it.
+[`dashboard/`](dashboard) is the family dashboard we run on the BIUFRAME (it uses mock data): a Vite
+web app deployed to Cloudflare Workers. `dashboard/kiosk/` is a small full-screen WebView Android app,
+built without Gradle, that shows it. Hold two fingers still for 1.5 s to open a menu for the
+launcher, Android settings, and reloading. On frames without system navigation, optional floating
+**Back** and **Dashboard** buttons help; see the [kiosk guide](dashboard/kiosk/README.md).
 
 ## For agents: start here
 
@@ -86,7 +71,8 @@ section unless the identity checks match exactly.
 7. **Keep dumps private.** They contain Wi-Fi passwords, tokens, serials, MAC addresses and
    copyrighted firmware. Use the ignored `backups/` and `diagnostics/` folders. Leave unique
    identifiers out of anything you commit.
-8. **Write notes as you go.** Keep a per-device file in `docs/` like the two below, with
+8. **Write notes as you go.** Keep a per-device file in `docs/`, like the ones in the
+   [device index](docs/devices.md), with
    observations kept separate from guesses.
 
 ### Check for updates, and send back what you find
@@ -140,31 +126,6 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
 | **7. Networking**            | USB reverse tethering with gnirehtet: [usb-internet-sharing.md](docs/usb-internet-sharing.md). An app that requires Wi-Fi specifically: [onboarding-network-gate.md](docs/onboarding-network-gate.md). Dead onboard Wi-Fi and a USB dongle: [usb-wifi-dongle.md](docs/usb-wifi-dongle.md).                                                                                                                                                                                                                                                                                                       |
 | **8. Vendor updates**        | Connecting the stock app to the internet can auto-install APK updates: [app-updates.md](docs/app-updates.md). Disable vendor updaters (FOTA etc.) before going online.                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **9. Security hand-off**     | Tell the owner what they now have: [biuframe-setup-guide.md](docs/biuframe-setup-guide.md#read-this-first).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-
-### Device-specific starting points
-
-- **BIUFRAME / Synergy 10X1 (RK3126, Android 6.0.1):** follow
-  [biuframe-setup-guide.md](docs/biuframe-setup-guide.md). `scripts/biuframe-setup.sh check`
-  changes nothing and confirms the hardware matches. `backup` and `apply` do the rest, with a
-  check after each step.
-- **Skylight 150-CAL (RK3566, Android 12):** there is no one-shot script. Start with
-  [next-session.md](docs/next-session.md) for the current state, then
-  [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
-  intentionally not published here. The doc describes where it is checked in the app, so you can
-  find it in your own unit's APK.
-- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
-  [pf1007l-start-here.md](docs/pf1007l-start-here.md). It runs read-only tests first, then
-  chooses between two published root routes: USB with mainline U-Boot over FEL
-  ([allwinner-a33-mainline-uboot.md](docs/allwinner-a33-mainline-uboot.md)), or Wi-Fi ADB from
-  the SD card alone ([allwinner-a33-sdcard-adb-wifi.md](docs/allwinner-a33-sdcard-adb-wifi.md)).
-  Setup after root is in [allwinner-a33-pf1007l.md](docs/allwinner-a33-pf1007l.md).
-  On USB-C-only units, use a **USB-A to USB-C** cable: USB-C to USB-C gives no power or data.
-  Do not run the Rockchip `apply` script on this board.
-  The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
-  read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
-- **Other tested frames:** see the [device index](docs/devices.md).
-- **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
-  to differ. Create `docs/<device>.md` and record everything.
 
 ## Other docs
 
