@@ -1,9 +1,10 @@
 # PF1007L (Allwinner A33): start here
 
 Many frames sold as BIUFRAME and similar brands are the **PF1007L**, with an Allwinner A33
-board. This is not the Rockchip BIUFRAME in the video. This page combines what three owners found
-on three units. It has a test sequence. Use the tests to find out, before you write anything to the
-frame, whether your unit matches a tested one and which route to use.
+board. This is not the Rockchip BIUFRAME in the video. This page starts with three documented units
+and links additional reports below. It has a test sequence. Use the tests to find out,
+before you write anything to the frame, whether your unit matches a tested one and
+which route to use.
 
 Each step lists a pass condition. **Stop at the first step that fails.** Then report your results
 (see [Report your unit](#report-your-unit)). Do not work around a failed check.
@@ -55,6 +56,12 @@ Units E and F run a firmware string ending in `OS-PF1009.0.20260417` on the 30,7
 with a new boot image hash. Both were rooted with Route U from macOS through a bus-powered hub:
 see [pf1007l-pf1009-20260417.md](pf1007l-pf1009-20260417.md).
 
+An additional [May 2026 macOS report](pf1007l-macos-20260529-report.md) has the same
+firmware string and boot-image hash as [issue #8](https://github.com/wesbos/photo-frame-dashboard/issues/8),
+but a smaller eMMC and **stock ADB off**, rather than on. The boot patch worked after
+a local U-Boot START STOP correction stabilized USB storage. Check actual ADB and each
+unit's storage layout; the firmware date and boot hash alone do not establish its USB state.
+
 ## The USB-A to USB-C rule
 
 On USB-C-only units, **use a USB-A to USB-C data cable**. Plug it into a USB-A port, or into a
@@ -64,6 +71,11 @@ A USB-C to USB-C cable gave unit C **no power and no data**. The frame appears t
 pull-down resistors. Without them, a USB-C host or charger never detects the frame and never turns
 on power. The same likely applies to USB-C chargers. For normal use, power the frame from a USB-A
 charger with an A-to-C cable.
+
+The [May Mac report](pf1007l-macos-20260529-report.md#cable-power-and-usb-observations)
+records intermittent C-to-C enumeration through a hub, with A-to-C as its stable final
+path. Treat the cable recommendation as a reliable starting point, rather than proof
+that C-to-C can never carry data. CC wiring was not measured in that session.
 
 Other things that hid USB data on unit C:
 
@@ -113,6 +125,9 @@ boot to the AiMOR screen. Then look for vendor ID `1f3a`:
 ```sh
 # macOS
 system_profiler SPUSBDataType | grep -i -B4 -A6 '0x1f3a'
+# If that profiler type returns nothing on newer macOS:
+system_profiler SPUSBHostDataType
+ioreg -p IOUSB -w 0
 # Linux
 lsusb | grep -i 1f3a
 # Windows (PowerShell)
@@ -125,7 +140,7 @@ adb devices -l
 | --- | --- | --- |
 | `adb devices` lists the frame as `device` | You have ADB over USB | Go to [T7](#t7-confirm-root-adb) |
 | `adb devices` lists the frame as `unauthorized` | ADB is on, but waits for approval on the screen | Accept the "Allow USB debugging" prompt on the frame. Units B and C have no SystemUI, so the prompt may never appear. Then continue at T3b and report it |
-| `1f3a:1000` (product "Android"), no ADB | USB data works. This is the stock state on all tested units | Go to T3b. If that fails, **Route U** (T4) |
+| `1f3a:1000` (product "Android"), no ADB | USB data works, but this unit's current interface does not expose ADB | Go to T3b. If that fails, **Route U** (T4) |
 | Nothing, after you try the checklist below | No USB data path | Go to T3b. If that fails, **Route S** (T5) |
 
 Before you decide on "nothing", try each of these:
@@ -161,6 +176,13 @@ adb -s <frame-ip>:5555 shell id
 
 Take the frame off Wi-Fi again until you finish [T8](#t8-lock-it-down-before-the-frame-stays-online).
 
+Before concluding that a flash patch is necessary, also inspect
+[PR #20](https://github.com/wesbos/photo-frame-dashboard/pull/20). It reports a temporary
+AiMOR command-channel route on **April 20260410 / AiMOR 6.0.78**, ending at reboot.
+It requires a live AiMOR connection and a deliberately configured, owner-approved network
+test; it is not a stock open ADB port. This May unit kept Wi-Fi off and did not test that
+route. Do not assume the April command hostname or helpers apply to another build.
+
 ### T4. Route U: FEL test (non-destructive to the frame)
 
 Do this only if T3 found `1f3a:1000`.
@@ -180,7 +202,8 @@ diagnostics/sunxi-tools/sunxi-fel version
 **Pass:** the USB ID is `1f3a:efe8` and the output contains `soc=00001667(A33)`.
 
 Then continue with the [U-Boot guide](allwinner-a33-mainline-uboot.md) sections 3 and 4. They build
-a U-Boot with writes removed. It exposes the eMMC to the host as a **read-only** disk, and you
+a U-Boot with USB mass-storage writes removed. Its native `mmc write` command still exists
+for the separately approved guarded patch. It exposes the eMMC to the host as a **read-only** disk, and you
 take a full backup. Go to T6 with that backup.
 
 To use this route on Linux, run the FEL steps from the PF1007L guide. `emmc-macos.py` also
@@ -309,12 +332,16 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 ## For agents
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
-  This page summarizes PRs #2 to #5. A newer PR may cover your unit.
+  The original unit table summarizes PRs #2 to #5; linked reports cover newer units.
+  A newer PR may cover your unit.
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
 - Stop at the first failed pass condition, and print the [report](#report-your-unit).
 - Never edit a hash, size, sector or disk-name guard in a script to make it pass.
+- For a May-style Route U experiment, use the [agent handoff checklist](pf1007l-macos-20260529-report.md#handoff-checklist-for-another-agent).
+  It distinguishes the pinned host build, per-unit boot-image plan, generated `.cmd` versus
+  executable `.scr`, whole-device readback, and package-state checks after reboot.
 - Before the write step, show the owner the route, the exact bytes to be written and the undo path.
   Get explicit approval for that write.
 - Do not commit anything in `backups/` or `diagnostics/`, and do not publish serials, MAC

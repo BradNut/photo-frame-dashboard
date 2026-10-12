@@ -321,6 +321,14 @@ adb -d shell input keyevent KEYCODE_HOME
 Select Rootless Launcher as the Home default if prompted.
 Disabling AiMOR also closes its remote root shell connection.
 See [aimor-remote-root-shell.md](aimor-remote-root-shell.md).
+
+Confirm the physical screen as well as Android's foreground activity. A
+[May 2026 macOS setup](pf1007l-macos-20260529-report.md#android-home-screen-and-evidence-after-reboot)
+produced black `adb exec-out screencap -p` images after reboot while the owner saw
+Rootless's date, arrow, and search bar on the panel. A black capture alone did not
+establish a boot or launcher failure, and changing the animation scale did not fix
+the capture. Ask what the panel shows before changing the setup.
+
 Also disable `com.DeviceTest`. It runs as the system user and has an unprotected receiver
 that enables or disables components of any package.
 
