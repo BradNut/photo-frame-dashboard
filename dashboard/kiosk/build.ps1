@@ -1,6 +1,8 @@
 # Windows equivalent of build.sh. Builds kiosk\build\homehq.apk without Gradle.
 # Needs a JDK 17 and Android build-tools 34 + platform 34 (see build.sh for the sdkmanager line).
 #   .\build.ps1
+# If Windows blocks the unsigned script, run it once with:
+#   powershell -ExecutionPolicy Bypass -File .\build.ps1
 # Install on the tablet: adb install -r build\homehq.apk
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
