@@ -32,7 +32,7 @@ differ in eMMC size and in whether ADB ships on.
 | Firmware string ends with | Reports | eMMC sectors | Boot SHA-256, first 8 (sector 172032, 31,028 sectors) | Stock ADB | What worked |
 | --- | --- | --- | --- | --- | --- |
 | `321-OS-AIMOR.0.20260113` | units A, B, C; #6, #12, #18, #19 | 30,535,680 or 30,777,344 | `d71c313d` | No | Route U, Route S |
-| `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
+| `321-OS-AIMOR.0.20260410` | unit D (#13), #17, #20, #27, #8 comment, [unit G](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; Route S with the [April patch builder](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) (#17, unit G); [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
 | `FL-AIMOR-OS.0.20260519` | #24, #36 | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route S only by editing its hash guard (do not) |
