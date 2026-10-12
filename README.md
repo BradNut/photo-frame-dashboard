@@ -4,6 +4,8 @@
 
 ▶️ **Watch the video: [https://youtu.be/ZLycoUMltNI](https://youtu.be/ZLycoUMltNI)**
 
+## Working frames
+
 <a href="https://amzn.to/4zneGNM"><img src="docs/images/devices/B0GHR65YYX.jpg" width="110" alt="10.1&quot; frame from the video (now often ships the PF1007L)" title="10.1&quot; frame from the video (now often ships the PF1007L)"></a>
 <a href="https://amzn.to/4B38DQ0"><img src="docs/images/devices/B0FSZ86HTM.jpg" width="110" alt="Runxion 10.1&quot; Frameo" title="Runxion 10.1&quot; Frameo"></a>
 <a href="https://amzn.to/4zwU6e0"><img src="docs/images/devices/B0GCCFPHZ4.jpg" width="110" alt="15.6&quot; Frameo" title="15.6&quot; Frameo"></a>
@@ -16,7 +18,9 @@
 Frames confirmed to work (Amazon affiliate links). See the **[device index](docs/devices.md)** for every
 frame, which board it has, and where to start.
 
-**[Community builds](docs/community-builds.md):** 30 people have shared their hacked frames: LCARS
+## Community builds
+
+30 people have shared their hacked frames in [Community builds](docs/community-builds.md): LCARS
 interfaces, retro weather channels, chess puzzles, Linux on a frame, family dashboards and more.
 
 <a href="docs/community-builds.md"><img src="docs/images/community/JesseWaites-11.jpg" height="90" alt="Star Trek LCARS interface" title="Star Trek LCARS interface"></a>
