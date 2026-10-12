@@ -17,6 +17,7 @@ Detailed guides behind this page:
 | [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS scripts) |
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL scripts) |
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
+| [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
@@ -61,11 +62,14 @@ Other things that hid USB data on unit C:
 
 1. **Stock ADB over USB** ([T3](#t3-usb-data-test)). No changes to the frame.
 2. **Stock ADB over the network** ([T3b](#t3b-network-adb-test)). No changes to the frame.
-3. **Boot patch written from an SD card** (T4 onward). Use this only if 1 and 2 both fail. It
+3. **Exact April `20260410` firmware:** consider [temporary AiMOR-channel ADB](#t3c-april-firmware-temporary-aimor-channel-adb).
+   This changes runtime ADB state and needs owner approval; it does not write a boot image.
+4. **Boot patch written from an SD card** (T4 onward). Use this only if stock ADB fails and the
+   applicable temporary route is unavailable. It
    writes to the frame's boot partition. Both patch routes need an SD card. Route U (USB) is
    preferred over Route S (SD card only), because it takes a full backup and verifies it over USB.
 
-Ideally no one needs step 3. If your frame gives ADB at step 1 or 2,
+Ideally no one needs a boot patch. If your frame gives ADB at step 1 or 2,
 [report it](#report-your-unit): it would mean that some units ship with ADB already on.
 
 ### T1. Read the About screen (no tools)
@@ -77,6 +81,8 @@ Settings → About. Record the model and firmware string.
 
 - `A33` in the firmware string with a different date or build: the routes may still work, but your
   unit is untested. Continue with the read-only tests only, and report your results.
+  The exact `20260410` firmware has a separately tested [temporary access route](pf1007l-20260410-network-adb.md);
+  that report does not change the January boot-image compatibility gate below.
 - Not A33 (for example a Rockchip `rk312x` firmware): this page does not apply. See the
   [BIUFRAME guide](biuframe-setup-guide.md).
 
@@ -139,9 +145,24 @@ adb -s <frame-ip>:5555 shell id
 | --- | --- |
 | `uid=0(root)` or another `uid` | You have ADB over the network. Set a static IP for the frame, then go to [T7](#t7-confirm-root-adb) and use `adb -s <frame-ip>:5555` |
 | `unauthorized` | Accept the prompt on the frame if one appears, and report it |
-| Connection refused or timed out | No network ADB. Continue: **Route U** (T4) if T3 found `1f3a:1000`, otherwise **Route S** (T5) |
+| Connection refused or timed out | No stock network ADB. For exact April `20260410` firmware, see T3c. Otherwise: **Route U** (T4) if T3 found `1f3a:1000`, or **Route S** (T5) |
 
 Take the frame off Wi-Fi again until you finish [T8](#t8-lock-it-down-before-the-frame-stays-online).
+
+### T3c. April firmware: temporary AiMOR-channel ADB
+
+One `PF1007L / AiMOR 6.0.78 / 20260410` unit obtained root ADB through a temporary
+DNS redirect of `imsconnect.efercro.com` and one vendor command. See the
+[complete procedure and unit report](pf1007l-20260410-network-adb.md), including
+the controlled network session, exact command requiring owner approval, identity
+checks, and DNS restoration. This is an alternative before a boot patch on that
+specific firmware, not stock ADB or a read-only test.
+
+**Pass:** the procedure's ADB identity checks match the April firmware and return
+UID 0; restore DNS and stop the helpers. Then back up and follow the existing
+post-root setup guides with `adb -s <frame-ip>:5555`. The January-only fingerprint
+check in T7 does not apply to this report. A reboot ends this temporary access.
+Other firmware variants remain untested for this route.
 
 ### T4. Route U: FEL test (non-destructive to the frame)
 
@@ -292,6 +313,8 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
+- Optional T3c is a runtime change, requires approval for its exact command, and applies
+  only to the separately verified April firmware. It does not bypass T6 for either boot-patch route.
 - Stop at the first failed pass condition, and print the [report](#report-your-unit).
 - Never edit a hash, size, sector or disk-name guard in a script to make it pass.
 - Before the write step, show the owner the route, the exact bytes to be written and the undo path.

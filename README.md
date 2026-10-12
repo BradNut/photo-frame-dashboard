@@ -22,6 +22,10 @@ have different boards. Check Settings → About before you follow any guide:
 - Anything else: see [For agents: start here](#for-agents-start-here), and please
   [send in what you find](#check-for-updates-and-send-back-what-you-find).
 
+**PF1007L / AiMOR 6.0.78 / firmware `20260410`:** a later macOS test obtained
+[temporary root ADB through AiMOR](docs/pf1007l-20260410-network-adb.md), without
+flashing a boot image. The connection ends at reboot.
+
 |                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   | Allwinner A33, Android 6.0.1, AiMOR home app                                         |

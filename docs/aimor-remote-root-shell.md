@@ -29,6 +29,13 @@ The frame is then a root-controlled device on your network.
 The app is the home screen. Android starts it at each boot.
 The app has no boot receiver. It does not need one.
 
+A later test on firmware
+`YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260410`, also running AiMOR
+6.0.78, used command 12009 to start temporary Wi-Fi root ADB. See the
+[April firmware report and bounded helpers](pf1007l-20260410-network-adb.md).
+The APK hash above belongs to the original January unit; it is not a hash of
+the April app.
+
 ## 3. Server
 
 | Item | Value |
