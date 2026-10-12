@@ -3,7 +3,8 @@
 Every frame documented in this repo. Each row is a record of the units its owners tested.
 Frames sold under the same name can have different boards, so match the About screen, not the
 brand: the same Amazon listing has shipped different boards. Links on amazon.com are affiliate
-links. Missing yours? See the README's
+links. Rows marked "no write-up yet" are confirmed working but not documented here; notes are
+welcome. Missing yours? See the README's
 [contributing section](../README.md#check-for-updates-and-send-back-what-you-find).
 
 | | Device | SoC, Android | ADB out of the box | Root | Start with | Where owners bought it |
@@ -16,18 +17,8 @@ links. Missing yours? See the README's
 | <a href="https://www.amazon.com/dp/B0CQN2PKQR?tag=webo080-20"><img src="images/devices/B0CQN2PKQR.jpg" width="100" alt="Pastigio 15.6 inch Frameo frame"></a> | Pastigio FRAME156 15.6" (Frameo) | Rockchip RK3326, Android 8.1 | Frameo Settings → Beta → ADB Access | Shipped `su` | [pastigio-frame156.md](pastigio-frame156.md) | [Amazon](https://www.amazon.com/dp/B0CQN2PKQR?tag=webo080-20) (sold as FRAME156; not confirmed as the tested listing) |
 | | VESWWE DP100 10.1" (Frameo) | Rockchip RK3326 (S101 board), Android 8.1, NAND | Frameo beta menu, USB | Shipped `su` and `adb root` | [veswwe-10.1.md](veswwe-10.1.md) | Not recorded |
 | | Uhale SI006 | Spreadtrum `sp7731g_1h10`, Android 6.0 | No. Hidden Settings, then `unauthorized` | Terminal app `su`, then host key added to `adb_keys` | [si006-uhale.md](si006-uhale.md) | Not recorded |
-
-## More frames confirmed working
-
-These listings are confirmed to work. There is no write-up in this repo yet, so the board and the
-exact steps are not documented here. If you have one, please
-[send in your notes](../README.md#check-for-updates-and-send-back-what-you-find): the About-screen
-firmware string, how you got ADB, and anything that differed.
-
-| | Listing | Notes |
-| --- | --- | --- |
-| <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="100" alt="Runxion 10.1 inch Frameo frame"></a> | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) (Amazon affiliate link) | Confirmed working. Frameo app |
-| <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="100" alt="15.6 inch Frameo frame"></a> | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) (Amazon affiliate link) | Confirmed working. Frameo app |
+| <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="100" alt="Runxion 10.1 inch Frameo frame"></a> | Runxion 10.1" (Frameo) | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) |
+| <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="100" alt="15.6 inch Frameo frame"></a> | 15.6" Frameo | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) |
 
 ## Patterns so far
 
