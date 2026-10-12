@@ -23,19 +23,30 @@ write, a verified backup comes first, and dumps stay private.
 
 ## Known units
 
-| | Unit A | Unit B | Unit C |
-| --- | --- | --- | --- |
-| Source | [#2](https://github.com/wesbos/photo-frame-dashboard/pull/2) | [#3](https://github.com/wesbos/photo-frame-dashboard/pull/3), [#5](https://github.com/wesbos/photo-frame-dashboard/pull/5) | [#4](https://github.com/wesbos/photo-frame-dashboard/pull/4) |
-| Power and ports | DC jack + USB OTG port | USB-C only, TF slot, button | USB-C only, TF slot, button |
-| eMMC | Samsung `KLMAG2WEMB-B031` | Samsung `AGND3R`, 30,535,680 sectors | 30,535,680 sectors |
-| USB data | Yes | Not seen | Yes, **USB-A to USB-C cable only** |
-| Firmware | `YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260113` | same | same |
-| Boot image | 15,886,336 bytes at sector 172032 | same, SHA-256 `d71c313d…` | same sectors |
-| Host | Linux | Windows + WSL | macOS (Apple silicon) |
-| Root route | Custom FEL reader/writer (not published) | **Route S** | **Route U** |
+| | Unit A | Unit B | Unit C | Unit D |
+| --- | --- | --- | --- | --- |
+| Source | [#2](https://github.com/wesbos/photo-frame-dashboard/pull/2) | [#3](https://github.com/wesbos/photo-frame-dashboard/pull/3), [#5](https://github.com/wesbos/photo-frame-dashboard/pull/5) | [#4](https://github.com/wesbos/photo-frame-dashboard/pull/4) | This PR |
+| Power and ports | DC jack + USB OTG port | USB-C only, TF slot, button | USB-C only, TF slot, button | USB-C only, TF slot, button |
+| eMMC | Samsung `KLMAG2WEMB-B031` | Samsung `AGND3R`, 30,535,680 sectors | 30,535,680 sectors | 30,777,344 sectors |
+| USB data | Yes | Not seen | Yes, **USB-A to USB-C cable only** | Yes, A-to-C data cable, rear motherboard port. Box cable gave nothing |
+| Firmware | `YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260113` | same | same | `…20260410` (build fingerprint `…/20260410:eng/test-keys`) |
+| Boot image | 15,886,336 bytes at sector 172032 | same, SHA-256 `d71c313d…` | same sectors | same sectors, SHA-256 `8ffc2a7d…` (same as [#8](https://github.com/wesbos/photo-frame-dashboard/issues/8)) |
+| Host | Linux | Windows + WSL | macOS (Apple silicon) | Linux (CachyOS) |
+| Root route | Custom FEL reader/writer (not published) | **Route S** | **Route U** | Route U backup, then [#6](https://github.com/wesbos/photo-frame-dashboard/pull/6)'s one-sector `build.prop` edit |
 
 Unit B and unit C have the same firmware and eMMC size. Unit C's USB worked only after a cable
 change, so Unit B's "no USB data" may have been a cable problem too. That has not been tested.
+
+Unit D shipped with ADB **off** (`1f3a:1000`, network port 5555 refused) although #8's unit,
+with the same firmware date, eMMC size and boot hash, had it on. On unit D the only switch was
+`persist.sys.usb.config=mass_storage` in `/system/build.prop` (nothing in `/data/property`).
+Its sector 399221 was byte-identical to #6's `sector-orig.bin`. A guarded U-Boot script
+(the Route U binary, `crc32 -v` on both payloads and `cmp.b` against the stock sector before
+`mmc write`) changed only that sector. After boot: `1f3a:1001`, `uid=0(root)`, boot image
+unchanged. In the read-only `ums` U-Boot, unit D reset itself about 16 minutes into a
+continuous read, twice (once on a hub, once on a rear port), right after `emmc-macos.py` pass 1
+finished. The cause is unknown. The independent re-read was done in two halves from fresh boots
+instead.
 
 ## The USB-A to USB-C rule
 
@@ -165,8 +176,8 @@ Then continue with the [U-Boot guide](allwinner-a33-mainline-uboot.md) sections 
 a U-Boot with writes removed. It exposes the eMMC to the host as a **read-only** disk, and you
 take a full backup. Go to T6 with that backup.
 
-To use this route on Linux, run the FEL steps from the PF1007L guide. Use the guide's
-`lsblk`/`dd` method instead of `emmc-macos.py`. That backup step is not scripted for Linux yet.
+To use this route on Linux, run the FEL steps from the PF1007L guide. `emmc-macos.py` also
+runs on Linux: pass the whole disk name, for example `sudo python3 -I scripts/a33-uboot/emmc-macos.py backup sdb 15758000128`.
 
 ### T5. Route S: SD boot and eMMC dump test (read-only on the frame)
 
