@@ -16,6 +16,16 @@
 Frames confirmed to work (Amazon affiliate links). See the **[device index](docs/devices.md)** for every
 frame, which board it has, and where to start.
 
+**[Community builds](docs/community-builds.md):** 35 people have shared what they built: LCARS
+interfaces, retro weather channels, chess puzzles, Linux on a frame, family dashboards and more.
+
+<a href="docs/community-builds.md"><img src="docs/images/community/JesseWaites-11.jpg" height="90" alt="Star Trek LCARS interface" title="Star Trek LCARS interface"></a>
+<a href="docs/community-builds.md"><img src="docs/images/community/derekparks-dev-14.jpg" height="90" alt="Retro weather-channel display" title="Retro weather-channel display"></a>
+<a href="docs/community-builds.md"><img src="docs/images/community/tushargugnani-10.jpg" height="90" alt="Chess puzzles and analytics" title="Chess puzzles and analytics"></a>
+<a href="docs/community-builds.md"><img src="docs/images/community/redp314-23.jpg" height="90" alt="Omarchy Linux on an A33 frame" title="Omarchy Linux on an A33 frame"></a>
+<a href="docs/community-builds.md"><img src="docs/images/community/rida-18.jpg" height="90" alt="Family dashboard" title="Family dashboard"></a>
+<a href="docs/community-builds.md"><img src="docs/images/community/onurceri-36.jpg" height="90" alt="FamilyOS" title="FamilyOS"></a>
+
 Notes and scripts from getting full control of locked-down Android photo frames: getting ADB,
 backing up the firmware, getting root, removing the vendor app, and running our own launcher,
 browser and kiosk app. These are records of the units their owners tested, not universal flashing
