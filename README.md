@@ -19,6 +19,9 @@ have different boards. Check Settings → About before you follow any guide:
   network. The SD card boot patch is the last resort.
 - Rockchip board, USB name `Synergy 10X1`, ADB prompt on screen: you have the frame from the video.
   Start with [biuframe-setup-guide.md](docs/biuframe-setup-guide.md).
+- Uhale **SI006**, Spreadtrum hardware `sp7731g_1h10`: see the
+  [SI006 setup notes](docs/si006-uhale.md). Root USB ADB, a verified firmware backup,
+  WebView 106, and the dashboard are working on one unit.
 - Anything else: see [For agents: start here](#for-agents-start-here), and please
   [send in what you find](#check-for-updates-and-send-back-what-you-find).
 
