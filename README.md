@@ -19,6 +19,9 @@ have different boards. Check Settings → About before you follow any guide:
   network. The SD card boot patch is the last resort.
 - Rockchip board, USB name `Synergy 10X1`, ADB prompt on screen: you have the frame from the video.
   Start with [biuframe-setup-guide.md](docs/biuframe-setup-guide.md).
+- **Dragon Touch Modern10 Charm**, firmware `Modern10 charm_A33MAU_202605151735_4.0_V01`,
+  home app **VPhoto**: [tested unit report](docs/dragontouch-modern10-charm.md). Root ADB was
+  already available over Wi-Fi; the dashboard works as a full-screen Firefox web app.
 - Anything else: see [For agents: start here](#for-agents-start-here), and please
   [send in what you find](#check-for-updates-and-send-back-what-you-find).
 
@@ -143,6 +146,9 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
  Wi-Fi with key
   authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
+- **Dragon Touch Modern10 Charm / VPhoto:** see [dragontouch-modern10-charm.md](docs/dragontouch-modern10-charm.md).
+  One Android 6.0.1 unit tested with root Wi-Fi ADB, a verified live backup, Rootless Pixel Launcher
+  and Firefox. Native kiosk, WebView replacement and reboot behaviour have not been tested.
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
