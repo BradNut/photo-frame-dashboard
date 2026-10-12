@@ -1,10 +1,14 @@
 package com.wesbos.homehq;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,7 +20,7 @@ import android.webkit.WebViewClient;
 /**
  * Full-screen kiosk WebView for the Home HQ wall tablet.
  * - Immersive mode hides the status + navigation bars (true 1280x800).
- * - Exit: hold two fingers still on the screen for 1.5s to go to the regular launcher.
+ * - Controls: hold two fingers still on the screen for 1.5s for launcher/settings/reload.
  * - Remote debugging is OFF unless launched with the debug extra (every app on this device
  *   gets root, so the devtools socket should only exist while actively debugging):
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
@@ -35,16 +39,20 @@ public class MainActivity extends Activity {
   private final float[] exitY = new float[2];
   private boolean exitArmed;
 
-  private final Runnable exitToLauncher = new Runnable() {
+  private final Runnable showControls = new Runnable() {
     @Override
     public void run() {
       exitArmed = false;
-      Log.i(TAG, "Two-finger hold: exiting to launcher");
-      Intent home = new Intent(Intent.ACTION_MAIN);
-      home.addCategory(Intent.CATEGORY_HOME);
-      home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      startActivity(home);
-      finish();
+      Log.i(TAG, "Two-finger hold: opening controls");
+      new AlertDialog.Builder(MainActivity.this)
+          .setTitle("Home HQ")
+          .setItems(new String[] {"Open launcher", "Android settings", "Reload dashboard"},
+              (dialog, which) -> {
+                if (which == 0) openLauncher();
+                else if (which == 1) startActivity(new Intent(Settings.ACTION_SETTINGS));
+                else web.reload();
+              })
+          .setNegativeButton("Back to dashboard", null).show();
     }
   };
 
@@ -69,11 +77,43 @@ public class MainActivity extends Activity {
   }
 
   @Override
+  protected void onResume() {
+    super.onResume();
+    NavigationService.setDashboardVisible(true);
+  }
+
+  @Override
+  protected void onPause() {
+    cancelExit();
+    NavigationService.setDashboardVisible(false);
+    super.onPause();
+  }
+
+  @Override
   protected void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
+    setIntent(intent);
     applyDebugFlag(intent);
     String url = intent.getDataString();
     if (url != null) web.loadUrl(url);
+  }
+
+  private void openLauncher() {
+    Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+    for (ResolveInfo info : getPackageManager().queryIntentActivities(home, 0)) {
+      String pkg = info.activityInfo.packageName;
+      if (pkg.equals(getPackageName()) || pkg.equals("com.android.settings")) continue;
+      startActivity(new Intent(home).setComponent(new ComponentName(pkg, info.activityInfo.name)));
+      return;
+    }
+    startActivity(new Intent(Settings.ACTION_SETTINGS));
+  }
+
+  @Override
+  protected void onDestroy() {
+    handler.removeCallbacksAndMessages(null);
+    if (web != null) web.destroy();
+    super.onDestroy();
   }
 
   /** Remote debugging only when explicitly requested; any normal launch turns it back off. */
@@ -95,8 +135,8 @@ public class MainActivity extends Activity {
             exitY[i] = e.getY(i);
           }
           exitArmed = true;
-          handler.removeCallbacks(exitToLauncher);
-          handler.postDelayed(exitToLauncher, EXIT_HOLD_MS);
+          handler.removeCallbacks(showControls);
+          handler.postDelayed(showControls, EXIT_HOLD_MS);
         } else {
           cancelExit(); // 3+ fingers
         }
@@ -126,7 +166,7 @@ public class MainActivity extends Activity {
   private void cancelExit() {
     if (!exitArmed) return;
     exitArmed = false;
-    handler.removeCallbacks(exitToLauncher);
+    handler.removeCallbacks(showControls);
   }
 
   @Override

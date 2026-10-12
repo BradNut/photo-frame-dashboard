@@ -36,7 +36,9 @@ have different boards. Check Settings → About before you follow any guide:
 [`dashboard/`](dashboard) is the family dashboard we run on the BIUFRAME (it uses mock data).
 It is a Vite web app deployed to Cloudflare Workers, plus `dashboard/kiosk/`: a small full-screen
 WebView Android app, built without Gradle, that shows it. Hold two fingers still for 1.5 s to
-exit to the launcher.
+open a menu for the launcher, Android settings, and reloading the dashboard.
+On frames without system navigation, optional floating **Back** and **Dashboard**
+buttons provide a way back from Settings. See the [kiosk navigation guide](dashboard/kiosk/README.md).
 
 Each is a record of **one unit**. Frames sold under the same name can have different boards
 and firmware. These are not universal flashing guides.
