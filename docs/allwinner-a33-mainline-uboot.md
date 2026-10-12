@@ -19,6 +19,12 @@ below is from one unit. Check each value on your own unit; stop at the first mis
 Scripts are in [`scripts/a33-uboot/`](../scripts/a33-uboot). Host-specific scripts end in
 `-macos.py`; on Linux use the guide's `lsblk`/`dd` equivalents.
 
+A later [May 2026 macOS unit report](pf1007l-macos-20260529-report.md) reached root
+with this route, after locally correcting U-Boot's START STOP handling and adding
+write/readback error guards to the generated scripts. Those changes are **not** in
+the scripts at the repository revision cited in that report. Read its checks and
+limitations before treating the commands below as a tested path for that firmware.
+
 ## 1. Get USB data on the USB-C-only unit
 
 The PF1007L guide records this unit type as "the port supplies power only". On this unit,
@@ -39,6 +45,10 @@ With a working path, this unit enumerated as:
 | After the boot patch | `1f3a:1002`, mass storage + ADB |
 
 On macOS, `ioreg -p IOUSB -l -w0` lists the tree. Vendor `1f3a` is 7994 in decimal.
+For a concise tree, use `ioreg -p IOUSB -w 0`. A "Generic Billboard Device" can be
+the hub itself; it does not establish that the frame enumerated. A later unit had
+intermittent C-to-C data through a hub, but used A-to-C for stable power and data:
+see the [cable observations](pf1007l-macos-20260529-report.md#cable-power-and-usb-observations).
 
 ## 2. FEL from the SD card (macOS)
 
@@ -122,6 +132,34 @@ The partition layout matched the tested unit in the PF1007L guide: env at sector
 **boot at 172032**, system (1 GiB ext4) at 237568, **recovery at 2400256**. Parse your own.
 `UDISK` (p1) is listed past the end of the eMMC, as the PF1007L guide notes.
 
+### If the UMS disks disappear on macOS
+
+An additional unit lost both read-only disks at about 30 seconds, while its cables
+stayed untouched and both hub halves remained enumerated. Null console input alone
+did not fix it. A local correction to `do_start_stop()` kept ordinary start/stop
+requests from setting `common->eject`; only an unload request ejects. The corrected
+build completed two full-device reads. See the [controlled tests and exact source
+change](pf1007l-macos-20260529-report.md#ums-disappeared-after-about-30-seconds).
+The current build script does not include that correction.
+The report includes a [host-only rebuild recipe](pf1007l-macos-20260529-report.md#reproduce-the-ram-only-build)
+and a [comparison with other UMS failures](pf1007l-macos-20260529-report.md#distinguish-other-ums-failure-reports).
+MMC read errors, loss of power, and a reset into FEL need different evidence from
+an idle START STOP exit. Do not copy every board workaround into one build.
+
+If `diskutil info` fails for a previously observed disk, first confirm that the UMS
+gadget still exists. After a reload or a script that exposes only eMMC, macOS can
+assign a different disk number and U-Boot can label it "UMS disk 0" instead of "1".
+Recheck exact size, USB/external identity, media name, and read-only status before
+every read. Keep all of `emmc-macos.py`'s guards.
+
+`sudo` may leave the backup files administrator-owned with mode 0600. If tools run
+as the owner cannot inspect them, change ownership of only the three backup files,
+preserving their private permissions:
+
+```sh
+sudo chown "$USER" backups/a33-emmc-full.{img,img.gz,sha256}
+```
+
 ## 5. Build the boot patch from your own backup
 
 ```sh
@@ -151,6 +189,15 @@ eMMC, then writes the ramdisk and then the header **only if** all four payloads 
 CRC-32 (`crc32 -v`) **and** the eMMC still holds the original bytes (`cmp.b`). If any check
 fails, nothing is written. Either way it ends in read-only `ums`.
 
+These are preflight guards. At the checked revision, the generator does not stop
+the header write on a failed ramdisk write or readback. The May session added
+explicit I/O-result checks and device readback before each next write, for both
+apply and restore; see [the tested local guards](pf1007l-macos-20260529-report.md#stronger-generated-write-script-guards).
+They are not included in the current generator and do not make the write atomic.
+Review the report's [RAM map and executable-script checks](pf1007l-macos-20260529-report.md#stronger-generated-write-script-guards)
+when adapting those local guards. Editing the `.cmd` without rebuilding and checking
+the `.scr` leaves the old commands in the executable image.
+
 With the owner approving **this specific boot-partition write**, power-cycle into FEL and run:
 
 ```sh
@@ -168,8 +215,10 @@ sudo python3 -I scripts/a33-uboot/emmc-macos.py verify diskN <exact-bytes>
 ```
 
 This reads the whole eMMC. Every byte must equal the backup, except the planned ranges,
-which must equal the patched payloads. A mismatch only in the boot ranges means the guard
-refused the write.
+which must equal the patched payloads. A mismatch does not by itself prove that the
+guard refused the write: an operation may have been incomplete. Only a complete
+match with the unchanged original proves the original bytes remain. If neither the
+full original nor the backup plus exact plan matches, stop and investigate.
 
 A first attempt here read the 5.4 MiB payloads back over FEL before starting U-Boot. The
 read timed out (`usb_bulk_recv() ERROR -7`). `sunxi-fel` stopped before "Starting U-Boot",

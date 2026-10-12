@@ -25,10 +25,10 @@ have different boards. Check Settings → About before you follow any guide:
 |                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | SoC / Android      | Rockchip RK3566, Android 12                                    | Rockchip RK3126, Android 6.0.1                   | Allwinner A33, Android 6.0.1, AiMOR home app                                         |
-| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                | `1f3a:1000` (mass storage only) → `1f3a:1002` (ADB, after the boot patch)            |
-| Cable              | Not recorded                                                   | USB-C. The first cable gave nothing, the second worked | USB-C-only units need a **USB-A to USB-C** cable. USB-C to USB-C gives no power or data.<br>The cable in the box is likely power only. It does not carry data. Use another cable that already allows data transfer. |
-| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 | No                                                                                  |
-| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       | Patched the boot ramdisk from U-Boot, over USB (FEL) or from the SD card alone       |
+| USB name / IDs     | `rockchip D156`, `2207:0007` (MTP) → `2207:0006` (ADB)         | `Synergy 10X1`, `2207:0006` (ADB)                | `1f3a:1000` (mass storage only); `1f3a:1001` / `1002` with ADB, depending on unit and route |
+| Cable              | Not recorded                                                   | USB-C. The first cable gave nothing, the second worked | Start with a known **USB-A to USB-C data cable**; the box cable may be power only. C-to-C behavior varies with the unit and hub: see the [May 2026 Mac report](docs/pf1007l-macos-20260529-report.md#cable-power-and-usb-observations). |
+| ADB out of the box | No                                                             | Yes, accept the prompt on screen                 | Varies: test it; even matching firmware strings and boot hashes have different ADB states |
+| How we got ADB     | Hidden 5-tap manufacturer menu in the Skylight app             | Already on                                       | Stock root ADB on some units; otherwise a verified boot patch through U-Boot over USB (FEL) or SD |
 | Backup             | Rockusb loader, with a patched RAM helper to read past 32 MiB  | `dd` over ADB as root                            | Read-only U-Boot `ums` disk, or U-Boot dump to the SD card                           |
 | Root               | Added `/force_debuggable` to the boot ramdisk, then `adb root` | Ships with SuperSU `su`                          | Stock build is debuggable: ADB shell is root once `adbd` runs                        |
 | End result         | Lawnchair launcher, USB Wi-Fi dongle (onboard radio is dead)   | Firefox, launcher, WebView 106, custom kiosk app | Launcher, WebView 106, kiosk app. Vendor app has a remote root shell: disable it     |
@@ -41,7 +41,17 @@ exit to the launcher.
 Each is a record of **one unit**. Frames sold under the same name can have different boards
 and firmware. These are not universal flashing guides.
 
-The PF1007L has been tested on three units by three owners. Its docs combine their findings.
+The PF1007L docs combine findings from several owners. An additional
+[May 2026 firmware report from macOS](docs/pf1007l-macos-20260529-report.md) records stock
+ADB off despite the same boot hash as an ADB-enabled unit, a tested local U-Boot START STOP
+correction for disappearing USB disks, and a verified boot patch. Those local code changes
+are described in the report; they are not yet in the repository's build scripts.
+Agents adapting that result should read its [build recipe](docs/pf1007l-macos-20260529-report.md#reproduce-the-ram-only-build)
+and [handoff checklist](docs/pf1007l-macos-20260529-report.md#handoff-checklist-for-another-agent),
+including the on-device write ordering and independent verification requirements.
+Newer unmerged reports also cover a [temporary AiMOR network-ADB route on April firmware](https://github.com/wesbos/photo-frame-dashboard/pull/20)
+and [MMC/power failures with similar USB symptoms](https://github.com/wesbos/photo-frame-dashboard/issues/24).
+Those are additional experiments to inspect, not changes already included in these tools.
 The vendor app on it accepts root shell commands from the vendor's server, so read
 [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before it goes online. Do not run
 the Rockchip setup script on it.
@@ -131,18 +141,21 @@ For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-y
 - **Skylight 150-CAL (RK3566, Android 12):** there is no one-shot script. Start with
   [next-session.md](docs/next-session.md) for the current state, then
   [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
-  intentionally not published here. T- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
+  intentionally not published here.
+- **PF1007L / AiMOR (Allwinner A33, Android 6.0.1):** start with
   [pf1007l-start-here.md](docs/pf1007l-start-here.md). It runs read-only tests first, then
   chooses between two published root routes: USB with mainline U-Boot over FEL
   ([allwinner-a33-mainline-uboot.md](docs/allwinner-a33-mainline-uboot.md)), or Wi-Fi ADB from
   the SD card alone ([allwinner-a33-sdcard-adb-wifi.md](docs/allwinner-a33-sdcard-adb-wifi.md)).
   Setup after root is in [allwinner-a33-pf1007l.md](docs/allwinner-a33-pf1007l.md).
-  On USB-C-only units, use a **USB-A to USB-C** cable: USB-C to USB-C gives no power or data.
+  On USB-C-only units, start with a known **USB-A to USB-C data cable**. Check power and
+  USB enumeration separately; see the [May Mac report](docs/pf1007l-macos-20260529-report.md)
+  for a powered-hub setup, a UMS disconnect fix, and firmware differences.
   Do not run the Rockchip `apply` script on this board.
   The AiMOR app has a **remote root shell over an unencrypted vendor connection**:
   read [aimor-remote-root-shell.md](docs/aimor-remote-root-shell.md) before the frame goes online.
- Wi-Fi with key
-  authentication. Scripts are in [`scripts/a33-sdboot/`](scripts/a33-sdboot).
+  The SD-only route uses Wi-Fi with key authentication. Its scripts are in
+  [`scripts/a33-sdboot/`](scripts/a33-sdboot).
 - **Something else:** work through the phase map. Expect the hidden-menu, root and backup routes
   to differ. Create `docs/<device>.md` and record everything.
 
