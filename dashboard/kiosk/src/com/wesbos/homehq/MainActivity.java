@@ -25,10 +25,13 @@ import android.webkit.WebViewClient;
  *   gets root, so the devtools socket should only exist while actively debugging):
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
  * - Launch with a URL: adb shell am start -a android.intent.action.VIEW -d <url> -n com.wesbos.homehq/.MainActivity
+ * - Set the saved URL, used on every later launch: adb shell am start -n com.wesbos.homehq/.MainActivity --es url <url>
  */
 public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
   static final String DEFAULT_URL = "https://home-dashboard.wesbos.workers.dev/";
+  static final String PREFS = "kiosk";
+  static final String PREF_URL = "url";
   static final long EXIT_HOLD_MS = 1500;
   static final long RETRY_MS = 5000;
   static final float EXIT_SLOP_PX = 60;
@@ -92,8 +95,8 @@ public class MainActivity extends Activity {
     });
     setContentView(web);
 
-    String url = getIntent().getDataString();
-    web.loadUrl(url != null ? url : DEFAULT_URL);
+    String url = urlFrom(getIntent());
+    web.loadUrl(url != null ? url : savedUrl());
   }
 
   @Override
@@ -114,11 +117,24 @@ public class MainActivity extends Activity {
     super.onNewIntent(intent);
     setIntent(intent);
     applyDebugFlag(intent);
-    String url = intent.getDataString();
+    String url = urlFrom(intent);
     if (url != null) {
       handler.removeCallbacks(retry);
       web.loadUrl(url);
     }
+  }
+
+  /** A "url" extra is saved for later launches. A VIEW link from another app is shown, not saved. */
+  private String urlFrom(Intent intent) {
+    String saved = intent.getStringExtra(PREF_URL);
+    if (saved == null) return intent.getDataString();
+    getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_URL, saved).apply();
+    Log.i(TAG, "Saved kiosk URL: " + saved);
+    return saved;
+  }
+
+  private String savedUrl() {
+    return getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_URL, DEFAULT_URL);
   }
 
   private void openLauncher() {

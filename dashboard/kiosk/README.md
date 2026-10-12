@@ -8,6 +8,17 @@ Hold two fingers still on the dashboard for 1.5 seconds to open the native contr
 - **Reload dashboard** reloads the current URL.
 - **Back to dashboard** dismisses the controls.
 
+## Dashboard URL
+
+The kiosk opens the hosted demo dashboard by default. To show your own, save its URL once:
+
+```sh
+adb shell am start -n com.wesbos.homehq/.MainActivity --es url https://your-dashboard/
+```
+
+Every later launch, including after a reboot, opens the saved URL. Links that other apps open
+in the kiosk, such as a sign-in page, are shown but not saved.
+
 ## Frames without Home or Back buttons
 
 Some frame firmware omits Android's navigation bar. The two-finger gesture only
