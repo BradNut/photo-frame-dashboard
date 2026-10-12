@@ -39,6 +39,14 @@ public class MainActivity extends Activity {
   private final float[] exitX = new float[2];
   private final float[] exitY = new float[2];
   private boolean exitArmed;
+  private String retryUrl;
+
+  private final Runnable retry = new Runnable() {
+    @Override
+    public void run() {
+      if (retryUrl != null) web.loadUrl(retryUrl);
+    }
+  };
 
   private final Runnable showControls = new Runnable() {
     @Override
@@ -75,14 +83,11 @@ public class MainActivity extends Activity {
     web.setWebViewClient(new WebViewClient() {
       @Override
       @SuppressWarnings("deprecation")
-      public void onReceivedError(final WebView view, int code, String desc, final String failingUrl) {
+      public void onReceivedError(WebView view, int code, String desc, String failingUrl) {
         Log.w(TAG, "Load failed (" + desc + "), retrying in " + RETRY_MS + " ms");
-        handler.postDelayed(new Runnable() {
-          @Override
-          public void run() {
-            view.loadUrl(failingUrl);
-          }
-        }, RETRY_MS);
+        retryUrl = failingUrl;
+        handler.removeCallbacks(retry);
+        handler.postDelayed(retry, RETRY_MS);
       }
     });
     setContentView(web);
@@ -110,7 +115,10 @@ public class MainActivity extends Activity {
     setIntent(intent);
     applyDebugFlag(intent);
     String url = intent.getDataString();
-    if (url != null) web.loadUrl(url);
+    if (url != null) {
+      handler.removeCallbacks(retry);
+      web.loadUrl(url);
+    }
   }
 
   private void openLauncher() {
