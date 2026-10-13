@@ -5,7 +5,8 @@ Usage (from the repository root):
   python3 -I scripts/a33-uboot/recovery-patch-build.py diagnostics/recovery-pull/boot.img <boot-sha256>
 
 <boot-sha256> is the full T6 hash (SHA-256 of the first 31,028 sectors) that you checked
-against the firmware table. The script refuses an image with a different hash.
+against the firmware table. Only the two tested May images are accepted (see TESTED), and the
+script refuses an image whose hash differs from the one you passed.
 
 This uses boot-patch.py's own build() and verify(): the same patch, the same structural checks
 (one cpio file changed; header changes limited to the ramdisk size and image ID). It does not
@@ -29,6 +30,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "diagnostics/recovery-patch"
 IMAGE_SECTORS, PART_START, PART_SECTORS = 31028, 172032, 65536
+# Firmware whose recovery-window write has been tested. Add a hash only after it is tested.
+TESTED = {
+    "6c118dc1aa583797884c33cd3ac3796c72b2bd3a3f1fcafd1bf0982ae5f29e2c": "V10-1680.0.20260529",
+    "9a6e2456952f3dc2b99e64ea021321397bdc824364b5c8b42f503f847261630a": "FL-AIMOR-OS.0.20260519",
+}
 
 
 def fail(message):
@@ -39,6 +45,9 @@ def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     src, want = Path(sys.argv[1]), sys.argv[2].lower()
+    if want not in TESTED:
+        fail("this route has only been tested on May 20260519 and 20260529 boot images "
+             f"({', '.join(h[:8] for h in TESTED)}); refusing {want[:8]}")
     spec = importlib.util.spec_from_file_location("boot_patch", REPO / "scripts/a33-uboot/boot-patch.py")
     bp = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(bp)

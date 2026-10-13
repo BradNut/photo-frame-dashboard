@@ -186,22 +186,35 @@ unit, the write ran with an earlier version of `recovery-patch.sh` (differences 
 ## 7. Undo
 
 - **Patched frame boots (the normal case):** you have root ADB. Write the original image back from
-  the running system, no window needed:
+  the running system, no window needed. Each check stops before the write if it fails:
   ```sh
-  adb -d push diagnostics/recovery-patch/original-image.bin /data/local/tmp/boot-orig.img
+  P=diagnostics/recovery-patch
+  want_patched=$(python3 -c "import json;print(json.load(open('$P/plan.json'))['sha256']['patched-image.bin'])")
+  want_orig=$(python3 -c "import json;print(json.load(open('$P/plan.json'))['sha256']['original-image.bin'])")
+  # 1. The frame must still hold exactly the patched image.
+  [ "$(adb -d exec-out 'dd if=/dev/block/mmcblk0p6 bs=512 count=31028 2>/dev/null' | shasum -a 256 | cut -d' ' -f1)" = "$want_patched" ] || echo "STOP: boot is not the patched image"
+  # 2. The file you push must be the original, before and after the push.
+  [ "$(shasum -a 256 < $P/original-image.bin | cut -d' ' -f1)" = "$want_orig" ] || echo "STOP: original-image.bin changed"
+  adb -d push $P/original-image.bin /data/local/tmp/boot-orig.img
+  [ "$(adb -d exec-out 'cat /data/local/tmp/boot-orig.img' | shasum -a 256 | cut -d' ' -f1)" = "$want_orig" ] || echo "STOP: push corrupted"
+  ```
+  Only if none of those printed `STOP`, write and read back:
+  ```sh
   adb -d shell 'set -e
   [ "$(cat /sys/class/block/mmcblk0p6/start)" = 172032 ]
   dd if=/data/local/tmp/boot-orig.img of=/dev/block/mmcblk0p6 bs=1048576
   sync'
   adb -d exec-out 'dd if=/dev/block/mmcblk0p6 bs=512 count=31028 2>/dev/null' | shasum -a 256
   ```
-  The hash must be the original image's. Check the node on your unit first.
+  The last hash must be the original image's (`$want_orig`).
 - **Patched frame does not boot:** restore with Route U (FEL from the SD card stub) and
   `restore-boot.scr`, or Route S. This route cannot reach recovery without a booting Android.
 
 ## 8. Not tested
 
-- Any firmware other than `20260529`, including April units with recovery ADB (#49).
+- Any firmware other than May `20260529` and `20260519` (the second was confirmed by another owner on a
+  30,777,344-sector unit, in the PR #65 thread), including April units with recovery ADB (#49).
+  `recovery-patch-build.py` refuses other boot images.
 - The larger 30,777,344-sector eMMC.
 - `recovery-patch.sh` as published, on a real frame (the write used an earlier version).
 - A write interrupted mid-push, and the undo in section 7 on a real frame.
