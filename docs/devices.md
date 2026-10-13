@@ -31,6 +31,7 @@ welcome. Missing yours? See the README's
 | Uhale SI006 | Spreadtrum `sp7731g_1h10`, Android 6.0 | No. Hidden Settings, then `unauthorized` | Terminal app `su`, then host key added to `adb_keys` | [si006-uhale.md](si006-uhale.md) | Not recorded |
 | <a href="https://amzn.to/4B38DQ0"><img src="images/devices/B0FSZ86HTM.jpg" width="120" alt="Runxion 10.1 inch Frameo frame"></a><br>Runxion 10.1" (Frameo) | Rockchip RK3326, Android 8.1 | Frameo ADB Access toggle, USB. Showed `unauthorized` at first; toggling ADB Access off and on with USB plugged in brought up the authorize prompt | Shipped `su` (`su 0 <cmd>`) and `adb root` | No write-up yet | [Runxion 10.1" Frameo, 32 GB](https://amzn.to/4B38DQ0) |
 | <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="120" alt="15.6 inch Frameo frame"></a><br>15.6" Frameo | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) |
+| Veidoo Frame 10.1" (F10) | Rockchip RK3126, Android 6.0.1 (fingerprint `rockchip/rk312x/rk312x:6.0.1/MXC89K/user.wanghy.20260307.135729`) | Frameo Settings → About → Beta Program → ADB Access (USB and Wi-Fi 5555) | Shipped SuperSU `su` (`/system/xbin/su`) | [veidoo-f10.md](veidoo-f10.md) | Not recorded |
 
 ## Details: the first three frames
 
