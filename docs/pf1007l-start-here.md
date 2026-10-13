@@ -35,7 +35,7 @@ differ in eMMC size and in whether ADB ships on.
 | `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
-| `FL-AIMOR-OS.0.20260519` | #24, #36 | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route S only by editing its hash guard (do not) |
+| `FL-AIMOR-OS.0.20260519` | #24, #36, #62, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch with SD-carried payloads and a 12 MHz FEL U-Boot; Route S only by editing its hash guard (do not) |
 | `V10-1680.0.20260529` | #8, #16, [#28](pf1007l-macos-20260529-report.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16 and #28 | Nothing needed (#8); Route U |
 
 Numbers are GitHub issues and pull requests. Units A to C are from the first three guides:
@@ -306,6 +306,7 @@ change to the U-Boot source, and its reports are the reference.
 | Drops through a bus-powered hub | Direct port or powered hub; low-power build (`CONFIG_SUNXI_NO_PMIC=y`, CPU at 408 MHz) | #16, #24, #29 |
 | Single read errors | Retry each read up to 8 times | #24 |
 | Route S dump fails on May `20260519` | eMMC at 12 MHz | #24 comment |
+| FEL U-Boot `mmc read` errors on May `20260519` even at 4-bit 26 MHz; guarded write refuses | eMMC at 8-bit **12 MHz** in the FEL U-Boot too | [Windows report](pf1007l-windows-wsl-20260519-report.md) |
 | DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL | #6 |
 | Frame resets 45 to 50 s after U-Boot starts | **Unsolved.** Possibly the START STOP eject or power | #19 |
 | `ums` never enumerates on May `20260519` | **Unsolved.** Try the 4-bit build and the START STOP patch | #36 |
