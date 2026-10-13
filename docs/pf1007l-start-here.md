@@ -15,7 +15,7 @@ Detailed guides behind this page:
 | --- | --- |
 | [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) | Identification, FEL with an SD card (Linux), and everything **after** root: backup, launcher, WebView 106, kiosk, memory |
 | [allwinner-a33-boot-access.md](allwinner-a33-boot-access.md) | How the first unit was rooted (custom tool, not published), and the boot-ramdisk change |
-| [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS scripts) |
+| [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS and Windows scripts) |
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL scripts) |
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
@@ -230,6 +230,10 @@ take a full backup. Go to T6 with that backup.
 
 To use this route on Linux, run the FEL steps from the PF1007L guide. `emmc-macos.py` also
 runs on Linux: pass the whole disk name, for example `sudo python3 -I scripts/a33-uboot/emmc-macos.py backup sdb <exact-bytes from lsblk -b>`.
+
+On Windows, use WSL2 with usbipd for the FEL steps and the PowerShell scripts for the card and
+the backup. See [section 9 of the U-Boot guide](allwinner-a33-mainline-uboot.md#9-windows-host-wsl2--usbipd).
+Never attach U-Boot's disk (`1f3a:1010`) to WSL.
 
 ### T5. Route S: SD boot and eMMC dump test (read-only on the frame)
 
