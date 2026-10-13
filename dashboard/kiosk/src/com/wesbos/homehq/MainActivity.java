@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -167,6 +168,12 @@ public class MainActivity extends Activity {
   private String urlFrom(Intent intent) {
     String saved = intent.getStringExtra(PREF_URL);
     if (saved == null) return intent.getDataString();
+    // The activity is exported, so only save web URLs: never file:, content: or javascript:.
+    String scheme = Uri.parse(saved).getScheme();
+    if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+      Log.w(TAG, "Ignoring non-web kiosk URL: " + saved);
+      return null;
+    }
     getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_URL, saved).apply();
     Log.i(TAG, "Saved kiosk URL: " + saved);
     return saved;
