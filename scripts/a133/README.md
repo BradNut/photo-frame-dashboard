@@ -1,7 +1,7 @@
 # scripts/a133: LOOFII C-3 (Allwinner A133) tools
 
 Written for and tested on **one** LOOFII C-3 (see `docs/allwinner-a133-loofii-c3.md`). Check the identity values there first.
-Nothing here writes to a device unless you name the phase/partition explicitly and set the matching `FB_ALLOW_*` variable.
+Nothing here writes to a device unless you name the phase explicitly. `a133-flash.sh flash-gsi` and `rollback` set `FB_ALLOW_FLASH` themselves, so they ask you to type `flash` first and check each partition's size on the device before writing. Run `fbflash.py` directly only if you know what you are doing.
 
 Requirements: Python 3 with `pyusb` (+ libusb; on macOS `brew install libusb`), `e2fsprogs` (`e2fsck`, `debugfs`),
 `sunxi-tools` (`sunxi-fel`) for FEL, `dtc` for the display overlay, Node 22+ for `cdp-eval.mjs`.
