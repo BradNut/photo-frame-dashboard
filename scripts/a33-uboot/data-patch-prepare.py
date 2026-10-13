@@ -95,6 +95,44 @@ def fine_ranges(orig_path, edited_path, regions):
     return ranges
 
 
+def restore_script(writes):
+    """Undo, including after a write that stopped partway. Phase 1: every range must hold
+    either the new bytes or the original bytes (and both payload CRC-32s must match);
+    anything else means the eMMC is not in a state this plan made, so nothing is written.
+    Phase 2: ranges that already hold the original bytes are left alone; the others get the
+    original bytes back, each read back and compared, stopping at the first failure."""
+    lines = ["# Undo the userdata patch. Load each range's orig/new payload with sunxi-fel first.",
+             "# Phase 1: every range must hold the new or the original bytes, or nothing is written.",
+             "# Phase 2: ranges holding the new bytes get the original bytes back.",
+             "mmc dev 1",
+             "setenv all_ok 1"]
+    for w in writes:
+        lines.append(f"mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x}")
+        lines.append(f"if crc32 -v {w['orig_addr']:#x} {w['length']:#x} {w['orig_crc32']} && "
+                     f"crc32 -v {w['new_addr']:#x} {w['length']:#x} {w['new_crc32']}; then")
+        lines.append(f"  if cmp.b {w['new_addr']:#x} {w['read_addr']:#x} {w['length']:#x}; then echo range {w['range']} holds the new bytes")
+        lines.append(f"  elif cmp.b {w['orig_addr']:#x} {w['read_addr']:#x} {w['length']:#x}; then echo range {w['range']} is already original")
+        lines.append(f"  else echo range {w['range']} holds unexpected bytes; setenv all_ok 0; fi")
+        lines.append(f"else echo range {w['range']} payload CRC FAILED; setenv all_ok 0; fi")
+    lines.append('if test "${all_ok}" = 1; then')
+    lines.append("  setenv go 1")
+    for w in writes:
+        lines.append('  if test "${go}" = 1; then')
+        lines.append(f"    mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x}")
+        lines.append(f"    if cmp.b {w['new_addr']:#x} {w['read_addr']:#x} {w['length']:#x}; then")
+        lines.append(f"      if mmc write {w['orig_addr']:#x} {w['sector']:#x} {w['sectors']:#x} && "
+                     f"mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x} && "
+                     f"cmp.b {w['orig_addr']:#x} {w['read_addr']:#x} {w['length']:#x}; then")
+        lines.append(f"        echo range {w['range']} restored")
+        lines.append(f"      else echo range {w['range']} restore FAILED; setenv go 0; fi")
+        lines.append("    fi")
+        lines.append("  fi")
+    lines.append("fi")
+    lines.append('if test "${all_ok}" != 1; then echo nothing written: the eMMC is not in a state this plan made; fi')
+    lines.append("ums 0 mmc 1")
+    return "\n".join(lines) + "\n"
+
+
 def script_image(text):
     """Legacy U-Boot script image, as `mkimage -A arm -T script -C none` makes it."""
     body = struct.pack(">II", len(text), 0) + text
@@ -215,11 +253,10 @@ def main():
     }
     (OUT / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
 
-    for name, title, expect, write in (
-        ("write-data", "Userdata patch", "orig", "new"),
-        ("restore-data", "Undo the userdata patch", "new", "orig"),
+    for name, script in (
+        ("write-data", guarded_script(writes, "Userdata patch", "orig", "new")),
+        ("restore-data", restore_script(writes)),
     ):
-        script = guarded_script(writes, title, expect, write)
         (OUT / f"{name}.cmd").write_text(script)
         (OUT / f"{name}.scr").write_bytes(script_image(script.encode()))
 

@@ -427,8 +427,8 @@ payload with `sunxi-fel write <addr> <file>` at the addresses `write-data.cmd`
 prints for each range, then load and run `write-data.scr` the same way
 `write-boot.scr` is run. It checks every range before writing any, so a range that no longer holds
 your recorded bytes stops it with nothing written. Undo with `restore-data.scr` the same way, loading the
-same payloads. If a write failed partway, restore puts back the ranges written before the failure
-and refuses the rest, which still hold the original bytes. Both scripts end in `ums 0 mmc 1`, so the eMMC is available
+same payloads. Restore also works after a write that stopped partway: ranges that already hold the
+original bytes are left alone, and it writes nothing if any range holds bytes this plan didn't make. Both scripts end in `ums 0 mmc 1`, so the eMMC is available
 read-only afterward for a whole-partition reread.
 
 ## Offline helper for the historical boot patch
