@@ -188,7 +188,8 @@ and also restores that package's risks.
 
 This firmware has no `com.android.systemui`. Opening Firefox left the owner
 without on-screen Home/Back controls; sending Home over ADB returned it to
-Rootless. Keep USB available until a compatible navigation solution is installed:
+Rootless. Keep USB available until a navigation solution is installed, such as the kiosk's
+[navigation buttons](../dashboard/kiosk/README.md#frames-without-home-or-back-buttons) (not tested on this unit):
 
 ```sh
 adb -d shell input keyevent KEYCODE_HOME
