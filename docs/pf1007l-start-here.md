@@ -20,6 +20,7 @@ Detailed guides behind this page:
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL scripts) |
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
+| [pf1007l-sector-edit-sdcard.md](pf1007l-sector-edit-sdcard.md) | **April firmware only:** root ADB over USB with a guarded one-sector `build.prop` edit from the SD card, check-only run first. Also: root ADB in stock recovery during a factory reset |
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
@@ -36,6 +37,7 @@ differ in eMMC size and in whether ADB ships on.
 | `321-OS-AIMOR.0.20260410` | unit D (#13), #17, #20, #27, #8 comment, [unit G](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; Route S with the [April patch builder](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) (#17, unit G); [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
 | `321-OS-AIMOR.0.20260113` | units A, B, C; #6, #12, #18, #19; [Windows report](pf1007l-windows-20260113-usb-adb-report.md) | 30,535,680 or 30,777,344 | `d71c313d` | No | Route U, Route S; one-sector USB setting edit on the reported Windows unit |
 | `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
+| `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment, [sector edit](pf1007l-sector-edit-sdcard.md) | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write; [one-sector edit](pf1007l-sector-edit-sdcard.md) |
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
 | `FL-AIMOR-OS.0.20260519` | #24, #36, #62, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch with SD-carried payloads and a 12 MHz FEL U-Boot; Route S only by editing its hash guard (do not) |
@@ -62,6 +64,14 @@ What this tells you:
   confirms the same original sector hash on one January unit and a successful
   guarded write through RAM-only U-Boot. Recheck the file mapping and bytes;
   neither report makes a fixed sector safe across all variants.
+- Unit D was rooted with a one-sector `build.prop` edit (#6, #13). For April `20260410` it is now
+  published with a check-only run that refuses any other sector:
+  [pf1007l-sector-edit-sdcard.md](pf1007l-sector-edit-sdcard.md). The sector differs on other
+  firmware, and some April units override it from `/data/property/persist.sys.usb.config`.
+- On April firmware, **stock recovery runs root ADB** (file transfer only, no shell, no prompt) for
+  about 15 s during an AiMOR factory reset. Enough to copy the boot partition for T6 with no SD
+  card. It erases user data, and it is a security issue
+  ([details](pf1007l-sector-edit-sdcard.md#9-stock-recovery-runs-root-adb-during-a-factory-reset)).
 
 Hardware notes from several units (#6, #13): the Wi-Fi chip is an AIC8800 with no stored MAC
 address, so the MAC and the DHCP address change at each boot (set a static IP). Stock firmware
@@ -319,6 +329,7 @@ change to the U-Boot source, and its reports are the reference.
 | Frame resets 45 to 50 s after U-Boot starts | **Unsolved.** Possibly the START STOP eject or power | #19 |
 | `ums` never enumerates on May `20260519` | **Unsolved.** Try the 4-bit build and the START STOP patch | #36 |
 | Frame resets about 16 minutes into a continuous read | **Unsolved.** Resumable backup works around it | #13 |
+| SD-booted U-Boot: the eMMC stops answering after 18 MiB to a few hundred MiB of reads, also at 4-bit 26 MHz with retries and `mmc rescan`. U-Boot keeps running | **Unsolved.** Keep U-Boot's eMMC work short ([one-sector edit](pf1007l-sector-edit-sdcard.md)), then back up over root ADB | [sector edit](pf1007l-sector-edit-sdcard.md#8-why-only-one-sector-u-boots-emmc-access-on-this-unit) |
 
 `build-uboot.sh` checks where the SPL code ends. Builds with the low-power changes pad the SPL with
 `0xFF`, which that check misreads, so #16 and #29 bypassed it. Do not bypass it for any other reason.
