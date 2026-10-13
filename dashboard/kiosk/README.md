@@ -99,6 +99,10 @@ Home HQ keeps retrying every 5 seconds, and the screen disappears once a load
 succeeds. Wi-Fi settings open only when tapped, because Wi-Fi is often still
 connecting for the first minute after boot.
 
+On frames without a navigation bar (most PF1007L units), set up the navigation service in
+[Frames without Home or Back buttons](#frames-without-home-or-back-buttons) first. Otherwise
+**Open Wi-Fi settings** leaves no way back to the dashboard.
+
 ## Build and install
 
 Use JDK 17, Android build-tools 34.0.0, and platform 34. From `dashboard/`:

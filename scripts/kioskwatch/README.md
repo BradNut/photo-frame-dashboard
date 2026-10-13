@@ -37,20 +37,26 @@ It stops at the next power cycle.
 ## Start it at boot (writes /system, owner approval first)
 
 This needs a boot hook that runs as root. On the PF1007L, `/system/bin/install-recovery.sh` is
-started by init as root at every boot. Back it up first, then add one line after the shebang:
+started by init as root at every boot. This block checks the file, keeps the first backup, adds one line
+after the shebang only once, and always remounts `/system` read-only. **Not yet tested from a cold
+boot.**
 
 ```sh
 adb pull /system/bin/install-recovery.sh install-recovery.sh.before-kioskwatch
 adb push scripts/kioskwatch/kioskwatch.sh /data/local/tmp/
-adb shell 'set -e
-mount -o remount,rw /system
-cp /system/bin/install-recovery.sh /system/bin/install-recovery.sh.before-kioskwatch
-cp /data/local/tmp/kioskwatch.sh /system/bin/kioskwatch.sh
-chmod 0755 /system/bin/kioskwatch.sh
-sed -i "1a /system/bin/sh /system/bin/kioskwatch.sh >/dev/null 2>&1 &" /system/bin/install-recovery.sh
+adb shell '
+f=/system/bin/install-recovery.sh
+head -1 $f | grep -q "^#!" || { echo "STOP: $f is missing or not a script"; exit 1; }
+grep -q kioskwatch $f && { echo "Already installed; nothing to do"; exit 0; }
+mount -o remount,rw /system || exit 1
+ok=1
+[ -e $f.before-kioskwatch ] || cp $f $f.before-kioskwatch || ok=0
+[ $ok = 1 ] && cp /data/local/tmp/kioskwatch.sh /system/bin/kioskwatch.sh \
+  && chmod 0755 /system/bin/kioskwatch.sh \
+  && sed -i "1a /system/bin/sh /system/bin/kioskwatch.sh >/dev/null 2>&1 &" $f || ok=0
 sync
 mount -o remount,ro /system
-head -3 /system/bin/install-recovery.sh'
+if [ $ok = 1 ]; then head -3 $f; else echo "FAILED: compare $f with $f.before-kioskwatch"; fi'
 ```
 
 **Undo:** remount `/system` read-write, copy `install-recovery.sh.before-kioskwatch` back over
