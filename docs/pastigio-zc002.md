@@ -53,9 +53,13 @@ candidate includes this owner's trusted public keys.
 2. The red Frameo Recovery menu appeared with or without a successful UPDATE
    bridge. Its external-storage update option was not used; we did not create
    or test a custom signed OTA package. **That menu is not evidence of FEL.**
-3. [DivineHawk's MS33/Pastigio guide](https://divinehawk.github.io/2026/07/08/pastigio-frame-adb-fel-mode.html)
+3. The rear cover was carefully removed to reach the UPDATE pads, which were
+   bridged using a paperclip. Getting contact and repeating power cycles was
+   fiddly; the paperclip itself was not evidence that FEL had been entered.
+   [DivineHawk's MS33/Pastigio guide](https://divinehawk.github.io/2026/07/08/pastigio-frame-adb-fel-mode.html)
    supplied the UPDATE-pad starting point. Both USB and the separate adapter
-   could keep this unit powered. Disconnecting both, placing the UPDATE bridge
+   could keep this unit powered. On Windows, Zadig installed WinUSB for the FEL device, not an ADB driver.
+   Disconnecting both, placing the UPDATE bridge
    before applying power, then reconnecting USB and the adapter produced FEL.
    Verify `1f3a:efe8` and `sunxi-fel version`; a dark or backlit screen alone
    does not establish the boot mode. No serial adapter was used.
@@ -108,7 +112,7 @@ returned zero blocks and was rejected rather than reported as successful.
 | Kernel | 10,165,848 bytes; unchanged by the root patch |
 | Original compressed ramdisk | 4,741,158 bytes; offset 10,168,320 within boot |
 | Ramdisk slot | 4,743,168 bytes, through boot-relative offset 14,911,488 |
-| Recovery capture | Start LBA 2334720; 15,583,232 bytes; compressed archive 415,248,460 bytes; Android core matches the pre-root original |
+| Recovery capture | Start LBA 2334720; pre-root Android core 15,583,232 bytes; independent current 32 MiB partition gzip 10,024,545 bytes; Android core matches the pre-root original |
 | Patched boot partition hash | Recorded privately; includes this owner's trusted public keys |
 
 **Backup scope:** before rooting, the complete boot partition was saved twice
