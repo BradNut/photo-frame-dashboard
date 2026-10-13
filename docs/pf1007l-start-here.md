@@ -17,7 +17,7 @@ Detailed guides behind this page:
 | [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) | Identification, FEL with an SD card (Linux), and everything **after** root: backup, launcher, WebView 106, kiosk, memory |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **T3c:** temporary root ADB over Wi-Fi through the vendor connection, no write. Tested on April firmware |
 | [pf1007l-sector-edit-sdcard.md](pf1007l-sector-edit-sdcard.md) | **April `20260410` only:** root ADB over USB with a guarded one-sector `build.prop` edit from the SD card, check-only run first |
-| [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS scripts; Linux works too) |
+| [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS and Windows scripts; Linux works too) |
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL, or macOS) |
 | [pf1007l-macos-20260529-recovery-boot-write.md](pf1007l-macos-20260529-recovery-boot-write.md) | **May firmware:** the Route U boot patch written over USB in stock recovery's root-ADB window, no SD card. Erases user data; tight timing |
 | [pf1007l-boot-fixes.md](pf1007l-boot-fixes.md) | **After root:** one Wi-Fi MAC, the clock after power cuts, no freeze at Wi-Fi start, fast DHCP |
@@ -250,6 +250,10 @@ take a full backup. Go to T6 with that backup.
 
 To use this route on Linux, run the FEL steps from the PF1007L guide. `emmc-macos.py` also
 runs on Linux: pass the whole disk name, for example `sudo python3 -I scripts/a33-uboot/emmc-macos.py backup sdb <exact-bytes from lsblk -b>`.
+
+On Windows, use WSL2 with usbipd for the FEL steps and the PowerShell scripts for the card and
+the backup. See [section 9 of the U-Boot guide](allwinner-a33-mainline-uboot.md#9-windows-host-wsl2--usbipd).
+Never attach U-Boot's disk (`1f3a:1010`) to WSL.
 
 ### T5. Route S: SD boot and eMMC dump test (read-only on the frame)
 
