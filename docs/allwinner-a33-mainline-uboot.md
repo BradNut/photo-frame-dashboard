@@ -257,6 +257,13 @@ Observations from the setup in the PF1007L guide (launcher, WebView 106, kiosk):
   SHA-256 fingerprint `96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A:8F:FC:EE:05:C0:BD:DF:08:C6`
   against a second source before installing. The guide's alternative, a host proxy, avoids
   changing `/system`.
+- **Cloudflare Workers.** On a `FL-AIMOR-OS.0.20260519` unit, the stock trust store also had
+  no GlobalSign Root CA (`5ad8a5d6.0`) and no GTS roots. A dashboard deployed to
+  `*.workers.dev` failed the same way (`net_error -202`): its chain ends at GTS Root R4,
+  cross-signed by GlobalSign Root CA. Adding GTS Root R1 (`f013ecaf.0`), GTS Root R4
+  (`5acf816d.0`) and ISRG Root X1 (`6187b673.0`), with the SHA-256 values from the
+  [Uhale guide](si006-uhale.md), fixed it. A custom domain on Cloudflare served a Google
+  Trust Services certificate too, so it needs the same roots.
 - **WebView 106 features**, measured with `CSS.supports` and syntax checks in the kiosk:
 
   | Missing | Present |
