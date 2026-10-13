@@ -44,6 +44,18 @@ fails to load at boot because Wi-Fi isn't up yet, the kiosk keeps retrying. In t
 **Open launcher** skips the kiosk and opens another Home app. To undo, pick another Home app in
 Settings → Apps → Default apps, then run the first command with `--ez home false`.
 
+## Screen density
+
+The dashboard is laid out for 1280×800 at density 160. Most frames ship at 160, but a VESWWE
+`DP101` shipped at 190 and the bottom of the dashboard was cut off
+([veswwe-dp101.md](../../docs/veswwe-dp101.md)). Check with `adb shell wm density`. If it isn't 160:
+
+```sh
+adb shell wm density 160      # undo: adb shell wm density reset
+```
+
+Android's own menus get smaller too. The setting survives a reboot.
+
 ## Frames without Home or Back buttons
 
 Some frame firmware omits Android's navigation bar. The two-finger gesture only
