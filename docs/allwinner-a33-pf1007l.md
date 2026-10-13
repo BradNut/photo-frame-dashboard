@@ -221,6 +221,11 @@ with published tools: a read-only `ums` backup, then a guarded boot write.
 
 ## 3. Confirm root ADB before the Android setup
 
+The [January Windows unit report](pf1007l-windows-20260113-usb-adb-report.md)
+reached USB root ADB with a verified one-sector `build.prop` edit after bulk
+U-Boot reads failed. Its boot image remained original. It also records the
+Windows raw-disk, console-pause, and binary `exec-out` pitfalls from that session.
+
 Only continue once Android boots and ADB actually works:
 
 ```sh
