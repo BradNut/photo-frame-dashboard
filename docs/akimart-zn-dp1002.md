@@ -7,9 +7,10 @@ That PR documents an Akimart ZN-DP1002 with a Rockchip RK3126, Android 6.0.1 and
 sold under the same name, has a Rockchip RK3326, Android 8.1 and logical NAND. Do not run PR #42's
 script on it. Check `ro.build.fingerprint` before following any Akimart guide.
 
-End result: Frameo and both vendor updaters disabled, Rootless Pixel Launcher as HOME, Firefox,
-the floating [Frame Home](../scripts/home-button/README.md) button, and the repo's
-[kiosk app](../dashboard/kiosk/README.md) showing the dashboard from a LAN server. No flash write,
+End result: Frameo and both vendor updaters disabled, the repo's
+[kiosk app](../dashboard/kiosk/README.md) as HOME so the frame boots into the dashboard (served
+from a LAN server), Rootless Pixel Launcher and Firefox behind it, and the floating
+[Frame Home](../scripts/home-button/README.md) button. No flash write,
 system remount or system APK edit was needed.
 
 ## Identity from ADB
@@ -100,7 +101,8 @@ Each change was approved separately, after the backup, and read back.
 | Launcher as HOME | `cmd package set-home-activity --user 0 amirz.rootless.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity` | `cmd package set-home-activity --user 0 net.frameo.frame/.ui.activities.AWaitForDeferredInitCompleted` |
 | Disable Frameo | `pm disable-user --user 0 net.frameo.frame` | `pm default-state --user 0 net.frameo.frame` |
 | Home button | Frame Home installed, `appops set com.photoframe.homebutton SYSTEM_ALERT_WINDOW allow`, **Show Home button** tapped | `adb uninstall com.photoframe.homebutton` |
-| Kiosk | `dashboard/kiosk` built with `DEFAULT_URL` set to a LAN server | `adb uninstall com.wesbos.homehq` |
+| Kiosk | `dashboard/kiosk` built with `DEFAULT_URL` set to a LAN server | `adb uninstall com.wesbos.homehq` (restore launcher HOME first) |
+| Kiosk as HOME | Rebuilt with a second intent filter (`MAIN` + `HOME` + `DEFAULT`) on `MainActivity`, then `cmd package set-home-activity --user 0 com.wesbos.homehq/.MainActivity` | `cmd package set-home-activity --user 0 amirz.rootless.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity` |
 
 All three vendor packages started as `enabled=0` with running processes, and read back as
 `enabled=3` with no process. Before Frameo was disabled, HOME resolved to the launcher and it was
@@ -113,6 +115,11 @@ and overlay window came back on their own, with the overlay permission kept. The
 (`vite build` output) full screen in WebView 106. Its first launch took 2 m 23 s to display; later
 launches were not timed. `am start -W` hung on that first launch, a plain `am start` did not.
 
+With the kiosk set as HOME, the Home key and Frame Home's button both open the dashboard, and
+after a normal reboot the frame came up on the dashboard (owner observation; network ADB was not
+reconnected for that boot). Rootless Pixel Launcher stays reachable from the kiosk's two-finger
+hold → **Open launcher**, which skips the kiosk's own HOME entry.
+
 ## Guesses, not confirmed
 
 - The board is probably the same SSA RK3326 frame as the Runxion 10.1" in
@@ -124,7 +131,6 @@ launches were not timed. `am start -W` hung on that first launch, a plain `am st
 
 ## Not yet checked
 
-- Starting the kiosk at boot; it is not a HOME app and does not start on its own.
 - `adb root`, which should work given `ro.debuggable=1`; not needed so far.
 - Other factory apps' network behaviour. Keep the frame on an isolated network: Android 8.1 with
   a 2020 security patch and shipped root.
