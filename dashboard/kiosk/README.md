@@ -8,6 +8,32 @@ Hold two fingers still on the dashboard for 1.5 seconds to open the native contr
 - **Reload dashboard** reloads the current URL.
 - **Back to dashboard** dismisses the controls.
 
+## Dashboard URL
+
+The kiosk opens the hosted demo dashboard by default. To show your own, save its URL once:
+
+```sh
+adb shell am start -n com.wesbos.homehq/.MainActivity --es url https://your-dashboard/
+```
+
+Every later launch, including after a reboot, opens the saved URL. Links that other apps open
+in the kiosk, such as a sign-in page, are shown but not saved.
+
+## Start at boot
+
+To have the frame boot into the dashboard, make the kiosk its Home app. Installing the kiosk
+does not offer it as a Home app, so nothing changes until you run:
+
+```sh
+adb shell am start -n com.wesbos.homehq/.MainActivity --ez home true
+adb shell cmd package set-home-activity com.wesbos.homehq/.Home
+```
+
+The kiosk then opens the saved URL at boot, and the Home button returns to it. If the page
+fails to load at boot because Wi-Fi isn't up yet, the kiosk keeps retrying. In the controls,
+**Open launcher** skips the kiosk and opens another Home app. To undo, pick another Home app in
+Settings → Apps → Default apps, then run the first command with `--ez home false`.
+
 ## Frames without Home or Back buttons
 
 Some frame firmware omits Android's navigation bar. The two-finger gesture only
