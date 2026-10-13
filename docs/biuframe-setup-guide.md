@@ -131,7 +131,8 @@ small browser that uses the system WebView (useful for testing WebView).
 - **`install-recovery.sh` hook:** SuperSU's `/system/su.d` folder is not run at boot on this
   firmware. `install-recovery.sh` runs as root on every boot, after swap is set up.
 - **Remount before `chmod`:** something remounts `/system` about 12 times a minute (the ext4 mount
-  count rose 15,036 → 15,042 in 30 s; SuperSU's `daemonsu` is the likely cause), so it can turn read-only between two
+  count rose 15,036 → 15,042 in 30 s; SuperSU's `daemonsu` is the likely cause, and was confirmed as the cause on a
+  [Uhale 102KZ](uhale-102kz.md#daemonsu-is-what-remounts-system)), so it can turn read-only between two
   commands. Each step remounts it read-write right before changing permissions, then checks the permissions afterwards.
 
 ## Step 5: Finish on the frame
