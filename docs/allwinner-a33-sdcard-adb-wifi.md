@@ -45,6 +45,8 @@ The stock firmware does not start `adbd`. The new `on boot` action starts it at 
 
 ## 3. Equipment and software
 
+For macOS, use the [macOS steps below](#macos).
+
 - A Windows PC with Python 3 and the Android platform tools (`adb`).
 - WSL with Ubuntu 24.04, or a Linux PC, to build U-Boot.
 - A new microSD card, 4 GB minimum, 256 GB maximum. Use this card only for the frame.
@@ -67,6 +69,80 @@ The scripts are in this repository:
 
 All output goes to `backups/` and `diagnostics/`. Do not publish these folders.
 They contain firmware, serial numbers and Wi-Fi passwords.
+
+## macOS
+
+Use these steps in place of sections 4 to 9. Install Python 3 and the Android platform
+tools (`adb`). Start Docker Desktop or another Docker engine. Run the commands at the
+repository root.
+
+1. Build U-Boot and the dump script:
+
+   ```sh
+   bash scripts/a33-sdboot/build-macos.sh
+   ```
+
+   The helper downloads the pinned U-Boot source and builds the Docker image. It then
+   runs `build.sh` with no network access and with the source mounted read-only.
+
+2. Insert a spare 4–256 GB card in a removable USB reader. Find its disk number, then
+   replace `diskN` below. **Prepare erases the card.** Check the printed size and name
+   before you type `ERASE diskN`.
+
+   ```sh
+   diskutil list external physical
+   sudo python3 -I scripts/a33-sdboot/card-macos.py prepare diskN
+   ```
+
+   The helper makes an MBR/FAT32 partition, saves the card identity and boot-area backup
+   in `diagnostics/a33-sdboot/macos-card/`, and checks each write by reading it back.
+   It then ejects the card. Keep that folder with the card.
+
+3. Disconnect frame power, insert the card, then connect power. Do not press the power
+   button. The screen stays dark. Wait 30 minutes, disconnect power, and put the card
+   in the Mac. Check its disk number again, then verify and save the dump:
+
+   ```sh
+   diskutil list external physical
+   python3 -I scripts/a33-sdboot/card-macos.py backup diskN
+   ```
+
+   All 32 chunks must pass. The helper uses `check-dump.py` to save and verify the copy
+   in `backups/pf1007-emmc/`, then ejects the card. Make a second copy on another disk.
+   This is the first 2 GiB, not a full-device backup. Dump verification also works on
+   April `20260410` units.
+
+4. Build the patch and both write scripts. **The write build accepts only the January
+   boot hash from section 1.** It stops on April and other boot images.
+
+   ```sh
+   adb devices
+   python3 -I scripts/a33-sdboot/patch-boot.py --pubkey ~/.android/adbkey.pub --out diagnostics/pf1007/patched
+   cat diagnostics/pf1007/patched/REPORT.txt
+   bash scripts/a33-sdboot/build-macos.sh apply
+   bash scripts/a33-sdboot/build-macos.sh restore
+   ```
+
+   Check that the report shows the original hash from section 1, two 15,886,336-byte
+   images, and `True` for the kernel and header checks. Keep the restore files.
+
+5. Reinsert the card. Copy the apply files to it, then eject it. The dump files can stay.
+
+   ```sh
+   cp diagnostics/pf1007/patched/sdcard-apply/{a33.scr,boot-patched.img} /Volumes/FRAMEBOOT/
+   diskutil list external physical
+   diskutil eject diskN
+   ```
+
+   With frame power disconnected, insert the card and connect power. **Do not disconnect
+   power during the write.** Wait 5 minutes, disconnect power, and return the card to the
+   Mac. Read `/Volumes/FRAMEBOOT/a33-write-status.txt`. Use the result table in section 9;
+   only `OK_WRITTEN_AND_VERIFIED` or `ALREADY_APPLIED_NO_WRITE` is a pass. Then continue
+   at section 10. To undo the patch, use the restore files as described in section 13.
+
+To reuse the card after you no longer need it for a restore, run
+`sudo python3 -I scripts/a33-sdboot/card-macos.py clean diskN`. This restores its saved
+boot area and ejects it. It does not restore the card contents erased by `prepare`.
 
 ## 4. Prepare the build tools
 
