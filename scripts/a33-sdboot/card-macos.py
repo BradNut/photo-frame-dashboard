@@ -22,6 +22,7 @@ OFFSET = 8192
 SECTOR = 512
 MAX_CARD = 256 * 1000**3
 DKIOCSYNCHRONIZECACHE = 0x20006416
+EXPECTED_BYTES = None  # set from the command line; guards against a disk number that changed
 
 
 def require(condition, message):
@@ -51,6 +52,8 @@ def card_disk(disk):
             current.get('VirtualOrPhysical') == 'Physical', 'Expected a removable USB card reader')
     require(4 * 1000**3 <= current.get('TotalSize', 0) <= MAX_CARD,
             'Expected a 4–256 GB card')
+    require(current.get('TotalSize') == EXPECTED_BYTES,
+            f"{disk} is {current.get('TotalSize')} bytes, not the {EXPECTED_BYTES} you passed")
     require(current.get('DeviceBlockSize') == SECTOR, 'Expected 512-byte sectors')
     return current
 
@@ -282,7 +285,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('step', choices=('prepare', 'backup', 'clean'))
     parser.add_argument('disk', help='diskN from diskutil list external physical')
+    parser.add_argument('exact_bytes', type=int, help="the card's Disk Size in bytes, from diskutil info diskN")
     args = parser.parse_args()
+    global EXPECTED_BYTES
+    EXPECTED_BYTES = args.exact_bytes
     {'prepare': prepare, 'backup': backup, 'clean': clean}[args.step](args.disk)
 
 

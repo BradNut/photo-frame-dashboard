@@ -91,7 +91,8 @@ repository root.
 
    ```sh
    diskutil list external physical
-   sudo python3 -I scripts/a33-sdboot/card-macos.py prepare diskN
+   diskutil info diskN | grep 'Disk Size'   # <exact-bytes> is the number of bytes shown
+   sudo python3 -I scripts/a33-sdboot/card-macos.py prepare diskN <exact-bytes>
    ```
 
    The helper makes an MBR/FAT32 partition, saves the card identity and boot-area backup
@@ -104,7 +105,7 @@ repository root.
 
    ```sh
    diskutil list external physical
-   python3 -I scripts/a33-sdboot/card-macos.py backup diskN
+   python3 -I scripts/a33-sdboot/card-macos.py backup diskN <exact-bytes>
    ```
 
    All 32 chunks must pass. The helper uses `check-dump.py` to save and verify the copy
@@ -141,7 +142,7 @@ repository root.
    at section 10. To undo the patch, use the restore files as described in section 13.
 
 To reuse the card after you no longer need it for a restore, run
-`sudo python3 -I scripts/a33-sdboot/card-macos.py clean diskN`. This restores its saved
+`sudo python3 -I scripts/a33-sdboot/card-macos.py clean diskN <exact-bytes>`. This restores its saved
 boot area and ejects it. It does not restore the card contents erased by `prepare`.
 
 ## 4. Prepare the build tools

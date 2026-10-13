@@ -269,9 +269,9 @@ to `1f`) are `ok`.
 
 If no `a33-status.txt` appears on the card at all, U-Boot did not run. Stop and report it.
 
-Hosts: the card-writing script (`fel-sdcard.py`) is **Windows-only**. The U-Boot build needs Linux
-or WSL. A macOS port is proposed in [#14](https://github.com/wesbos/photo-frame-dashboard/pull/14)
-but not merged yet.
+Hosts: Windows uses `fel-sdcard.py` and builds U-Boot in WSL; macOS uses `card-macos.py` and
+`build-macos.sh` (Docker). See the [SD card guide](allwinner-a33-sdcard-adb-wifi.md). If the dump
+stops with `FAIL first read`, see [U-Boot settings](#u-boot-settings-that-fixed-ums-problems).
 
 ### T6. Compatibility gate: is your boot image the tested one?
 
