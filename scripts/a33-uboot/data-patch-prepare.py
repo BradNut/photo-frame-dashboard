@@ -105,15 +105,27 @@ def script_image(text):
 
 
 def guarded_script(writes, title, expect, write):
-    """Nested, fail-stop chain: range i's write only runs if range i's own CRC
-    and `expect`-byte checks pass, and range i+1 only runs if range i's write
-    both happened and read back correctly. One failure anywhere in the chain
-    stops everything after it; nothing past that point is written."""
+    """Two phases. First every range is checked (both CRC-32s, and the eMMC must hold the
+    `expect` bytes); if any check fails, nothing is written, so the filesystem is never left
+    half-edited by a range that was already wrong. Then a nested, fail-stop chain: range i's
+    write only runs if its checks pass again, and range i+1 only runs if range i's write
+    happened and read back correctly."""
     lines = [f"# {title}. Load each range's orig/new payload with sunxi-fel first.",
-             "# Writes a range only if its own CRC-32s match and the eMMC holds the",
-             f"# {expect} bytes for that range; stops at the first check or write that fails.",
-             "mmc dev 1"]
-    closers = []
+             f"# Phase 1 checks every range; nothing is written unless all hold the {expect} bytes.",
+             "# Phase 2 writes the ranges in order and stops at the first check or write that fails.",
+             "mmc dev 1",
+             "setenv all_ok 1"]
+    for w in writes:
+        lines.append(f"mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x}")
+        lines.append(f"if crc32 -v {w['orig_addr']:#x} {w['length']:#x} {w['orig_crc32']} && "
+                     f"crc32 -v {w['new_addr']:#x} {w['length']:#x} {w['new_crc32']} && "
+                     f"cmp.b {w[f'{expect}_addr']:#x} {w['read_addr']:#x} {w['length']:#x}; then")
+        lines.append(f"  echo range {w['range']} checked")
+        lines.append("else")
+        lines.append(f"  echo range {w['range']} FAILED its check; setenv all_ok 0")
+        lines.append("fi")
+    lines.append('if test "${all_ok}" = 1; then')
+    closers = ["fi"]
     for w in writes:
         pad = "  " * len(closers)
         lines.append(f"{pad}mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x}")
@@ -131,6 +143,7 @@ def guarded_script(writes, title, expect, write):
     # The innermost `if` needs a body: an empty then/fi is invalid in U-Boot's hush shell.
     lines.append(f"{pad2}  echo all ranges written")
     lines += reversed(closers)
+    lines.append('if test "${all_ok}" != 1; then echo nothing written: a range did not hold the expected bytes; fi')
     lines.append("ums 0 mmc 1")
     return "\n".join(lines) + "\n"
 
@@ -174,6 +187,8 @@ def main():
             abs_byte = partition_start_byte + s
             if abs_byte % SECTOR:
                 fail(f"range {i} is not sector-aligned")
+            if e - s > SLOT:
+                fail(f"range {i} is {e - s} bytes; this script's RAM slots hold at most {SLOT} bytes per range")
             base = BASE_ADDR + i * 3 * SLOT
             writes.append({
                 "range": i,
@@ -214,9 +229,9 @@ def main():
               f"{w['length']} bytes, RAM {w['orig_addr']:#x}/{w['new_addr']:#x}/{w['read_addr']:#x}")
     print("\nLoad every orig/new payload with sunxi-fel, then run write-data.scr the same way")
     print("this repo's existing write-boot.scr is run: against the READ-ONLY U-Boot build,")
-    print("over FEL. It only writes a range if that range's own checks pass, and stops at")
-    print("the first range whose checks or write-verify fail; nothing past that point is")
-    print("written. Undo the same way with restore-data.scr.")
+    print("over FEL. It checks every range first and writes nothing unless all of them hold")
+    print("the original bytes; then it writes them in order and stops at the first write that")
+    print("does not read back correctly. Undo the same way with restore-data.scr.")
 
 
 if __name__ == "__main__":

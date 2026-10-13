@@ -400,6 +400,11 @@ the eMMC is never exposed as a writable host disk. `mmc write` is a U-Boot
 command, internal to the device, unrelated to the USB mass-storage (`ums`)
 code path that build patches out.
 
+**Only edit a copy of a backup taken from a frame that has not booted Android since.** Booting
+changes `/data`, and the script then refuses (the eMMC no longer holds your recorded bytes). Check
+the copy is clean first: `debugfs -R stats` must not list `needs_recovery`; an unreplayed journal
+makes a `debugfs -w` edit unsafe.
+
 Prepare it from a pristine and an edited copy of your own verified `/data`
 backup (edit the copy with `debugfs -w`, e.g. adding your host's public ADB
 key to `/misc/adb/adb_keys` with the ownership/mode/SELinux context already on
@@ -420,8 +425,10 @@ To run it: with the frame in FEL and this repo's existing read-only U-Boot
 loaded (same as the Route U backup above), load every `range-NN.orig`/`.new`
 payload with `sunxi-fel write <addr> <file>` at the addresses `write-data.cmd`
 prints for each range, then load and run `write-data.scr` the same way
-`write-boot.scr` is run. Undo with `restore-data.scr` the same way, loading the
-same payloads. Both scripts end in `ums 0 mmc 1`, so the eMMC is available
+`write-boot.scr` is run. It checks every range before writing any, so a range that no longer holds
+your recorded bytes stops it with nothing written. Undo with `restore-data.scr` the same way, loading the
+same payloads. If a write failed partway, restore puts back the ranges written before the failure
+and refuses the rest, which still hold the original bytes. Both scripts end in `ums 0 mmc 1`, so the eMMC is available
 read-only afterward for a whole-partition reread.
 
 ## Offline helper for the historical boot patch
