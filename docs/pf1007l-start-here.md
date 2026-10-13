@@ -26,6 +26,7 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),
+[May `20260519` on Linux](pf1007l-20260519-linux-report.md),
 [May `20260529` on macOS](pf1007l-macos-20260529-report.md),
 [May `20260529` on Windows + WSL](pf1007l-windows-20260529-report.md).
 
@@ -44,7 +45,7 @@ differ in eMMC size and in whether ADB ships on.
 | `321-OS-AIMOR.0.20260410` | unit D (#13), #17, #20, #27, #69, #8 comment, [unit G](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write; [one-sector edit](pf1007l-sector-edit-sdcard.md); Route S with an April patch builder that is not in this repo (unit G) |
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
-| `FL-AIMOR-OS.0.20260519` | #24, #36, #62, #65 comment, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch carried on the SD card with a 12 MHz FEL U-Boot (#62, #68); [recovery-window write](pf1007l-macos-20260529-recovery-boot-write.md) (#65 comment). Route S only by editing its hash guard (do not) |
+| `FL-AIMOR-OS.0.20260519` | #24, #36, #62, #65 comment, [Windows report](pf1007l-windows-wsl-20260519-report.md), [Linux report](pf1007l-20260519-linux-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch carried on the SD card with a 12 MHz FEL U-Boot (#62, #68); [recovery-window write](pf1007l-macos-20260529-recovery-boot-write.md) (#65 comment). Route S only by editing its hash guard (do not) |
 | `V10-1680.0.20260529` (also `321-OS-AIMOR.0.20260529`, #81) | #8, #16, [#41](pf1007l-windows-20260529-report.md), [#28](pf1007l-macos-20260529-report.md), [recovery write](pf1007l-macos-20260529-recovery-boot-write.md), [no-HS report](pf1007l-macos-20260529-no-mmc-hs-report.md), #81 | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16, #28, #81, the no-HS unit and the recovery-write unit; not established in #41 | Nothing needed (#8); Route U; Route U with the [no-HS U-Boot patch](patches/pf1007l-v2025.10-no-mmc-hs.patch) (no-HS report); Route U with the boot patch aimed at the `ptp` USB action, because that unit's saved USB setting was `ptp` (#81, local edit, not in the repo); recovery-window write; a 1-bit 25 MHz read-only `ums` backup, then a userdata `persist.sys.usb.config` edit (#41, record only, not a published route) |
 
 Numbers are GitHub issues and pull requests. Units A to C are from the first three guides:
@@ -331,6 +332,7 @@ change to the U-Boot source, and its reports are the reference.
 | Single read errors | Retry each read up to 8 times | #24 |
 | Route S dump fails | eMMC at 12 MHz. On May `20260519` a 12 MHz dump could still reset about a minute in | #24 comment, #61 (January), #62, #68 |
 | FEL U-Boot `mmc read` errors on May `20260519` even at 4-bit 26 MHz; guarded write refuses | eMMC at 8-bit **12 MHz** in the FEL U-Boot too | [Windows report](pf1007l-windows-wsl-20260519-report.md) |
+| Linux UMS drops after about 42 MB even at 4-bit 26 MHz through a powered dock | With the low-power build and START STOP correction retained, lowering the eMMC cap to **12 MHz** completed the full backup and post-write comparison. Electrical cause unmeasured; optional source patch, not a default change | [Linux report](pf1007l-20260519-linux-report.md) |
 | `ums` disk (`1f3a:1010`) resets or vanishes after being attached to WSL with usbipd | Never attach `1010` to WSL; read it from Windows with `emmc-windows.ps1` ([Windows section](allwinner-a33-mainline-uboot.md#9-windows-host-wsl2--usbipd)) | #6, #75 |
 | DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL | #6 |
 | `ums` exposes no eMMC on May `20260529`; `unable to select a mode: -1` | Legacy timing. The eMMC stops answering after U-Boot switches it to high-speed timing, at any clock. 4-bit with the HS host capabilities removed: [patch](patches/pf1007l-v2025.10-no-mmc-hs.patch). 1-bit at 25 MHz also worked. Both units had the smaller 30,535,680-sector eMMC. Check the disk's capacity: some builds exposed the SD card instead | #41, [no-HS report](pf1007l-macos-20260529-no-mmc-hs-report.md) |
