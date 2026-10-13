@@ -331,6 +331,7 @@ change to the U-Boot source, and its reports are the reference.
 | Single read errors | Retry each read up to 8 times | #24 |
 | Route S dump fails | eMMC at 12 MHz. On May `20260519` a 12 MHz dump could still reset about a minute in | #24 comment, #61 (January), #62, #68 |
 | FEL U-Boot `mmc read` errors on May `20260519` even at 4-bit 26 MHz; guarded write refuses | eMMC at 8-bit **12 MHz** in the FEL U-Boot too | [Windows report](pf1007l-windows-wsl-20260519-report.md) |
+| `ums` disk (`1f3a:1010`) resets or vanishes after being attached to WSL with usbipd | Never attach `1010` to WSL; read it from Windows with `emmc-windows.ps1` ([Windows section](allwinner-a33-mainline-uboot.md#9-windows-host-wsl2--usbipd)) | #6, #75 |
 | DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL | #6 |
 | `ums` exposes no eMMC on May `20260529` | Legacy timing, 1-bit at 25 MHz. Check the disk's capacity: some builds exposed the SD card instead | #41 |
 | Unstable USB reads on April `20260410` | CPU at 480 MHz in the RAM U-Boot | #56 |
