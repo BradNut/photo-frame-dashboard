@@ -16,6 +16,7 @@ Detailed guides behind this page:
 | [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) | Identification, FEL with an SD card (Linux), and everything **after** root: backup, launcher, WebView 106, kiosk, memory |
 | [allwinner-a33-boot-access.md](allwinner-a33-boot-access.md) | How the first unit was rooted (custom tool, not published), and the boot-ramdisk change |
 | [allwinner-a33-mainline-uboot.md](allwinner-a33-mainline-uboot.md) | **Route U:** root ADB over USB with mainline U-Boot over FEL (macOS scripts) |
+| [pf1007l-windows-20260113-usb-adb-report.md](pf1007l-windows-20260113-usb-adb-report.md) | January firmware on Windows: verified USB root ADB with a one-sector `build.prop` edit; original boot image unchanged |
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL scripts) |
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
@@ -33,6 +34,8 @@ differ in eMMC size and in whether ADB ships on.
 | --- | --- | --- | --- | --- | --- |
 | `321-OS-AIMOR.0.20260113` | units A, B, C; #6, #12, #18, #19 | 30,535,680 or 30,777,344 | `d71c313d` | No | Route U, Route S |
 | `321-OS-AIMOR.0.20260410` | unit D (#13), #17, #20, #27, #8 comment, [unit G](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; Route S with the [April patch builder](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware) (#17, unit G); [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
+| `321-OS-AIMOR.0.20260113` | units A, B, C; #6, #12, #18, #19; [Windows report](pf1007l-windows-20260113-usb-adb-report.md) | 30,535,680 or 30,777,344 | `d71c313d` | No | Route U, Route S; one-sector USB setting edit on the reported Windows unit |
+| `321-OS-AIMOR.0.20260410` | unit D (#13), #20, #27, #8 comment | 30,777,344 | `8ffc2a7d` | Usually no; **on** in one unit | Route U; [T3c](#t3c-temporary-adb-through-the-aimor-connection) with no write |
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
 | `FL-AIMOR-OS.0.20260519` | #24, #36, #62, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch with SD-carried payloads and a 12 MHz FEL U-Boot; Route S only by editing its hash guard (do not) |
@@ -51,9 +54,14 @@ What this tells you:
   of the U-Boot `ums` problems, see [U-Boot settings](#u-boot-settings-that-fixed-ums-problems).
 - **Route U** checks the boot image's structure, not a fixed hash, so it has worked on every
   firmware it was tried on (all but `20260416`). **Route S** accepts only the January boot image.
-- Unit D was rooted with a one-sector `build.prop` edit (#6, #13). **It is not a published route.**
+- Unit D was rooted with an unpublished one-sector `build.prop` edit (#6, #13).
   That sector differed on another unit, and some April units override it from
   `/data/property/persist.sys.usb.config`.
+  [PR #49](https://github.com/wesbos/photo-frame-dashboard/pull/49) proposes published
+  sector-edit scripts for an April unit. The [January Windows report](pf1007l-windows-20260113-usb-adb-report.md)
+  confirms the same original sector hash on one January unit and a successful
+  guarded write through RAM-only U-Boot. Recheck the file mapping and bytes;
+  neither report makes a fixed sector safe across all variants.
 
 Hardware notes from several units (#6, #13): the Wi-Fi chip is an AIC8800 with no stored MAC
 address, so the MAC and the DHCP address change at each boot (set a static IP). Stock firmware
