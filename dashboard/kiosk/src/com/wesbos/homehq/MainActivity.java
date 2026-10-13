@@ -93,6 +93,7 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     applyDebugFlag(getIntent());
     applyHomeFlag(getIntent());
+    keepNavigationEnabled();
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         | WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -234,6 +235,32 @@ public class MainActivity extends Activity {
     } catch (Exception e) {
       Log.w(TAG, "No Wi-Fi settings screen, opening Settings", e);
       startActivity(new Intent(Settings.ACTION_SETTINGS));
+    }
+  }
+
+  /**
+   * Some frames (PF1007L) run a vendor BackgroundManagerService that drops the navigation service
+   * after the kiosk is updated or force-stopped, leaving no way back from Settings. If the owner
+   * opted in by granting WRITE_SECURE_SETTINGS, put the service back on the enabled list:
+   *   adb shell pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS
+   */
+  private void keepNavigationEnabled() {
+    if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") != PackageManager.PERMISSION_GRANTED) return;
+    String svc = getPackageName() + "/" + NavigationService.class.getName();
+    String cur = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+    if (cur != null) {
+      ComponentName want = new ComponentName(this, NavigationService.class);
+      for (String entry : cur.split(":")) {
+        if (want.equals(ComponentName.unflattenFromString(entry))) return;
+      }
+    }
+    String next = cur == null || cur.isEmpty() ? svc : cur + ":" + svc;
+    try {
+      Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, next);
+      Settings.Secure.putString(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, "1");
+      Log.i(TAG, "Re-enabled navigation service");
+    } catch (SecurityException e) {
+      Log.w(TAG, "Could not re-enable navigation service", e);
     }
   }
 
