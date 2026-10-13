@@ -55,6 +55,8 @@ Settings → About before you follow any guide:
 - **Skylight Calendar 150-CAL** (Rockchip RK3566): start with [next-session.md](docs/next-session.md),
   then [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
   intentionally not published; the doc shows where the app checks it.
+- **Skylight Calendar with firmware D156** (RK356x, Android 12 userdebug): USB ADB and `su` work
+  out of the box. See [skylight-d156.md](docs/skylight-d156.md); check the About screen first.
 - **Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and others:** see the
   [device index](docs/devices.md).
 - **Something else:** work through the [phase map](#phase-map), create `docs/<device>.md`, and
