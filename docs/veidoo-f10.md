@@ -4,7 +4,6 @@ Record of one unit, started 2026-10-13, Windows host. Observations are kept sepa
 
 Same SoC and Android version as the [BIUFRAME](biuframe.md) and [Rollei Smart Frame 107](rollei-smartframe-107.md), but a different vendor board (`ChipTrip` / `WeiDu`, Wi-Fi chip `rk915`, eMMC storage).
 
----
 
 ## Observations (read-only unless noted)
 
@@ -22,102 +21,99 @@ Same SoC and Android version as the [BIUFRAME](biuframe.md) and [Rollei Smart Fr
 | SELinux | **Permissive** (`androidboot.selinux=permissive` on kernel command line) |
 | Display | 1280x800, 160 dpi, landscape orientation |
 | RAM / Storage | 1 GB RAM, 128 MB ZRAM swap, 30 GB eMMC (`mmcblk0`) |
-| WebView | `com.google.android.webview` 107.0.5304.36 (Chrome 107), modern enough for the Vite dashboard |
+| WebView | `com.google.android.webview` 107.0.5304.36. Not recorded whether it shipped or was installed later |
 | Wi-Fi | Onboard radio (`wlan0`), driver module `rk915` |
 | SystemUI | `com.android.systemui` is disabled: no status bar or soft navigation keys |
 | Shipped Home | `net.frameo.frame` v1.32.15, disabled during onboarding |
 
----
 
-### USB, ADB, and Root Access
+### USB, ADB and root
 
-- **ADB Access:** Enabled via Frameo Settings -> About -> Beta Program -> ADB Access.
-- **USB ADB:** Recognized as `2207:0006` (MTP/ADB).
-- **Network ADB:** Active on port 5555 (`service.adb.tcp.port=5555`), accessible over Wi-Fi (`adb connect <ip>:5555`).
-- **Root Shell:** Pre-installed `/system/xbin/su` (SuperSU 2.45, UID 0). `adb shell su -c id` returns `uid=0(root)` immediately without manager prompts.
-- **Persistence Mechanism:** SuperSU's daemon (`daemonsu`) automatically executes executable scripts located in `/system/su.d/` on boot.
+- **ADB:** Frameo Settings → About → Beta Program → ADB Access.
+- **USB ADB:** `2207:0006` (MTP/ADB).
+- **Network ADB:** `adbd` also listens on port 5555 (`service.adb.tcp.port=5555`). Whether it
+  checks the computer's key was not tested. With the shipped `su`, anything on your Wi-Fi may be
+  able to get root. Turn network ADB off when you are done, or keep the frame on a trusted network.
+- **Root:** shipped `/system/xbin/su` (SuperSU 2.45). `adb shell su -c id` returns `uid=0(root)`
+  with no prompt.
 
----
+Same family as the BIUFRAME: [`scripts/biuframe-setup.sh`](../scripts/biuframe-setup.sh) and the
+[BIUFRAME setup guide](biuframe-setup-guide.md) are the tested route for RK3126 frames. Its BIUFRAME
+profile was not run on this unit.
 
-### Security & Privacy Audit Findings
+### Vendor packages
 
-A complete decompilation and binary audit of the stock firmware identified aggressive vendor updaters and telemetry:
+Before disabling Frameo (it holds the ADB toggle) and Home, follow README rule 9: confirm USB ADB
+still connects with Frameo disabled and that you can reach Android Settings from the kiosk. That
+check was not recorded for this unit. SystemUI is disabled from the factory, so there is no
+navigation bar; see [the kiosk README](../dashboard/kiosk/README.md#frames-without-home-or-back-buttons).
 
-1. **Adups FOTA Subsystem (`com.adups.fota` and `com.adups.fota.sysoper`):**
-   - Contains hardcoded C2 endpoints (`fota5p.adups.com`, `fota5p.adups.cn`, `fruet.adups.com`).
-   - Plaintext data exfiltration (IMEI, MAC, Android ID, Advertising ID, cellular carrier, build fingerprint).
-   - Remote DES-encrypted push commands over FCM capable of silent firmware flashing and background code execution.
-   - **Remediation:** Disable and hide both packages:
-     ```sh
-     adb shell su -c pm disable-user --user 0 com.adups.fota
-     adb shell su -c pm hide com.adups.fota
-     adb shell su -c pm disable-user --user 0 com.adups.fota.sysoper
-     adb shell su -c pm hide com.adups.fota.sysoper
-     ```
-2. **Rockchip Vendor Updater & Test Suite:**
-   - `android.rockchip.update.service` (OTA updater targeting `www.rockchip.com:2300`) and `com.DeviceTest` (factory hardware test utility) can be safely disabled:
-     ```sh
-     adb shell su -c pm disable-user --user 0 android.rockchip.update.service
-     adb shell su -c pm disable-user --user 0 com.DeviceTest
-     ```
-3. **Frameo Application (`net.frameo.frame`):**
-   - Cloud telemetry and slideshow service disabled; replaced by an alternative launcher (such as Rootless Pixel Launcher 3.9.1; see [android-launcher.md](android-launcher.md)):
-     ```sh
-     adb shell su -c pm disable-user --user 0 net.frameo.frame
-     ```
+| Package | How | Undo |
+| --- | --- | --- |
+| Adups FOTA | `adb shell "su -c 'pm disable-user --user 0 com.adups.fota; pm hide com.adups.fota'"` | `adb shell "su -c 'pm unhide com.adups.fota; pm enable com.adups.fota'"` |
+| Adups reboot helper | `adb shell "su -c 'pm disable-user --user 0 com.adups.fota.sysoper; pm hide com.adups.fota.sysoper'"` | `adb shell "su -c 'pm unhide com.adups.fota.sysoper; pm enable com.adups.fota.sysoper'"` |
+| Rockchip updater | `adb shell "su -c 'pm disable-user --user 0 android.rockchip.update.service'"` | `adb shell "su -c 'pm enable android.rockchip.update.service'"` |
+| Factory test app | `adb shell "su -c 'pm disable-user --user 0 com.DeviceTest'"` | `adb shell "su -c 'pm enable com.DeviceTest'"` |
+| Frameo | `adb shell "su -c 'pm disable-user --user 0 net.frameo.frame'"`, after a launcher such as Rootless Launcher ([android-launcher.md](android-launcher.md)) is installed | `adb shell "su -c 'pm enable net.frameo.frame'"` |
 
----
+Not verified on this unit: the contributor's notes say the Adups packages contain update-server
+host names (`fota5p.adups.com`, `fota5p.adups.cn`, `fruet.adups.com`) and can install firmware
+remotely, and that the Rockchip updater targets `www.rockchip.com:2300`.
 
-### System TLS Certificate Store Modernization
+### System CA store (record, not a procedure)
 
-The stock Android 6.0.1 certificate store (`/system/etc/security/cacerts`) contained 227 legacy certificates with 48 expired roots, causing HTTPS handshake failures to modern web endpoints (e.g. Let's Encrypt ISRG Root X1, Google Trust Services):
+The stock store had 227 certificates, 48 of them expired, and HTTPS to Let's Encrypt sites failed.
+On this unit the whole `/system/etc/security/cacerts` folder was replaced with 209 certificates
+from several sources, after an archive of the original. The commands, sources and undo were not
+published, so don't repeat this. The tested fix is to add only the two ISRG roots, as step 5 of the
+[BIUFRAME setup guide](biuframe-setup-guide.md) does, with its undo.
 
-- **Backup:** Original store archived before modification.
-- **Modernization:** Deployed 209 modern, deduplicated, unexpired CA certificates incorporating modern LineageOS/AOSP, Mozilla CA bundle, GTS Root R1-R4/E1-E4, and Let's Encrypt ISRG Root X1/X2.
-- **Verification:** Clean TLS 1.2/1.3 handshakes verified in modern browsers with valid security locks.
+### Performance tuning (record, not a procedure)
 
----
-
-### System, Kernel, and Performance Optimization Suite
-
-To convert the device into a snappy, responsive 24/7 Home Assistant / Web Dashboard, the system settings, kernel parameters, I/O queues, and daemons were tuned:
+These settings were changed on this unit. Nothing was measured before or after, and none of it is
+needed for the dashboard. No undo was recorded for the `setprop` and `settings put` changes; a
+factory reset clears the `settings` ones. The `/sys` and `sysctl` values go back to
+stock at each reboot unless the boot script below runs.
 
 #### 1. Storage Block Layer (`/sys/block/mmcblk0/queue`)
-- **I/O Scheduler:** Switched from spinning-disk `[cfq]` to `deadline`. Eliminates rotational seek sorting on eMMC flash.
-- **Readahead:** Reduced from `2048 KB` to `512 KB` to avoid thrashing page cache on 1 GB RAM.
-- **Entropy Overhead:** Disabled `add_random` (`0`) to eliminate block-level hashing overhead.
-- **Core Affinity:** Set `rq_affinity = 2` to complete I/O interrupts on the submitting CPU core.
+- **I/O Scheduler:** Switched from spinning-disk `[cfq]` to `deadline`.
+- **Readahead:** Reduced from `2048 KB` to `512 KB`.
+- **Entropy Overhead:** Disabled `add_random` (`0`).
+- **Core Affinity:** Set `rq_affinity = 2`.
 
 #### 2. CPU Interactive Governor (`/sys/devices/system/cpu/cpufreq/interactive`)
-- **Ramp Threshold:** Lowered `go_hispeed_load` from `99` to `80`. The quad-core Cortex-A7 now scales to 1.008 GHz smoothly during page rendering instead of stuttering at 816 MHz.
-- **I/O Wait Boost:** Enabled `io_is_busy = 1` so disk reads are treated as busy time, preventing clock drops during asset loads.
+- **Ramp Threshold:** Lowered `go_hispeed_load` from `99` to `80`.
+- **I/O Wait Boost:** Enabled `io_is_busy = 1`.
 - **Sample Time:** Set `min_sample_time = 30000` (30 ms) and `above_hispeed_delay = 20000` (20 ms).
 
 #### 3. Virtual Memory & ZRAM (`sysctl`)
-- **Swappiness:** Raised `vm.swappiness` from `60` to `80`. Activates the 128 MB ZRAM swap partition to compress dormant background pages, preserving vital file caches for the dashboard browser.
-- **Min Free Headroom:** Increased `vm.min_free_kbytes` from `2797 KB` (2.8 MB) to `8192 KB` (8 MB) to prevent direct-reclaim frame drops.
-- **VFS Cache:** Set `vm.vfs_cache_pressure = 70` to retain directory structure in memory.
-- **Dirty Flushes:** Set `vm.dirty_ratio = 15` and `vm.dirty_background_ratio = 5` to smooth eMMC writes.
+- **Swappiness:** Raised `vm.swappiness` from `60` to `80`.
+- **Min Free Headroom:** Increased `vm.min_free_kbytes` from `2797 KB` (2.8 MB) to `8192 KB` (8 MB).
+- **VFS Cache:** Set `vm.vfs_cache_pressure = 70`.
+- **Dirty Flushes:** Set `vm.dirty_ratio = 15` and `vm.dirty_background_ratio = 5`.
 
 #### 4. Background Daemons & CPU Churn
-- **Disabled `rild`:** Hardware lacks cellular modem (`ro.baseband=N/A`). Stopped `ril-daemon` to eliminate background polling of `/dev/ttyACM0`.
-- **Throttled KSM:** Increased Kernel Samepage Merging (`ksmd`) scan interval from `500 ms` to `2000 ms` (`/sys/kernel/mm/ksm/sleep_millisecs`), cutting wakeup CPU churn by 75%.
+- **Disabled `rild`:** Hardware lacks cellular modem (`ro.baseband=N/A`). Stopped `ril-daemon`.
+- **Throttled KSM:** Increased Kernel Samepage Merging (`ksmd`) scan interval from `500 ms` to `2000 ms` (`/sys/kernel/mm/ksm/sleep_millisecs`).
 - **Disabled GPS Polling:** Set `location_mode = 0` and cleared `location_providers_allowed` (`ro.factory.hasGPS=false`).
 
 #### 5. 24/7 Display & Android Settings
-- **Stay Awake:** Set `global stay_on_while_plugged_in = 3` (AC + USB) to keep the display on 24/7.
+- **Stay Awake:** Set `global stay_on_while_plugged_in = 3` (AC + USB).
 - **Animation Scales:** Configured `animator_duration_scale = 0.5` (was null/1.0), `window_animation_scale = 0.5`, `transition_animation_scale = 0.5`.
-- **Forced 2D GPU Acceleration:** Enabled `persist.sys.ui.hw = 1` to route 2D view rendering through the Mali-400 GPU.
-- **Wallpaper Surface:** Enabled `sys.wallpaper.rgb565 = 1` to save 50% wallpaper surface memory.
-- **Disabled Screensaver:** Set `secure screensaver_enabled = 0` to prevent DeskClock daydream from interrupting the dashboard.
+- **Forced 2D GPU Acceleration:** Enabled `persist.sys.ui.hw = 1`.
+- **Wallpaper Surface:** Enabled `sys.wallpaper.rgb565 = 1`.
+- **Disabled Screensaver:** Set `secure screensaver_enabled = 0`.
 - **Wi-Fi Background Scans:** Disabled open Wi-Fi notification scans (`wifi_networks_available_notification_on = 0`) and Google captive portal checks (`captive_portal_detection_enabled = 0`).
 - **TCP Optimizations:** Configured `net.ipv4.tcp_tw_reuse = 1`, `net.ipv4.tcp_slow_start_after_idle = 0`, and `net.ipv4.tcp_keepalive_time = 300`.
 
----
+### Boot script (record, not a procedure)
 
-### Boot Persistence Script
-
-All kernel parameters under `/sys/` and `/proc/sys/` are made persistent across reboots via `/system/su.d/01_optimizations.sh` (`chmod 0755 root:root`). SuperSU `daemonsu` executes scripts in `/system/su.d/` automatically during early boot:
+The kernel settings above were put in `/system/su.d/01_optimizations.sh` (root:root, 0755), on the
+assumption that SuperSU's `daemonsu` runs `/system/su.d/` at boot. On the BIUFRAME, which uses the
+same SuperSU, it **did not** ([biuframe-setup-guide.md](biuframe-setup-guide.md)), and the report
+doesn't show that it ran after a reboot here. To check, after a reboot:
+`adb shell cat /sys/block/mmcblk0/queue/scheduler` should show `[deadline]`. To remove it:
+`adb shell "su -c 'mount -o remount,rw /system; rm /system/su.d/01_optimizations.sh; mount -o remount,ro /system'"`.
 
 ```sh
 #!/system/bin/sh
