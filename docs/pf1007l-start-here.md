@@ -22,6 +22,7 @@ Detailed guides behind this page:
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
 | [pf1007l-sector-edit-sdcard.md](pf1007l-sector-edit-sdcard.md) | **April firmware only:** root ADB over USB with a guarded one-sector `build.prop` edit from the SD card, check-only run first. Also: root ADB in stock recovery during a factory reset |
 | [pf1007l-macos-20260529-recovery-boot-write.md](pf1007l-macos-20260529-recovery-boot-write.md) | **May `20260529`, one unit:** the Route U boot patch written over USB in stock recovery's root-ADB window (factory reset), no SD card |
+| [pf1007l-boot-fixes.md](pf1007l-boot-fixes.md) | **After root:** one Wi-Fi MAC, the clock after power cuts, no freeze at Wi-Fi start, fast DHCP |
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
@@ -77,7 +78,8 @@ What this tells you:
   ([details](pf1007l-sector-edit-sdcard.md#9-stock-recovery-runs-root-adb-during-a-factory-reset)).
 
 Hardware notes from several units (#6, #13): the Wi-Fi chip is an AIC8800 with no stored MAC
-address, so the MAC and the DHCP address change at each boot (set a static IP). Stock firmware
+address, so the MAC and the DHCP address change at each boot (set a static IP, or pin the MAC with
+[pf1007l-boot-fixes.md](pf1007l-boot-fixes.md)). Stock firmware
 listens on TCP 8086, AiMOR's paired file service, not ADB. AiMOR's `vuid_cert.txt` is a device
 credential: keep it out of anything you publish.
 
@@ -408,6 +410,8 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 - `adb reboot` hangs on many units (one rebooted cleanly). Plan to power-cycle instead.
 - After the WebView 106 swap, a hub-powered unit may need one boot with Wi-Fi off (dexopt).
 - If the clock shows 1969, run `settings put global auto_time 1`.
+- For a frame that must boot unattended (power cuts, a fixed MAC, the clock, a freeze when Wi-Fi
+  starts), install [pf1007l-boot-fixes.md](pf1007l-boot-fixes.md).
 - `/system/xbin/su` is setuid root with no prompt (#24), so any app on the frame can get root.
   Install nothing untrusted.
 
