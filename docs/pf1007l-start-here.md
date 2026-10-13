@@ -26,7 +26,8 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),
-[May `20260529` on macOS](pf1007l-macos-20260529-report.md).
+[May `20260529` on macOS](pf1007l-macos-20260529-report.md),
+[May `20260529` on Windows + WSL](pf1007l-windows-20260529-report.md).
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
@@ -44,7 +45,7 @@ differ in eMMC size and in whether ADB ships on.
 | `321-OS-AIMOR.0.20260416` | #16 comment | 30,777,344 | `fc4d22d2` (over 31,032 sectors) | No | An unpublished `build.prop` edit |
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
 | `FL-AIMOR-OS.0.20260519` | #24, #36, #62, #65 comment, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch carried on the SD card with a 12 MHz FEL U-Boot (#62, #68); [recovery-window write](pf1007l-macos-20260529-recovery-boot-write.md) (#65 comment). Route S only by editing its hash guard (do not) |
-| `V10-1680.0.20260529` | #8, #16, #41, [#28](pf1007l-macos-20260529-report.md), [recovery write](pf1007l-macos-20260529-recovery-boot-write.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16, #28, #41 and the recovery-write unit | Nothing needed (#8); Route U; recovery-window write |
+| `V10-1680.0.20260529` | #8, #16, [#41](pf1007l-windows-20260529-report.md), [#28](pf1007l-macos-20260529-report.md), [recovery write](pf1007l-macos-20260529-recovery-boot-write.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16, #28 and the recovery-write unit; not established in #41 | Nothing needed (#8); Route U; recovery-window write; a 1-bit 25 MHz read-only `ums` backup, then a userdata `persist.sys.usb.config` edit (#41, record only, not a published route) |
 
 Numbers are GitHub issues and pull requests. Units A to C are from the first three guides:
 [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) (A, DC jack and Linux, rooted with a custom
