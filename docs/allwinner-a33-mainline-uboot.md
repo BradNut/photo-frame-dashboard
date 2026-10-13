@@ -104,9 +104,12 @@ reference design:
 | `BOOTDELAY=-2` | No serial console is attached, so noise on the console pin cannot stop autoboot |
 | `CRC32_VERIFY` | The write script checks every payload on the device (section 6) |
 | **Read-only `ums`**, two layers | `ums_write_sector` refuses all writes, and the LUN reports write-protect to the host |
+| DRAM byte lane 0 retrain | On some units (#6) lane 0 comes out of training disabled, so every even byte reads as 0. If a 16-bit bus ends training with lane 0 off, the SPL copies lane 1's config onto it and retrains. A no-op on units where lane 0 trains normally |
+| `sunxi-spl-warmup.bin` | A second SPL, built with `-DPF1007L_DRAM_WARMUP`, that returns to FEL right after DRAM init. On #6 the first DRAM init after power-on never trained and the SPL hung; running this first made the next init train (section 4) |
 
-The build prints where the SPL code ends. Here it was `0x456a`, about 6.6 KB below the
-early global-data/stack area. See the boot access notes for why that matters.
+The build prints where the SPL code ends, for both SPLs. Here it was `0x456a`, about 6.6 KB below the
+early global-data/stack area. See the boot access notes for why that matters. With the
+DRAM changes it was `0x458a`, and `0x45ba` for the warm-up SPL.
 
 The boot access notes say a full RAM-booted U-Boot did not enumerate as a USB disk on
 their unit. With the OTG, VBUS and ID changes above, `ums` enumerated on this one.
@@ -120,6 +123,18 @@ With the frame in FEL, and the owner approving this RAM payload:
 diagnostics/sunxi-tools/sunxi-fel -v -p uboot diagnostics/a33-uboot-out/u-boot-sunxi-with-spl.bin \
   write 0x43100000 diagnostics/a33-uboot-out/ums-readonly.scr
 ```
+
+If `sunxi-fel` hangs after loading the SPL on the first run after power-on, the DRAM did not
+train. Power-cycle back into FEL and, with the owner approving this RAM payload too, warm the DRAM first:
+
+```sh
+diagnostics/sunxi-tools/sunxi-fel spl diagnostics/a33-uboot-out/sunxi-spl-warmup.bin
+diagnostics/sunxi-tools/sunxi-fel version     # must answer
+```
+
+An answer from `sunxi-fel version` proves only that the warm-up SPL returned to FEL, not that the DRAM
+trained. Then run the `uboot` command above. The warm-up SPL only initializes DRAM; it does not touch
+storage.
 
 U-Boot runs `ums 0 mmc 0,1`: the SD card and the eMMC appear as two disks. Identify the
 eMMC by size. Here it was "UMS disk 1", 15,634,268,160 bytes, **Media Read-Only: Yes**.

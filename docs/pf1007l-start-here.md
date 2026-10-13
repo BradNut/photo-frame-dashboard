@@ -330,8 +330,8 @@ slot; `boot-patch.py` reads the slot from your image, so its write ranges differ
 The repository's Route U build (`scripts/a33-uboot/`) runs the eMMC at full speed on an 8-bit bus.
 That worked on units B and C (30,535,680 sectors). On the larger 30,777,344-sector eMMC, many owners
 saw the `ums` disk never appear, disappear partway through a backup, or the frame reset. These
-changes fixed it for them. **They are not in the repository's build yet**, so each one is a local
-change to the U-Boot source, and its reports are the reference.
+changes fixed it for them. **Except for the DRAM fix, they are not in the repository's build yet**,
+so each one is a local change to the U-Boot source, and its reports are the reference.
 
 | Symptom | What fixed it | Reports |
 | --- | --- | --- |
@@ -343,7 +343,7 @@ change to the U-Boot source, and its reports are the reference.
 | FEL U-Boot `mmc read` errors on May `20260519` even at 4-bit 26 MHz; guarded write refuses | eMMC at 8-bit **12 MHz** in the FEL U-Boot too | [Windows report](pf1007l-windows-wsl-20260519-report.md) |
 | Linux UMS drops after about 42 MB even at 4-bit 26 MHz through a powered dock | With the low-power build and START STOP correction retained, lowering the eMMC cap to **12 MHz** completed the full backup and post-write comparison. Electrical cause unmeasured; optional source patch, not a default change | [Linux report](pf1007l-20260519-linux-report.md) |
 | `ums` disk (`1f3a:1010`) resets or vanishes after being attached to WSL with usbipd | Never attach `1010` to WSL; read it from Windows with `emmc-windows.ps1` ([Windows section](allwinner-a33-mainline-uboot.md#9-windows-host-wsl2--usbipd)) | #6, #75 |
-| DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL | #6 |
+| DRAM init fails on a cold start | DRAM byte lane 0 retrain and a warm-up SPL, now in the build ([section 4 of the U-Boot guide](allwinner-a33-mainline-uboot.md#4-expose-the-emmc-read-only-and-back-it-up)). Hardware-tested only on #6, with U-Boot v2025.01; #6 also needs the 4-bit eMMC build | #6 |
 | `ums` exposes no eMMC on May `20260529`; `unable to select a mode: -1` | Legacy timing. The eMMC stops answering after U-Boot switches it to high-speed timing, at any clock. 4-bit with the HS host capabilities removed: [patch](patches/pf1007l-v2025.10-no-mmc-hs.patch). 1-bit at 25 MHz also worked. Both units had the smaller 30,535,680-sector eMMC. Check the disk's capacity: some builds exposed the SD card instead | #41, [no-HS report](pf1007l-macos-20260529-no-mmc-hs-report.md) |
 | Unstable USB reads on April `20260410` | CPU at 480 MHz in the RAM U-Boot | #56 |
 | Bulk reads fail on January (Windows) at 4-bit 26 MHz; single sectors are fine | **Unsolved** | #63 |
