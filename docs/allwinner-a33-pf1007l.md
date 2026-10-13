@@ -279,6 +279,12 @@ before any replacement. A `dd`/`tar` error may otherwise leave a misleading file
 Old `adbd` can merge remote stderr into binary `exec-out` output; the `2>/dev/null`
 in these commands prevents a `dd` status footer from contaminating the image.
 
+To read the whole eMMC in chunks (`/dev/block/mmcblk0` with `skip=`), use
+`/sbin/busybox dd`. The stock `dd` returned **0 bytes, with no error**, for every chunk
+that starts at 2 GiB or later (firmware 20260529, observed). `busybox dd` read those
+chunks, and gave the same bytes as the stock `dd` below 2 GiB. Check each chunk's size,
+not only its hash: an empty chunk has the same MD5 on the frame and on the host.
+
 The tested session independently verified the whole system partition and boot
 image. Recovery had partial spot checks rather than a complete second reread.
 This was **not a full-device backup**: userdata, hardware boot areas and every

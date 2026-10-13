@@ -30,6 +30,15 @@ adb shell am start -n com.wesbos.homehq/.MainActivity --ez home true
 adb shell cmd package set-home-activity com.wesbos.homehq/.Home
 ```
 
+Android 6 frames (PF1007L, BIUFRAME) don't have `cmd package set-home-activity`. After the first
+command, open the Home chooser instead, then tap **Home HQ** and **Always** on the frame. Keep
+another launcher installed so **Open launcher** has somewhere to go.
+
+```sh
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME
+adb shell 'grep -A2 "<preferred-activities" /data/system/users/0/package-restrictions.xml'   # check it stuck
+```
+
 The kiosk then opens the saved URL at boot, and the Home button returns to it. If the page
 fails to load at boot because Wi-Fi isn't up yet, the kiosk keeps retrying. In the controls,
 **Open launcher** skips the kiosk and opens another Home app. To undo, pick another Home app in
@@ -71,12 +80,12 @@ other way back. If needed, return to the kiosk with:
 adb shell am start -n com.wesbos.homehq/.MainActivity
 ```
 
-This service supplies navigation controls; it does not change the default Home
-app or automatically launch the dashboard at boot.
+This service supplies navigation controls only. To start the dashboard at boot,
+make Home HQ the default Home app (see [Start at boot](#start-at-boot)).
 
-On a rooted frame, [kioskwatch](../../scripts/kioskwatch/README.md) is a fallback
-that needs no tap: after 2 minutes with no touches in another app, it brings
-Home HQ back.
+To build your own dashboard for a PF1007L frame, see
+[building-for-the-frame.md](../../docs/building-for-the-frame.md): what WebView 106 supports,
+what to avoid, and how to test on the frame.
 
 ## When the dashboard can't load
 
