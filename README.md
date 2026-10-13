@@ -92,6 +92,11 @@ section unless the identity checks match exactly.
 8. **Write notes as you go.** Keep a per-device file in `docs/`, like the ones in the
    [device index](docs/devices.md), with
    observations kept separate from guesses.
+9. **Prove the way back before you close the way in.** Before you disable the app or route your
+   access came through, or end an access session, check by hand on the panel that your kiosk can
+   reach Android Settings → Apps. An `input tap` or `screencap` over ADB does not prove it. A
+   PF1007L was locked out this way; see
+   [the lockout notes](docs/pf1007l-20260410-network-adb.md#6-lockout-after-disabling-aimor-and-offline-recovery).
 
 ### Check for updates, and send back what you find
 

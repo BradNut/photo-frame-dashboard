@@ -311,7 +311,10 @@ adb -d install diagnostics/firefox.apk
 adb -d shell am start -a android.intent.action.MAIN -c android.intent.category.HOME -p amirz.rootless.nexuslauncher
 ```
 
-Confirm the new launcher is visible before disabling the vendor launcher:
+Confirm the new launcher is visible before disabling the vendor launcher. Also check by hand on the
+panel that you can reach Android Settings → Apps from it. On a unit without working USB ADB,
+AiMOR is the only route back in that doesn't need the SD card; see
+[the lockout notes](pf1007l-20260410-network-adb.md#6-lockout-after-disabling-aimor-and-offline-recovery).
 
 ```sh
 adb -d shell pm disable com.efercro.os.aimor
@@ -429,6 +432,11 @@ require opening a host firewall port or using the frame's changing Wi-Fi address
 Keep the host server and USB connected. Recreate the reverse mapping after a
 device/ADB restart. Hold two fingers still for **1.5 seconds** to exit to the
 launcher. Boot auto-start is not implemented by this procedure.
+
+Don't make a two-finger hold your only way out. On one April unit, a different kiosk's two-finger
+hold never triggered for the owner. The `gslX680` driver reports multitouch (tracking IDs 0–11),
+but [PR #40](https://github.com/wesbos/photo-frame-dashboard/pull/40) observed that it reads two
+fingers held close together as one touch. A control revealed by a single tap did work on that unit.
 
 The dashboard contains **sample data**, not your real calendar. Older Android
 trust stores can reject external HTTPS images even though the local HTML loads.
