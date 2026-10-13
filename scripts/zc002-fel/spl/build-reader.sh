@@ -30,6 +30,10 @@ python3 "$HERE/patch-reader.py"
 make q8_a33_tablet_1024x600_defconfig
 scripts/kconfig/merge_config.sh -m .config "$HERE/reader.config"
 make olddefconfig
+if grep -q '^CONFIG_SPL_MMC_WRITE=' .config; then
+	echo 'refusing to build a reader with SPL MMC write support' >&2
+	exit 1
+fi
 make -j"$JOBS" spl/u-boot-spl.bin
 
 mkdir -p "$OUT"
@@ -37,5 +41,9 @@ tools/mksunxiboot --default-dt sun8i-a33-q8-tablet \
 	spl/u-boot-spl.bin "$OUT/zc002-fel-reader-spl.bin"
 cp spl/u-boot-spl.map "$OUT/reader.map"
 ${CROSS_COMPILE}nm -n spl/u-boot-spl > "$OUT/reader.symbols"
+if grep -Eq '[[:space:]](blk_dwrite|mmc_bwrite|mmc_write_blocks)$' "$OUT/reader.symbols"; then
+	echo 'reader contains an unexpected storage-write symbol' >&2
+	exit 1
+fi
 cp .config "$OUT/resolved.config"
 printf 'SPL image written to %s\n' "$OUT/zc002-fel-reader-spl.bin"

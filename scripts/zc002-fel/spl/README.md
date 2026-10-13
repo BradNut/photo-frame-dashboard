@@ -1,13 +1,17 @@
-# ZC002 FEL-returning SPL storage helper
+# ZC002 FEL-returning read-only SPL storage helper
 
 This directory contains the readable source and build inputs for a small
 Allwinner A33 SPL helper. It initializes the frame's eMMC, records controller
 and card information in a fixed DRAM result structure, performs bounded block
-reads, and then returns through the normal FEL path. Its source is pinned to
+reads, and then returns through the normal FEL path. The SPL has no storage-write
+operation, and its build disables `CONFIG_SPL_MMC_WRITE`. Its source is pinned to
 the official [U-Boot repository](https://source.denx.de/u-boot/u-boot.git) at
 commit `ece349ade2973e220f524ce59e59711cc919263f`.
 
-The original helper was used in a per-unit workflow with a private request.
+The original private helper also supported guarded writes. This public reader
+has had both that write operation and its CRC-preflight operation removed;
+requests for either are rejected before MMC initialization. The original helper
+was used in a per-unit workflow with a private request.
 That request, its CID, and the resulting binary are intentionally absent here.
 The public source sets all request words to zero. **Do not use it unchanged:
 the all-zero request fails the magic/version check before MMC I/O.** A host
@@ -19,7 +23,7 @@ not been run on hardware.
 
 The helper's result layout and DRAM addresses are retained. These are DRAM
 addresses, not SRAM addresses: the result structure begins at `0x43000000`,
-read data begins at `0x43001000`, and write input data begins at `0x43110000`.
+read data begins at `0x43001000`. There is no write-input buffer in this reader.
 Keep `struct hd_result` and these addresses unchanged when collecting results
 with existing host tooling.
 
@@ -37,23 +41,17 @@ invalid. For a unit-specific request, its fields are:
 | 5 | Requested clock: `400000` or `12000000` Hz |
 | 6 | MMC device index; this board helper requires `1` |
 | 7 | Board-specific electrical mode selector |
-| 8 | Operation: `0` read, `1` write, `2` CRC preflight |
-| 9 | Expected CRC32 of the existing blocks for operations 1 and 2 |
-| 10 | CRC32 of the supplied input blocks for operations 1 and 2 |
+| 8 | Operation: must be `0` (read); all other values are rejected |
+| 9–10 | Reserved legacy CRC fields; both must be zero |
 | 11–14 | The same unit's 16-byte CID, represented as four words whose in-memory bytes match the card CID |
 | 15 | That unit's sector count |
 
 The helper rejects a request if the magic, version, MMC index, request bounds,
-clock, card CID, or sector count do not match. Read-only operation `0` accepts
-at most 2048 blocks at 12 MHz or 8 blocks at 400 kHz. Operations `1` and `2`
-accept at most 128 blocks per request. Before either non-read operation, the
-helper reads the old blocks and verifies both supplied CRCs.
-
-Operation `1` is the only operation that writes. Its existing LBA checks allow
-writes only inside the boot-header range `[172032, 172034)` or ramdisk range
-`[191892, 201156)`. Each request must fit entirely inside one of those ranges.
-Do not remove or widen those fences, and do not use this helper as a general
-device writer.
+clock, card CID, or sector count do not match. Read operation `0` accepts
+at most 2048 blocks at 12 MHz or 8 blocks at 400 kHz. Nonzero operation or reserved
+CRC fields are rejected before MMC initialization. The version-3 result layout
+is retained for the host tool; its former input-CRC, readback-CRC and written-block
+fields stay zero. The successful read still returns its data CRC and block count.
 
 ## Build
 
@@ -76,7 +74,8 @@ The script builds `q8_a33_tablet_1024x600_defconfig`, merges
 `reader.config`, inserts `hd_storage_probe()` immediately before the SPL
 returns to FEL, builds the SPL, and wraps it with the board's eGON header using
 `mksunxiboot`. The output directory receives the image, map, symbol table, and resolved
-configuration; no generated binaries are part of this source package.
+configuration; no generated binaries are part of this source package. The build
+refuses an enabled SPL MMC write option or a linked storage-write symbol.
 
 The default zero initializer remains fail-closed. Use the read-only host
 transaction tool below to inject a per-unit request into a temporary copy of
@@ -135,7 +134,10 @@ offline tests, but has not been run against a device with the sanitized image.
 injection script and build script carry the same SPDX identifier. This source
 package is a cleaned and de-identified presentation of the helper used with a
 private request; source formatting and comments were made readable while the
-request/result data layout, MMIO addresses, operation flow, CRC checks, and
-LBA fences were retained. The SPL compiled from the pinned source commit in an
-isolated network-disabled container; neither it nor the host transaction tool
-has been tested on another frame.
+request/result data layout, MMC initialization, MMIO addresses, bounded reads,
+identity checks and read CRC were retained. The earlier write-capable source
+compiled from the pinned commit in an isolated network-disabled container; this
+read-only revision still needs a full SPL rebuild and hardware validation. Its C
+probe is exercised by native host tests with simulated MMC and MMIO; those tests
+do not execute on a frame or establish electrical compatibility. The host
+transaction tool has not been tested on another frame.

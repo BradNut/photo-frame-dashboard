@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Prepare an authenticated ZC002 boot candidate offline; never flashes it."""
+"""Prepare the historical ZC002 boot patch offline; never flashes it.
+
+See docs/pastigio-zc002.md for the smaller host-key plus stock-su route first.
+This candidate changes adbd and SELinux policy.
+"""
 
 from __future__ import annotations
 

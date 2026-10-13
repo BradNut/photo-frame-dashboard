@@ -5,10 +5,14 @@ brightness control and network ADB were verified on this unit.
 
 **Result:** authorized root ADB over USB and the LAN, a replacement launcher and
 browser, and working Android Back/Home/Recents navigation. Android remains 6.0.1.
-The route used a custom, FEL-returning SPL storage helper and a per-unit boot
-ramdisk patch. The included candidate helper prepares a boot image offline, and
-a separate host command performs bounded read-only FEL transactions. Neither
-provides a complete recovery tool or a boot-write command.
+This unit was rooted using a custom, FEL-returning SPL storage helper and a
+per-unit boot ramdisk patch. A second owner's later report found a smaller
+change on the same firmware: authorize the host key in userdata and use the
+shipped `su 0`, preserving the stock boot image and SELinux policy. Start with
+[that finding](#prefer-stock-su-after-host-key-authorization) before considering
+the historical boot patch recorded here. The included boot-candidate helper is
+offline; the public SPL and FEL host command provide bounded storage reads only.
+They do not provide a complete recovery tool or a boot-write command.
 
 Host scope: Windows was used for the initial USB/FEL/root workflow and offline
 Python tests; a Linux container built the pinned SPL and ran offline
@@ -17,8 +21,11 @@ checks. These are the host contexts tested, not a claim that the workflows are
 interchangeable across operating systems.
 
 Related: [ZC002 issue #38](https://github.com/wesbos/photo-frame-dashboard/issues/38).
-That owner reports another ZC002 with a similar missing authorization prompt;
-matching the model name does not establish matching boot bytes or board wiring.
+The SOMY / `DPF ZC002` owner in [PR #73](https://github.com/wesbos/photo-frame-dashboard/pull/73)
+reports the same `ZC002_20260313` build and the same 14,911,488-byte stock boot
+core hash. Their eMMC capacity and userdata layout differ from this unit;
+matching firmware does not establish interchangeable disk images, offsets or
+board wiring.
 This is different hardware from the Rockchip [Pastigio FRAME156](pastigio-frame156.md).
 
 ## Identity
@@ -44,6 +51,37 @@ Unique identifiers, host addresses, account information, ADB key material and
 vendor images are omitted. Stock firmware hashes below identify the tested
 public build; the patched candidate hash is retained privately because the
 candidate includes this owner's trusted public keys.
+
+## Prefer stock `su` after host-key authorization
+
+[mikestecker's report](https://github.com/wesbos/photo-frame-dashboard/pull/73)
+on a SOMY ZC002 independently verified that adding the host's ADB **public** key
+to `/data/misc/adb/adb_keys` authorizes the stock ADB daemon. A normal shell then
+reports UID 2000, while `adb shell su 0 id` reports UID 0. No `adbd` binary,
+boot-image or SELinux-policy change was needed on that unit. Its SystemUI package
+was present but disabled; the key method did not require enabling it.
+
+The key file's ownership, mode and SELinux label were matched to that unit's
+existing userdata metadata. This finding has not been re-tested against stock
+boot on the Pastigio unit recorded here. The boot patch below is a historical
+tested route, not evidence that those broader changes are required on this build.
+
+PR #73 also verified a full backup through the repository's existing read-only
+[Route U](allwinner-a33-mainline-uboot.md). That route remains untested on this
+Pastigio unit; the failed borrowed U-Boot attempts below used different binaries.
+
+The initially submitted key writer exposed the whole eMMC as a writable USB disk.
+The maintainer [requested a replacement](https://github.com/wesbos/photo-frame-dashboard/pull/73#issuecomment-6147848346)
+that keeps USB mass storage read-only and performs only planned writes through a
+generated U-Boot script: check payload CRCs, compare current storage against the
+owner's original bytes, write, then read back and compare. The existing read-only
+U-Boot build protects its USB disk interface; it still permits controlled internal
+`mmc write` commands. The public SPL reader in this report has no such write path.
+
+Re-derive any userdata patch from your own verified backup and exact partition
+table. The other unit's nine changed ranges and 7,680-byte total describe that
+owner's filesystem edit; they are not reusable offsets or payloads. This report
+does not provide a replacement userdata writer.
 
 ## What was tried before the successful route
 
@@ -97,8 +135,11 @@ it is a record of the tested combination, not a universal MMC2 fix.
 The reader reported exact block counts, capacity and errors; the host checked the
 returned bytes and confirmed FEL response after each successful transaction.
 Read buffers began as `0xCC` filler rather than silently accepting unread memory.
-The later writer required `CONFIG_SPL_MMC_WRITE=y`; without it, a write attempt
-returned zero blocks and was rejected rather than reported as successful.
+The original private writer required `CONFIG_SPL_MMC_WRITE=y`; without it, a write
+attempt returned zero blocks and was rejected. The public reader has had write
+and CRC-preflight operations removed and disables that option. It rejects any
+nonzero operation before MMC initialization. Its controller reset and pin
+configuration do not write storage sectors.
 
 ## Backup and boot structure
 
@@ -135,7 +176,10 @@ hardware restore has been performed. The boot-only byte rollback test is
 described below; restoring boot alone would not undo later app or
 `/system/build.prop` changes.
 
-## Boot ramdisk change and verification
+## Historical boot ramdisk change and verification
+
+This records what was done on this unit before the stock-`su` finding above.
+It is not the preferred starting point for another owner with matching firmware.
 
 The patch was prepared offline against the exact original boot bytes:
 
@@ -314,18 +358,23 @@ to expose port 5555 to the internet or a shared untrusted network.
 - The public SPL source has an invalid zeroed request by default. The read-only
   host tool prepares one bounded request after the owner supplies that unit's
   CID and capacity; it checks the result but has not been run on hardware with
-  the sanitized image. The SPL compiled from the pinned U-Boot commit in an
-  isolated, network-disabled container. Use on another frame remains unvalidated.
+  the sanitized image. The previous source compiled from the pinned U-Boot commit in
+  an isolated, network-disabled container; the revised reader still needs a full
+  SPL rebuild and hardware validation. Native host tests exercise its C request
+  handling, reads and rejected write operations using simulated MMC/MMIO, and the
+  build refuses an enabled SPL MMC write option or linked storage-write symbols.
+  Use on another frame remains unvalidated.
   No per-unit request, eMMC CID, generated SPL, candidate image, or keys are included.
 
 This report contributes the identity, failed-attempt boundary, working storage
 initialization, guarded boot changes and observed post-root behavior. It does not
 claim that copying another unit's offsets, binary or patched boot hash is safe.
 
-## Offline boot-candidate helper
+## Offline helper for the historical boot patch
 
 [`scripts/zc002-fel/prepare-root.py`](../scripts/zc002-fel/prepare-root.py) prepares
-the boot image candidate described above. It is an offline builder: it does not
+the historical boot image candidate described above. Check the stock-`su` route
+first; this candidate changes `adbd` and SELinux policy. It is an offline builder: it does not
 connect to a frame, read storage, or write/flash anything. It accepts only the
 verified original 16 MiB boot partition for this ZC002 build, checks the boot,
 `adbd` and original `sepolicy` hashes, and refuses unexpected header, ramdisk,

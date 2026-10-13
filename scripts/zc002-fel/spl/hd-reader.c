@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * ZC002 FEL-returning SPL storage probe.
+ * ZC002 FEL-returning, read-only SPL storage probe.
  *
  * The request below is deliberately invalid. A host must supply a request
  * bound to its own unit and rebuild the eGON checksum before use. Leaving the
@@ -32,6 +32,7 @@ struct hd_result {
 	u32 pin_samples[3];
 	u32 op;
 	u32 old_crc;
+	/* Retained for the version-3 result ABI; always zero in this reader. */
 	u32 input_crc;
 	u32 readback_crc;
 	u32 written;
@@ -132,7 +133,9 @@ void hd_storage_probe(void)
 	hz = hd_reader_request[5];
 	r->op = hd_reader_request[8];
 	r->requested = blocks;
-	if (r->dev != 1 || r->op > 2 || (r->op && blocks > 128) ||
+	/* Reject the former write/preflight operations before any MMC I/O. */
+	if (r->dev != 1 || r->op != 0 ||
+	    hd_reader_request[9] || hd_reader_request[10] ||
 	    !blocks || blocks > 2048 ||
 	    (hz != 400000 && hz != 12000000) ||
 	    (hz == 400000 && blocks > 8)) {
@@ -202,16 +205,6 @@ void hd_storage_probe(void)
 		HD_RETURN;
 	}
 
-	/*
-	 * Write and preflight requests stay fenced to the boot-header and ramdisk
-	 * regions validated by the original helper. Do not broaden these bounds.
-	 */
-	if (r->op && !((lba >= 172032 && lba + blocks <= 172034) ||
-		       (lba >= 191892 && lba + blocks <= 201156))) {
-		r->rc = -1101;
-		HD_RETURN;
-	}
-
 	cfg->f_max = hz;
 	rc = mmc_set_clock(m, hz, false);
 	r->clock = m->clock;
@@ -229,39 +222,5 @@ void hd_storage_probe(void)
 		HD_RETURN;
 
 	r->old_crc = hd_crc32((const unsigned char *)0x43001000, blocks * 512);
-	if (!r->op) {
-		hd_snapshot(r->regs_after);
-		return;
-	}
-
-	r->input_crc = hd_crc32((const unsigned char *)0x43110000, blocks * 512);
-	r->phase = 6;
-	if (r->old_crc != hd_reader_request[9] ||
-	    r->input_crc != hd_reader_request[10]) {
-		r->rc = -1102;
-		HD_RETURN;
-	}
-	if (r->op == 2) {
-		r->rc = 0;
-		HD_RETURN; /* CRC preflight only. */
-	}
-
-	r->phase = 7;
-	got = blk_dwrite(bd, lba, blocks, (const void *)0x43110000);
-	r->written = got;
-	if (got != blocks) {
-		r->rc = -1103;
-		HD_RETURN;
-	}
-
-	r->phase = 8;
-	got = blk_dread(bd, lba, blocks, (void *)0x43001000);
-	if (got != blocks) {
-		r->rc = -1104;
-		HD_RETURN;
-	}
-	r->readback_crc = hd_crc32((const unsigned char *)0x43001000, blocks * 512);
-	r->rc = (r->readback_crc == hd_reader_request[10]) ? 0 : -1105;
-	r->phase = 9;
 	hd_snapshot(r->regs_after);
 }
