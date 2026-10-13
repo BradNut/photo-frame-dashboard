@@ -36,25 +36,29 @@ override instead of the documented per-host proxy; the frame side is identical.
 
 ## Findings worth folding into the guides
 
-1. **A persistent Wi-Fi ADB property works on this firmware.**
-   `setprop persist.adb.tcp.port 5555` survives reboot: after every reboot the
-   frame listens on TCP 5555 as root with no key check, no boot patch and no
-   re-run of the vendor-channel route. (Caveat from the U-Boot notes still
-   applies: toggling Wi-Fi off/on kills the listener until the next boot.)
-   The same holds for USB: `setprop persist.sys.usb.config mass_storage,adb`
-   keeps USB ADB across reboots on this debuggable build.
+1. **Persistent ADB properties work on this firmware.** Both survived a reboot on this
+   `ro.debuggable=1` build, with no boot patch and no re-run of the vendor-channel route:
+   - USB: `setprop persist.sys.usb.config mass_storage,adb` keeps USB ADB. Prefer this one.
+     To turn it off: `setprop persist.sys.usb.config mass_storage`.
+   - Wi-Fi: `setprop persist.adb.tcp.port 5555`. **After every boot, port 5555 is root ADB with
+     no key check, open to the whole network.** Only use it on a network you control, and turn it
+     off with `setprop persist.adb.tcp.port ""` once USB ADB works. Toggling Wi-Fi off and on
+     kills the listener until the next boot.
+
+   Each is a write to `/data/property`, so ask the owner first. An AiMOR factory reset clears
+   both.
 2. **The "set a static IP" advice is not actionable on this unit.**
    Its Wi-Fi settings screen has no Modify/Advanced option, so no static IP can
    be set on the frame. A router DHCP reservation cannot work either: the
-   AIC8800 cycled through seven distinct MACs (all `88:00:33:77:xx:xx`) and just
-   as many DHCP addresses in one evening, one per Wi-Fi reconnect. Recommend
-   finding the frame by MAC prefix (`88:00:33:77`) in the ARP table plus a TCP
-   5555 probe and `getprop ro.serialno` confirmation, rather than a static IP.
+   AIC8800 cycled through seven distinct MACs and just as many DHCP addresses in
+   one evening, one per Wi-Fi reconnect. The first four bytes of the MAC stayed
+   the same. Find the frame by that prefix in your router's or computer's ARP
+   table, then confirm with a TCP 5555 probe and `getprop ro.serialno`, rather
+   than relying on a static IP.
 3. **USB-C to C carries nothing**, confirming the A-to-C rule: no power, no
    device. A USB-A port (via adapter on USB-C-only hosts) plus an A-to-C data
    cable enumerates `1f3a:1000` immediately.
-4. **Kiosk notes (local changes, not in this diff):** the repo kiosk has no
-   `CATEGORY_HOME` filter and no `BOOT_COMPLETED` receiver, so reboot lands on
-   an empty activity stack and HOME goes nowhere. Adding both fixed cold boot
-   to the dashboard with no touches. The Pastigio doc already records the HOME
-   filter as a local change; the boot receiver may be worth the same note.
+4. **Kiosk at boot:** a local build with a Home filter and a boot receiver
+   opened the dashboard on a cold boot with no touches. The repo's kiosk now
+   does this without a code change: enable it as Home with `--ez home true`
+   ([kiosk README](../dashboard/kiosk/README.md#start-at-boot)).
