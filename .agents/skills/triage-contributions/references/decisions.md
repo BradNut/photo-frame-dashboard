@@ -57,7 +57,8 @@ the date.
 
 - **The dashboard is a demo** for people to build on themselves. Don't add features to it
   (translations, integrations, new screens). Bug fixes and changes that help it run on the frames are
-  fine. Suggest a fork plus a Community Builds link instead. (2026-10-13: #34.)
+  fine. Docs for features the demo doesn't have are declined too. Suggest a fork plus a Community
+  Builds link instead. (2026-10-13: #34, #52, #53.)
 - **Private per-frame records:** yes, in the ignored `frames/` folder, as described in
   `docs/frame-records.md`. (2026-10-13: #47.)
 - **Self-hosted services** (hubs, admin pages, stored secrets) belong in their contributors' own
@@ -66,7 +67,5 @@ the date.
 
 ## Waiting for the owner (as of 2026-10-13)
 
-- #52 printing docs, #53 Wi-Fi kiosk update docs: document features the kiosk doesn't have.
-  Leaning no, but the owner decides.
 - Agent skill files from contributors (`skills/…`) were declined (#54, #55): out of scope, and they
   put instructions above the README's safety rules.
