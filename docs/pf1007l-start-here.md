@@ -21,6 +21,7 @@ Detailed guides behind this page:
 | [aimor-remote-root-shell.md](aimor-remote-root-shell.md) | **Read first.** The stock app gives the vendor server a root shell |
 | [pf1007l-20260410-network-adb.md](pf1007l-20260410-network-adb.md) | **April firmware only:** temporary Wi-Fi root ADB through the vendor connection, without a boot write |
 | [pf1007l-sector-edit-sdcard.md](pf1007l-sector-edit-sdcard.md) | **April firmware only:** root ADB over USB with a guarded one-sector `build.prop` edit from the SD card, check-only run first. Also: root ADB in stock recovery during a factory reset |
+| [pf1007l-macos-20260529-recovery-boot-write.md](pf1007l-macos-20260529-recovery-boot-write.md) | **May `20260529`, one unit:** the Route U boot patch written over USB in stock recovery's root-ADB window (factory reset), no SD card |
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
@@ -42,6 +43,8 @@ differ in eMMC size and in whether ADB ships on.
 | `OS-PF1009.0.20260417` | units E and F ([report](pf1007l-pf1009-20260417.md)) | 30,777,344 | `3f0dc9d5` | No | Route U with [U-Boot fixes](#u-boot-settings-that-fixed-ums-problems) |
 | `FL-AIMOR-OS.0.20260519` | #24, #36, #62, [Windows report](pf1007l-windows-wsl-20260519-report.md) | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route U patch with SD-carried payloads and a 12 MHz FEL U-Boot; Route S only by editing its hash guard (do not) |
 | `V10-1680.0.20260529` | #8, #16, [#28](pf1007l-macos-20260529-report.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16 and #28 | Nothing needed (#8); Route U |
+| `FL-AIMOR-OS.0.20260519` | #24, #36 | 30,777,344 | `9a6e2456`, **different ramdisk slot** | No | Route U with U-Boot fixes; Route S only by editing its hash guard (do not) |
+| `V10-1680.0.20260529` | #8, #16, [#28](pf1007l-macos-20260529-report.md), [recovery write](pf1007l-macos-20260529-recovery-boot-write.md) | 30,777,344 or 30,535,680 | `6c118dc1` | **On** in #8; off in #16, #28 and the recovery-write unit | Nothing needed (#8); Route U; Route U patch written through recovery ADB, no SD card (one unit) |
 
 Numbers are GitHub issues and pull requests. Units A to C are from the first three guides:
 [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md) (A, DC jack and Linux, rooted with a custom
@@ -411,7 +414,7 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 ## For agents
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
-  The firmware table was last updated on 2026-10-12. A newer report may cover your unit.
+  The firmware table was last updated on 2026-10-13. A newer report may cover your unit.
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
