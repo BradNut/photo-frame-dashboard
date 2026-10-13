@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Set up a BIUFRAME 10.1" frame (USB "Synergy 10X1", RK3126, Android 6.0.1) as a browser device.
-# Guide: docs/biuframe-setup-guide.md
+# Set up a BIUFRAME 10.1" frame (USB "Synergy 10X1", RK3126, Android 6.0.1) or an
+# Akimart ZN-DP1002 frame (RK3126, Android 6.0.1) as a browser device.
+# Guides: docs/biuframe-setup-guide.md and docs/akimart-setup-guide.md
 #
 # Usage: scripts/biuframe-setup.sh <command>
 #   check     Confirm the frame matches the known unit. Changes nothing.
@@ -17,13 +18,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CACHE="${BIUFRAME_CACHE:-$ROOT/diagnostics/biuframe-downloads}"
 DEV_TMP=/data/local/tmp/biuframe
 
-EXPECT_FINGERPRINT="rockchip/rk312x/rk312x:6.0.1/MXC89K/user.thzy.20240919.143320:user/release-keys"
-EXPECT_MODEL="10X1"
-EXPECT_MANUFACTURER="Synergy"
-
-# Loader sector 0 is eMMC sector 8192; userdata starts at loader sector 0x3B4000.
-BACKUP_SECTORS=$((8192 + 0x3B4000))
-
 FIREFOX_URL="https://archive.mozilla.org/pub/fenix/releases/143.0.4/android/fenix-143.0.4-android-armeabi-v7a/fenix-143.0.4.multi.android-armeabi-v7a.apk"
 FIREFOX_SHA256="af560738627d4efc9ace75e708fc48aad6a24c78ef43a89daca27e16ff3829f8"
 LAUNCHER_URL="https://f-droid.org/repo/amirz.rootless.nexuslauncher_30911.apk"
@@ -38,10 +32,41 @@ ISRG_X1_FP="96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A
 ISRG_X2_URL="https://letsencrypt.org/certs/isrg-root-x2.pem"
 ISRG_X2_FP="69:72:9B:8E:15:A8:6E:FC:17:7A:57:AF:B7:17:1D:FC:64:AD:D2:8C:2F:CA:8C:F1:50:7E:34:45:3C:CB:14:70"
 
-VENDOR_DISABLE=(com.shenju.biuframe com.adups.fota android.rockchip.update.service
-  com.cghs.stresstest com.DeviceTest com.android.rk com.android.rk.mediafloat)
-# Persistent apps that Android 6 still starts at boot when only disabled.
-VENDOR_HIDE=(com.adups.fota com.cghs.stresstest)
+# --- DEVICE PROFILES ---
+PROFILE=""
+
+load_profile() {
+  local fp
+  fp="$(sh_dev getprop ro.build.fingerprint)"
+  case "$fp" in
+    "rockchip/rk312x/rk312x:6.0.1/MXC89K/user.thzy.20240919.143320:user/release-keys")
+      PROFILE="BIUFRAME"
+      EXPECT_MODEL="10X1"
+      EXPECT_MANUFACTURER="Synergy"
+      EXPECT_WIFI_DRIVER="^ssv6x5x"
+      EXPECT_BOOT_SECTOR="90112"
+      EXPECT_NO_PROCESSES="adups|stresstest|biuframe|rockchip.update|DeviceTest|com.android.rk"
+      VENDOR_DISABLE=(com.shenju.biuframe com.adups.fota android.rockchip.update.service com.cghs.stresstest com.DeviceTest com.android.rk com.android.rk.mediafloat)
+      VENDOR_HIDE=(com.adups.fota com.cghs.stresstest)
+      ;;
+      
+    "rockchip/rk312x/rk312x:6.0.1/MXC89K/user.cdm.20240816.163346:user/release-keys")
+      PROFILE="AKIMART"
+      EXPECT_MODEL="ZN-DP1002"
+      EXPECT_MANUFACTURER="rockchip"
+      EXPECT_WIFI_DRIVER=""
+      EXPECT_BOOT_SECTOR="" # Validated purely dynamically via sysfs
+      EXPECT_NO_PROCESSES="frameo|mxota|cldevicetest|rockchip.update"
+      VENDOR_DISABLE=(net.frameo.frame com.muxintu.app.mxota com.szclink.app.cldevicetest android.rockchip.update.service)
+      VENDOR_HIDE=(com.muxintu.app.mxota com.szclink.app.cldevicetest)
+      ;;
+      
+    *)
+      die "Unknown or unsupported build fingerprint: $fp"
+      ;;
+  esac
+}
+# -----------------------
 
 say() { printf '\n==> %s\n' "$*"; }
 ok() { printf '    ok: %s\n' "$*"; }
@@ -55,8 +80,7 @@ has_pkg() { dev_has "^package:$1\$" pm list packages; }
 
 # Run a script on the frame as root. The script is pushed as a file to avoid quoting problems.
 root_script() {
-  local file
-  file="$(mktemp)"
+  local file="$(mktemp)"
   cat > "$file"
   adb push "$file" "$DEV_TMP/step.sh" >/dev/null
   rm -f "$file"
@@ -83,59 +107,108 @@ wait_boot() {
   die "frame did not finish booting"
 }
 
+# Dynamically lookup partition start/size from sysfs by its uevent PARTNAME
+get_part_info() {
+  local name=$1
+  local pdirs="$(sh_dev "ls -d /sys/block/mmcblk0/mmcblk0p* 2>/dev/null")"
+  for pdir in $pdirs; do
+    if dev_has "PARTNAME=$name\$" cat "$pdir/uevent" 2>/dev/null; then
+      local pstart="$(sh_dev "cat $pdir/start")"
+      local psize="$(sh_dev "cat $pdir/size")"
+      if [[ "$pstart" =~ ^[0-9]+$ ]] && [[ "$psize" =~ ^[0-9]+$ ]]; then
+        echo "$pstart $psize"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
 cmd_check() {
-  say "Checking the frame matches the known unit"
+  say "Checking the frame matches a known unit"
   command -v adb >/dev/null || die "adb not found (brew install android-platform-tools)"
-  local state
-  state="$(adb get-state 2>/dev/null || true)"
+  local state="$(adb get-state 2>/dev/null || true)"
   [ "$state" = device ] || die "no authorized ADB device (state: ${state:-none}). Accept the prompt on the frame."
-  [ "$(sh_dev getprop ro.build.fingerprint)" = "$EXPECT_FINGERPRINT" ] || die "build fingerprint differs: $(sh_dev getprop ro.build.fingerprint)"
-  ok "fingerprint $EXPECT_FINGERPRINT"
+  
+  load_profile
+  ok "fingerprint matched ($PROFILE profile)"
+  
   [ "$(sh_dev getprop ro.product.model)" = "$EXPECT_MODEL" ] || die "model is not $EXPECT_MODEL"
   [ "$(sh_dev getprop ro.product.manufacturer)" = "$EXPECT_MANUFACTURER" ] || die "manufacturer is not $EXPECT_MANUFACTURER"
   ok "model $EXPECT_MANUFACTURER $EXPECT_MODEL"
+  
   dev_has 'Rockchip RK3126' cat /proc/cpuinfo || die "CPU is not Rockchip RK3126"
   ok "RK3126"
-  dev_has '^ssv6x5x' lsmod || die "Wi-Fi driver ssv6x5x not loaded"
-  ok "Wi-Fi driver ssv6x5x"
+  
+  if [ -n "$EXPECT_WIFI_DRIVER" ]; then
+    dev_has "$EXPECT_WIFI_DRIVER" lsmod || die "Wi-Fi driver $EXPECT_WIFI_DRIVER not loaded"
+    ok "Wi-Fi driver loaded"
+  fi
+  
   [ "$(sh_dev "su -c id" | cut -d' ' -f1)" = "uid=0(root)" ] || die "su did not give root"
   ok "su gives root"
-  [ "$(sh_dev "su -c 'cat /sys/block/mmcblk0/mmcblk0p5/start'")" = 90112 ] || die "boot partition is not at eMMC sector 90112"
-  ok "partition layout (boot at eMMC sector 90112)"
+  
+  local b_info="$(get_part_info boot)" || die "boot partition not found in sysfs"
+  if [ -n "$EXPECT_BOOT_SECTOR" ]; then
+    [ "${b_info% *}" = "$EXPECT_BOOT_SECTOR" ] || die "boot partition is not at eMMC sector $EXPECT_BOOT_SECTOR"
+  fi
+  ok "partition layout securely readable via sysfs"
 }
 
 cmd_backup() {
   cmd_check
-  local serial dir out
-  serial="$(sh_dev getprop ro.serialno)"
-  dir="$ROOT/backups/$serial"
-  out="$dir/emmc-0-$BACKUP_SECTORS.img.gz"
+  
+  local ud_info backup_sectors
+  ud_info="$(get_part_info userdata)" || die "Could not find userdata partition in sysfs"
+  backup_sectors="${ud_info% *}"
+  [ "$backup_sectors" -gt 0 ] || die "Invalid userdata start sector"
+  
+  local serial="$(sh_dev getprop ro.serialno)"
+  local dir="$ROOT/backups/$serial"
+  local out="$dir/emmc-0-$backup_sectors.img.gz"
+  
   mkdir -p "$dir"
   [ -e "$out" ] && die "$out already exists"
-  say "Reading $BACKUP_SECTORS sectors ($((BACKUP_SECTORS / 2048)) MiB) over ADB"
-  adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 count=$BACKUP_SECTORS 2>/dev/null'" \
+  say "Reading $backup_sectors sectors ($((backup_sectors / 2048)) MiB) over ADB"
+  
+  adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 count=$backup_sectors 2>/dev/null'" \
     | tee >(shasum -a 256 | cut -d' ' -f1 > "$out.sha256.raw") | gzip -1 > "$out.partial"
   mv "$out.partial" "$out"
-  local size raw
-  size="$(gunzip -c "$out" | wc -c | tr -d ' ')"
-  [ "$size" = $((BACKUP_SECTORS * 512)) ] || die "backup is $size bytes, expected $((BACKUP_SECTORS * 512))"
-  raw="$(cat "$out.sha256.raw")"
+  
+  local size="$(gunzip -c "$out" | wc -c | tr -d ' ')"
+  [ "$size" = $((backup_sectors * 512)) ] || die "backup is $size bytes, expected $((backup_sectors * 512))"
+  local raw="$(cat "$out.sha256.raw")"
   [ "$(gunzip -c "$out" | shasum -a 256 | cut -d' ' -f1)" = "$raw" ] || die "gzip readback does not match stream hash"
+  
   ok "$size bytes, SHA-256 $raw"
   echo "$raw" > "$out.sha256"
   rm -f "$out.sha256.raw"
+  
   cmd_verify_backup "$out"
   ok "backup saved to $out"
 }
 
-# Re-read boot, recovery and the start of system from the frame and compare with a backup image.
 cmd_verify_backup() {
+  [ -n "$PROFILE" ] || load_profile
   local out=${1:?usage: verify-backup <backup.img.gz>} name start count a b
   [ -f "$out" ] || die "$out not found"
   say "Re-reading boot, recovery and 16 MiB of system data to compare with $(basename "$out")"
-  # system data at loader 0xC0000; the start of system holds the ext4 superblock and journal, which
+  
+  local b_info r_info s_info b_start b_size r_start r_size s_start
+  b_info="$(get_part_info boot)" || die "boot partition not found"
+  r_info="$(get_part_info recovery)" || die "recovery partition not found"
+  s_info="$(get_part_info system)" || die "system partition not found"
+  
+  b_start="${b_info% *}"; b_size="${b_info#* }"
+  r_start="${r_info% *}"; r_size="${r_info#* }"
+  s_start="${s_info% *}"
+  
+  # system data; the start of system holds the ext4 superblock and journal, which
   # change while mounted (SuperSU remounts /system several times a minute).
-  for region in "boot 90112 24576" "recovery 114688 65536" "system 794624 32768"; do
+  # Skip 180224 sectors (~90 MiB) to bypass dynamic areas securely across variants.
+  local s_check_start=$((s_start + 180224))
+  
+  for region in "boot $b_start $b_size" "recovery $r_start $r_size" "system $s_check_start 32768"; do
     read -r name start count <<<"$region"
     a="$(adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 skip=$start count=$count 2>/dev/null'" | shasum -a 256 | cut -d' ' -f1)"
     # dd stops reading early; ignore gunzip's broken pipe.
@@ -286,6 +359,7 @@ EOF
 }
 
 cmd_verify() {
+  [ -n "$PROFILE" ] || load_profile
   say "Verifying end state"
   [ "$(sh_dev "dumpsys package com.android.webview" | grep -m1 versionName | sed 's/.*=//')" = "$WEBVIEW_VERSION" ] || die "WebView is not $WEBVIEW_VERSION"
   ok "WebView $WEBVIEW_VERSION"
@@ -295,10 +369,12 @@ cmd_verify() {
   ok "swap 512 MB after boot"
   dev_has 'Window\{.* NavigationBar\}' dumpsys window windows || die "no navigation bar window"
   ok "navigation bar present"
+  
   local running
-  running="$(sh_dev ps | grep -E 'adups|stresstest|biuframe|rockchip.update|DeviceTest|com.android.rk' || true)"
+  running="$(sh_dev ps | grep -E "$EXPECT_NO_PROCESSES" || true)"
   [ -z "$running" ] || die "vendor processes still running: $running"
   ok "no vendor processes"
+  
   sh_dev "ls /system/etc/security/cacerts/6187b673.0 /system/etc/security/cacerts/8794b4e3.0" >/dev/null || die "Let's Encrypt roots missing"
   ok "Let's Encrypt roots present"
 }
@@ -327,5 +403,5 @@ case "${1:-}" in
   verify-backup) cmd_verify_backup "${2:-}" ;;
   apply) cmd_apply ;;
   verify) cmd_verify ;;
-  *) sed -n '2,12p' "$0"; exit 1 ;;
+  *) sed -n '6,12p' "$0"; exit 1 ;;
 esac

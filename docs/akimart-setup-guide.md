@@ -8,10 +8,9 @@ a normal launcher, WebView 106, a larger swap, and a navigation bar, and it swit
 > This guide is strictly for the **Rockchip RK3126** / **Android 6.0.1** version (eMMC storage). 
 > If `adb shell getprop ro.build.fingerprint` reveals `rk3326_go` / Android 8.1 / `rknand0`, **DO NOT USE THIS SCRIPT**.
 
-This specific RK3126 frame is functionally identical to the BIUFRAME. The major difference is that its partition 
-table does not map to `/dev/block/by-name/`, requiring dynamic `sysfs` lookups for safe modification.
+This specific RK3126 frame is functionally identical to the BIUFRAME, so they share the exact same setup script. The major difference is that its partition table does not map to `/dev/block/by-name/`, requiring dynamic `sysfs` lookups for safe modification.
 
-Automation: [`scripts/akimart-setup.sh`](../scripts/akimart-setup.sh).
+Automation: [`scripts/biuframe-setup.sh`](../scripts/biuframe-setup.sh).
 
 ## Read this first
 
@@ -32,7 +31,7 @@ This frame cannot be made secure. Know these limits before you use it:
 
 Connect your frame to the PC and run:
 ```sh
-scripts/akimart-setup.sh check
+scripts/biuframe-setup.sh check
 ```
 
 This changes nothing. Every line must be `ok`:
@@ -40,7 +39,7 @@ This changes nothing. Every line must be `ok`:
 | Check | Expected |
 | --- | --- |
 | Build fingerprint | `rockchip/rk312x/rk312x:6.0.1/MXC89K/user.cdm.20240816.163346:user/release-keys` |
-| Model | `ZN-DP1002` |
+| Model | `ZN-DP1002` (AKIMART profile) |
 | CPU | `Rockchip RK3126` |
 | Root | `su gives root` |
 | Partitions | Layout bounds securely readable dynamically via `sysfs` uevents |
@@ -50,16 +49,16 @@ This changes nothing. Every line must be `ok`:
 ## Step 2: Back up the firmware
 
 ```sh
-scripts/akimart-setup.sh backup
+scripts/biuframe-setup.sh backup
 ```
 
-- Reads everything on the eMMC prior to the `userdata` partition over ADB with root. 
+- Reads everything on the eMMC prior to the `userdata` partition over ADB with root. It will dynamically calculate the sector boundary.
 - Automatically verifies exact bytes and hashes against a second pass to ensure a flawless recovery image.
 
 ## Step 3: Apply the setup
 
 ```sh
-scripts/akimart-setup.sh apply
+scripts/biuframe-setup.sh apply
 ```
 
 Each step verifies its own execution natively against the Android system before proceeding. At the end, the frame reboots once and the script runs a final verification check.
