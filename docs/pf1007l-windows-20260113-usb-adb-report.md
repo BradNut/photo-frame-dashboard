@@ -96,6 +96,8 @@ system, and recovery images. Each 128 MiB segment was read twice through separat
 uncached Windows handles, checked for `0xCC` filler, and verified after saving.
 The complete saved prefix was hashed, compressed, and verified by decompressing
 it. Copies were retained on two host drives.
+It is not a full-device backup, so it does not meet the repository's
+[backup rule](../README.md#rules-we-learned-the-hard-way).
 
 This was an owner-approved **firmware-prefix backup**, not a full-device backup:
 userdata, the remaining eMMC, and separate hardware boot areas were not captured.

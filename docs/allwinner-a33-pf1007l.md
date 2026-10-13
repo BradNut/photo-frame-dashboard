@@ -22,27 +22,6 @@ Follow the [repository's backup, approval and privacy rules](../README.md#rules-
 Do not run `scripts/biuframe-setup.sh apply`, `rkdeveloptool`, Rockchip loaders,
 or Rockchip partition offsets on an Allwinner unit.
 
-## Native Linux / Omarchy SD build
-
-Paolo Rosson ([`@redp314`](https://x.com/redp314)) built a separate, experimental
-Arch Linux ARM and Omarchy path for the Humblestead HM-PF1007-BK / EFERCRO
-PF1007L variant. It boots from microSD and deliberately leaves the original
-eMMC untouched; it is independent of this guide's Android recovery and boot
-patch routes.
-
-The tested unit has an Allwinner A33, 1 GB RAM, Mali-400 graphics, an 800×1280
-DSI panel, Silead touch, and AIC8800 Wi-Fi/Bluetooth. Its working features are
-Hyprland/Omarchy, display and touch rotation, an on-screen keyboard, Wi-Fi,
-and Bluetooth LE mouse/keyboard support. Audio, accelerometer-based rotation,
-and automatic ambient-light dimming are still being brought up. The internal
-radio is 2.4 GHz only.
-
-The reproducible SD-image builder and frame-specific installer are at
-[`pangoleen/ormarch-picture-frame`](https://github.com/pangoleen/ormarch-picture-frame).
-They are for this exact PF1007L hardware family: start with the device checks
-and keep the original card and Android firmware backup before attempting the
-Linux route.
-
 ## 1. Identify the board and firmware
 
 Record Settings → About before changing anything. On this unit:
@@ -535,3 +514,27 @@ measure again; do not assume the Rockchip swap prescription applies.
 
 This setup does not update Android, remove the root exposure, configure automatic
 startup, or integrate real calendar data. Those are separate tasks.
+
+## Native Linux / Omarchy SD build
+
+Paolo Rosson ([`@redp314`](https://x.com/redp314)) built a separate, experimental
+Arch Linux ARM and Omarchy path for the Humblestead HM-PF1007-BK / EFERCRO
+PF1007L variant. It boots from microSD and deliberately leaves the original
+eMMC untouched; it is independent of this guide's Android recovery and boot
+patch routes.
+
+The tested unit has an Allwinner A33, 1 GB RAM, Mali-400 graphics, an 800×1280
+DSI panel, Silead touch, and AIC8800 Wi-Fi/Bluetooth. Its working features are
+Hyprland/Omarchy, display and touch rotation, an on-screen keyboard, Wi-Fi,
+and Bluetooth LE mouse/keyboard support. Audio, accelerometer-based rotation,
+and automatic ambient-light dimming are still being brought up. The internal
+radio is 2.4 GHz only.
+
+The SD-image builder and frame-specific installer are at
+[`pangoleen/ormarch-picture-frame`](https://github.com/pangoleen/ormarch-picture-frame/tree/a3d83874aabcae655f245973e6408937a591e39f)
+(linked at the commit we looked at). **It is third-party and has not been reviewed here.** The image
+enables passwordless `sudo` and an auto-login console on USB serial, so anyone with the frame in
+hand has root.
+They are for this exact PF1007L hardware family: start with the device checks
+and keep the original card and Android firmware backup before attempting the
+Linux route.

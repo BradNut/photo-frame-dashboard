@@ -81,5 +81,6 @@ error look the same from the host; the status file made the difference.
 ## Not done
 
 - No full eMMC backup: system, recovery and userdata were not captured before the write. The patch
-  touches only p6, which was backed up in full.
+  touches only p6, which was backed up in full. This does not meet the repository's
+  [backup rule](../README.md#rules-we-learned-the-hard-way); take a full backup if you can.
 - The 12 MHz U-Boot was not tried with `ums`.
