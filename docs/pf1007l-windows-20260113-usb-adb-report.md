@@ -180,6 +180,12 @@ bulk UMS read. The descriptor was changed in RAM only; no `saveenv` was used.
 The returned digest was the edited-sector hash above. This was a storage
 readback check, not an inference from a successful FEL upload.
 
+To undo this particular write, the retained restore script reverses the payloads:
+it requires the current sector to match the edited bytes, writes the original
+512 bytes, and requires the readback to match the original `f78d2d4e…` digest.
+Keep the verified backup and FEL card available: returning to `mass_storage`
+can remove USB ADB on the next normal boot. This undo procedure was **not tested**.
+
 ## Verification after Android boot
 
 Power was disconnected, the FEL microSD was removed, and Android was booted again
