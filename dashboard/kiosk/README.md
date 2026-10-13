@@ -5,6 +5,7 @@ Hold two fingers still on the dashboard for 1.5 seconds to open the native contr
 - **Open launcher** opens another installed Home app, such as Rootless Launcher.
   If none is available, it opens Android Settings.
 - **Android settings** opens the device's Settings app.
+- **Wi-Fi settings** opens Android's Wi-Fi list directly.
 - **Reload dashboard** reloads the current URL.
 - **Back to dashboard** dismisses the controls.
 
@@ -34,6 +35,22 @@ adb shell am start -n com.wesbos.homehq/.MainActivity
 
 This service supplies navigation controls; it does not change the default Home
 app or automatically launch the dashboard at boot.
+
+On a rooted frame, [kioskwatch](../../scripts/kioskwatch/README.md) is a fallback
+that needs no tap: after 2 minutes with no touches in another app, it brings
+Home HQ back.
+
+## When the dashboard can't load
+
+If the dashboard fails to load, Home HQ covers WebView's error page with its own
+screen. The error page would print the full URL, including any token in it.
+
+- **No Wi-Fi:** "Connect to Wi-Fi?" with an **Open Wi-Fi settings** button.
+- **Wi-Fi is up but the dashboard is unreachable:** "Can't reach the dashboard".
+
+Home HQ keeps retrying every 5 seconds, and the screen disappears once a load
+succeeds. Wi-Fi settings open only when tapped, because Wi-Fi is often still
+connecting for the first minute after boot.
 
 ## Build and install
 
