@@ -16,8 +16,10 @@ Follow the [repository's backup, approval and privacy rules](../README.md#rules-
 and read [the AiMOR remote root shell notes](aimor-remote-root-shell.md) first. Everything
 below is from one unit. Check each value on your own unit; stop at the first mismatch.
 
-Scripts are in [`scripts/a33-uboot/`](../scripts/a33-uboot). Host-specific scripts end in
-`-macos.py`; on Linux use the guide's `lsblk`/`dd` equivalents. Windows has its own
+Scripts are in [`scripts/a33-uboot/`](../scripts/a33-uboot).
+`emmc-macos.py` also supports Linux: use the bare whole-disk name (for example `sdb`,
+not `/dev/sdb`) and the exact byte count from `lsblk -b`, keeping all its identity,
+read-only and mount checks. Windows has its own
 `-windows.ps1` scripts, see [section 9](#9-windows-host-wsl2--usbipd).
 
 A later [May 2026 macOS unit report](pf1007l-macos-20260529-report.md) reached root
@@ -25,6 +27,11 @@ with this route, after locally correcting U-Boot's START STOP handling and addin
 write/readback error guards to the generated scripts. Those changes are **not** in
 the scripts at the repository revision cited in that report. Read its checks and
 limitations before treating the commands below as a tested path for that firmware.
+
+A [May `20260519` Linux report](pf1007l-20260519-linux-report.md) completed a full
+user-area backup and post-write comparison with 4-bit / 12 MHz eMMC, a low-power
+U-Boot and the START STOP correction. Its source patch is opt-in; the report
+records a build-helper SPL-padding limitation, not a change to the default build.
 
 ## 1. Get USB data on the USB-C-only unit
 
