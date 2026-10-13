@@ -6,22 +6,34 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 /**
  * Full-screen kiosk WebView for the Home HQ wall tablet.
  * - Immersive mode hides the status + navigation bars (true 1280x800).
- * - Controls: hold two fingers still on the screen for 1.5s for launcher/settings/reload.
+ * - Controls: hold two fingers still on the screen for 1.5s for launcher/settings/Wi-Fi/reload.
+ * - Offline: a failed page load shows a native screen instead of WebView's error page (which
+ *   prints the full URL, including any token in it). With no Wi-Fi it offers Wi-Fi settings.
  * - Remote debugging is OFF unless launched with the debug extra (every app on this device
  *   gets root, so the devtools socket should only exist while actively debugging):
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
@@ -47,6 +59,9 @@ public class MainActivity extends Activity {
   private final float[] exitY = new float[2];
   private boolean exitArmed;
   private String retryUrl;
+  private boolean pageFailed;
+  private LinearLayout offline;
+  private TextView offlineTitle, offlineText;
 
   private final Runnable retry = new Runnable() {
     @Override
@@ -62,10 +77,11 @@ public class MainActivity extends Activity {
       Log.i(TAG, "Two-finger hold: opening controls");
       new AlertDialog.Builder(MainActivity.this)
           .setTitle("Home HQ")
-          .setItems(new String[] {"Open launcher", "Android settings", "Reload dashboard"},
+          .setItems(new String[] {"Open launcher", "Android settings", "Wi-Fi settings", "Reload dashboard"},
               (dialog, which) -> {
                 if (which == 0) openLauncher();
                 else if (which == 1) startActivity(new Intent(Settings.ACTION_SETTINGS));
+                else if (which == 2) openWifiSettings();
                 else web.reload();
               })
           .setNegativeButton("Back to dashboard", null).show();
@@ -88,17 +104,33 @@ public class MainActivity extends Activity {
     s.setMediaPlaybackRequiresUserGesture(false);
     // Keep navigation inside the kiosk. When the kiosk starts at boot before Wi-Fi is up, the
     // first load fails and would stay on the error page, so retry failed main-frame loads.
+    // The offline screen covers WebView's error page until a load succeeds.
     web.setWebViewClient(new WebViewClient() {
+      @Override
+      public void onPageStarted(WebView view, String url, Bitmap icon) {
+        pageFailed = false;
+      }
+
+      @Override
+      public void onPageFinished(WebView view, String url) {
+        if (!pageFailed) offline.setVisibility(View.GONE);
+      }
+
       @Override
       @SuppressWarnings("deprecation")
       public void onReceivedError(WebView view, int code, String desc, String failingUrl) {
         Log.w(TAG, "Load failed (" + desc + "), retrying in " + RETRY_MS + " ms");
+        pageFailed = true;
+        showOffline();
         retryUrl = failingUrl;
         handler.removeCallbacks(retry);
         handler.postDelayed(retry, RETRY_MS);
       }
     });
-    setContentView(web);
+    FrameLayout root = new FrameLayout(this);
+    root.addView(web);
+    root.addView(buildOffline());
+    setContentView(root);
 
     String url = urlFrom(getIntent());
     web.loadUrl(url != null ? url : savedUrl());
@@ -141,6 +173,68 @@ public class MainActivity extends Activity {
 
   private String savedUrl() {
     return getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_URL, DEFAULT_URL);
+  }
+
+  private int dp(float v) {
+    return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics());
+  }
+
+  private View buildOffline() {
+    offline = new LinearLayout(this);
+    offline.setOrientation(LinearLayout.VERTICAL);
+    offline.setGravity(Gravity.CENTER);
+    offline.setBackgroundColor(Color.rgb(17, 17, 17));
+    offline.setVisibility(View.GONE);
+    offline.setClickable(true); // keep taps off the error page underneath
+
+    offlineTitle = new TextView(this);
+    offlineTitle.setTextColor(Color.WHITE);
+    offlineTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 40);
+    offlineTitle.setGravity(Gravity.CENTER);
+    offline.addView(offlineTitle);
+
+    offlineText = new TextView(this);
+    offlineText.setTextColor(Color.rgb(170, 170, 170));
+    offlineText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+    offlineText.setGravity(Gravity.CENTER);
+    offlineText.setPadding(dp(24), dp(12), dp(24), dp(28));
+    offline.addView(offlineText);
+
+    Button wifi = new Button(this);
+    wifi.setText("Open Wi-Fi settings");
+    wifi.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+    wifi.setPadding(dp(32), dp(16), dp(32), dp(16));
+    wifi.setOnClickListener(v -> openWifiSettings());
+    offline.addView(wifi, new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    return offline;
+  }
+
+  private boolean wifiConnected() {
+    ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+    @SuppressWarnings("deprecation")
+    NetworkInfo n = cm != null ? cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI) : null;
+    return n != null && n.isConnected();
+  }
+
+  private void showOffline() {
+    if (wifiConnected()) {
+      offlineTitle.setText("Can't reach the dashboard");
+      offlineText.setText("Wi-Fi is connected. Retrying every few seconds.");
+    } else {
+      offlineTitle.setText("Connect to Wi-Fi?");
+      offlineText.setText("The frame isn't on Wi-Fi. The dashboard comes back by itself once it is.");
+    }
+    offline.setVisibility(View.VISIBLE);
+  }
+
+  private void openWifiSettings() {
+    try {
+      startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+    } catch (Exception e) {
+      Log.w(TAG, "No Wi-Fi settings screen, opening Settings", e);
+      startActivity(new Intent(Settings.ACTION_SETTINGS));
+    }
   }
 
   private void openLauncher() {
