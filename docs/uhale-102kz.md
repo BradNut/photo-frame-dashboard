@@ -66,8 +66,8 @@ rkdeveloptool rl 0x14000 0x7000 boot-stock.img     # must start with ANDROID!
 ```
 
 The kernel command line on this unit puts `boot` at loader LBA `0x14000`, `0x7000` sectors
-long. Our first backup read only `0x6000` sectors. That covered the whole Android image, but
-read the full partition. Check the offsets against your own unit (see the partition table
+long. Our first backup read only `0x6000` sectors. That covered the whole Android image, but read
+the full `0x7000` sectors anyway. Check the offsets against your own unit (see the partition table
 below) before you trust them.
 
 ### 3. The boot image, and what was changed
@@ -95,9 +95,14 @@ tested on this unit. If you repeat this, try `/adb_keys` alone first.
 
 ### 4. Write, read back, reboot
 
+**Before writing,** check that your backup is the stock image this patch was made from: its size is
+exactly `0x7000` sectors and its SHA-256 matches the stock boot hash recorded above. Stop if it
+doesn't. Then:
+
 ```sh
 rkdeveloptool wl 0x14000 boot-patched.img
-rkdeveloptool rl 0x14000 0x7000 readback.img       # compare with what you wrote
+rkdeveloptool rl 0x14000 0x7000 readback.img
+cmp readback.img boot-patched.img && echo "readback matches"   # stop here if this fails
 rkdeveloptool rd
 ```
 
@@ -146,7 +151,8 @@ From the kernel command line (`mtdparts=rk29xxnand:...`). Offsets are loader LBA
 | userdata | `0x2B5000` | rest of the eMMC, about 27.8 GB |
 
 Every partition except userdata was backed up, and each image matched an MD5 taken on the
-device. `/system` restores with one command: `rkdeveloptool wl 0x95000 system.img`.
+device. `/system` restores with one command, after checking `system.img` against its recorded MD5:
+`rkdeveloptool wl 0x95000 system.img`.
 
 ## `daemonsu` is what remounts `/system`
 

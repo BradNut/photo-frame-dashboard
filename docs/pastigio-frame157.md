@@ -53,6 +53,12 @@ results distinguish Loader entry from a blank screen during ordinary startup.
 
 ## Verified backup and ADB authorization
 
+> **This is a record of one unit, not a step-by-step procedure.** The patch and write tooling used
+> for the userdata `adb_keys` write is not in this repo, and `xrock` was not pinned to a release.
+> Before any flash write, try the simpler routes other Frameo owners used: accept Frameo's own ADB
+> warning on screen ([FRAME156](pastigio-frame156.md)), and toggle ADB Access off and on with USB
+> connected (see the Runxion row in the [device index](devices.md)).
+
 ### Reader needed for the full backup
 
 Stock Loader reads returned `0xCC` filler at and beyond sector `0x10000`

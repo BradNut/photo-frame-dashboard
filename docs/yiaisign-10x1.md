@@ -117,10 +117,17 @@ They copy files and change packages and do not depend on partition offsets. They
 at a time, from bash (macOS's `/bin/bash` 3.2 cannot `source <(...)`, so use a file). The steps
 ran through a small wrapper doing the same thing; this snippet was not re-run exactly as written:
 
+This skips the script's `check`, so the block checks the identity itself and stops unless this is
+the YIAISIGN build documented here.
+
 ```sh
-sed '/^case /,$d' scripts/biuframe-setup.sh > /tmp/biuframe-lib.sh
+mkdir -p diagnostics
+sed '/^case /,$d' scripts/biuframe-setup.sh > diagnostics/biuframe-lib.sh
 export BIUFRAME_CACHE=$PWD/diagnostics/biuframe-downloads
-bash -c 'set -euo pipefail; source /tmp/biuframe-lib.sh; ROOT=$PWD
+bash -c 'set -euo pipefail
+  [ "$(adb shell getprop ro.build.display.id | tr -d "\r")" = dpf01m1a_user_YJ_2024082915 ] || { echo "STOP: not this frame"; exit 1; }
+  adb shell su -c "stop daemonsu"     # stops the remount loop before /system writes
+  source diagnostics/biuframe-lib.sh; ROOT=$PWD
   sh_dev "mkdir -p $DEV_TMP"
   step_apps                          # launcher first: there is no other home app
   VENDOR_DISABLE=(com.shenju.biuframe com.adups.fota com.DeviceTest)
@@ -128,7 +135,7 @@ bash -c 'set -euo pipefail; source /tmp/biuframe-lib.sh; ROOT=$PWD
   step_debloat
   step_zram; step_webview; step_certs; step_navbar'
 adb reboot   # then, once booted:
-bash -c 'source /tmp/biuframe-lib.sh; ROOT=$PWD; cmd_verify'
+bash -c 'source diagnostics/biuframe-lib.sh; ROOT=$PWD; cmd_verify'
 ```
 
 Differences from the guide:
