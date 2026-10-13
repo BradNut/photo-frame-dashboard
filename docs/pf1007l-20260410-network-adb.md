@@ -7,7 +7,21 @@ permanent ADB. The temporary connection ended at the next frame reboot.
 
 Try stock USB ADB and stock network ADB first, as described in
 [pf1007l-start-here.md](pf1007l-start-here.md). This is an additional option for
-the exact firmware below when those tests fail. Read
+the exact firmware below when those tests fail.
+
+> **This is a bootstrap, not the route to keep.** It gives one temporary root
+> session that ends at the next reboot, needs a DNS redirect of the vendor host,
+> and leaves you leaning on an unencrypted vendor command channel. Once you have
+> any root session (this route, Route U or Route S), the stronger maintenance
+> setup is **persistent, key-authenticated Wi-Fi ADB**: patch the boot ramdisk to
+> add your host's `adb_keys`, keep `ro.adb.secure=1`, and start `adbd` on
+> `service.adb.tcp.port=5555`. Then maintenance is just `adb connect <frame-ip>:5555`
+> from one authorised machine, with no DNS changes and no vendor channel, surviving
+> reboots. The Route S ramdisk patch in [#45](https://github.com/wesbos/photo-frame-dashboard/pull/45)
+> does exactly this for this firmware, and [#64](https://github.com/wesbos/photo-frame-dashboard/pull/64)
+> shows the same on another Allwinner A33 Android 6 unit. Reserve the frame's
+> (preferably pinned) Wi-Fi MAC in DHCP so the address is stable. Confirm an
+> unknown host is actually refused before trusting the key check. Read
 [aimor-remote-root-shell.md](aimor-remote-root-shell.md) and the repository's
 [backup, approval and privacy rules](../README.md#rules-we-learned-the-hard-way).
 The tested session already had a verified private backup. Once you have access,
@@ -269,6 +283,10 @@ move whenever Android rewrites the file.
 
 **What to do instead:**
 
+- Prefer persistent key-authenticated Wi-Fi ADB (see the note at the top of this
+  file) over repeating this temporary route. With a stable `adb connect <frame-ip>:5555`
+  in place, you never need the DNS redirect or the vendor channel again, and you can
+  neutralise AiMOR by blocking its traffic (TCP 7806) rather than disabling the package.
 - Before you disable AiMOR, check by hand on the panel: kiosk → Android Settings → Apps → AiMOR.
 - Give the kiosk a way out that needs one finger, such as a corner button revealed by a single tap.
   On this unit, such a button appeared after an ADB-injected tap. It has not yet been checked by
