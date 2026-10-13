@@ -360,6 +360,12 @@ changes too.
 
 ### T8. Lock it down before the frame stays online
 
+> **If T3 and T3b failed and you reached root through AiMOR (the April Wi-Fi route), disabling
+> AiMOR closes the only way back in that doesn't need the SD card.** The frame has no navigation
+> bar, so check by hand on the panel that your kiosk opens Android Settings and that you can reach
+> **Apps → AiMOR**. That is where you re-enable it. Do this before you disable it. See
+> [the lockout notes](pf1007l-20260410-network-adb.md#6-lockout-after-disabling-aimor-and-offline-recovery).
+
 Do section 8 of [aimor-remote-root-shell.md](aimor-remote-root-shell.md): block TCP 7806, install a
 launcher, then disable `com.efercro.os.aimor`, `com.yhk.qeota` and `com.DeviceTest`. Wait until
 `package-restrictions.xml` shows `enabled="2"`, then reboot.
