@@ -85,7 +85,10 @@ This is probably why 4-bit / 26 MHz did not help here, and why #41's 1-bit legac
 ## The fix
 
 [`patches/pf1007l-v2025.10-no-mmc-hs.patch`](patches/pf1007l-v2025.10-no-mmc-hs.patch) applies on
-top of `pf1007l-uboot.patch` (that is, to `diagnostics/u-boot` after `build-uboot.sh` has run once):
+top of `pf1007l-uboot.patch`. Apply it inside the disposable build container, to the copy of
+`diagnostics/u-boot`, as the [May report's recipe](pf1007l-macos-20260529-report.md) does, and use
+a separate output directory. Never patch `diagnostics/u-boot` itself: `build-uboot.sh` then refuses
+to run because the tree has changes other than its own patch.
 
 - The eMMC node gets `bus-width = <4>`, `max-frequency = <26000000>` and a
   `pf1007l,no-mmc-hs` property.
@@ -95,10 +98,14 @@ top of `pf1007l-uboot.patch` (that is, to `diagnostics/u-boot` after `build-uboo
 U-Boot then keeps the eMMC in legacy timing. The tested build also had the START STOP patch and
 `CONFIG_SYS_DEVICE_NULLDEV` with `setenv stdin nulldev`, as in the
 [May report's build](pf1007l-macos-20260529-report.md). To reproduce it, copy the source as that
-report does, then apply both patches before `make`:
+report does, then apply both patches before `make`. These lines go inside the May recipe, which
+also has the `docker run`, the `ums-readonly.cmd` with `setenv stdin nulldev` and the SPL size
+check. Don't run them on their own:
 
 ```sh
+patch --dry-run --fuzz=0 -p1 < /patches/pf1007l-v2025.10-start-stop.patch
 patch --fuzz=0 -p1 < /patches/pf1007l-v2025.10-start-stop.patch
+patch --dry-run --fuzz=0 -p1 < /patches/pf1007l-v2025.10-no-mmc-hs.patch
 patch --fuzz=0 -p1 < /patches/pf1007l-v2025.10-no-mmc-hs.patch
 make O=/build pf1007l_backup_defconfig
 scripts/config --file /build/.config --enable SYS_DEVICE_NULLDEV
@@ -109,7 +116,7 @@ The SPL ended at `0x456a`, well inside the `0x5e00` limit. The tested binary was
 same edits applied by a script; a rebuild from the patch files differed only in build timestamps
 and the checksums that cover them.
 
-## A console log that survives the reset
+## A console log that survives the reset (record, not a procedure)
 
 The frame has no serial console, and this unit reset into FEL before a host could read SRAM.
 This diagnostic build kept the log in DRAM and saved it to the FEL card:
