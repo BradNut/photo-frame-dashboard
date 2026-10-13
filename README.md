@@ -139,6 +139,13 @@ attempts are useful too.
 
 For a PF1007L, include the [report template](docs/pf1007l-start-here.md#report-your-unit).
 
+### Keep a private record of each frame
+
+Keep what you changed on the owner's frame, where the backups are and how to undo it in the
+ignored `frames/` folder, and read it at the start of the next session. Re-check the frame before
+trusting it, and remember that a past approval is not permission for a new write. See
+[frame-records.md](docs/frame-records.md).
+
 ### Phase map
 
 | Phase                        | What to read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |

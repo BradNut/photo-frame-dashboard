@@ -53,10 +53,17 @@ the date.
 - Keep the two-finger controls dialog, the navigation service (opt-in via accessibility, re-enabled
   only with an adb-granted `WRITE_SECURE_SETTINGS`), one pending load retry, and the offline screen.
 
+## Scope decisions
+
+- **Private per-frame records:** yes, in the ignored `frames/` folder, as described in
+  `docs/frame-records.md`. (2026-10-13: #47.)
+- **Self-hosted services** (hubs, admin pages, stored secrets) belong in their contributors' own
+  repos. Link them from Community Builds once they exist. Tools that only work with such a
+  service go with it. (2026-10-13: #25, #23.)
+
 ## Waiting for the owner (as of 2026-10-13)
 
-- #34 translations, #23 agent-usage tools, issue #25 LAN hub, issue #47 private per-frame records:
-  product scope. Don't merge or close.
+- #34 translations: product scope. Don't merge or close.
 - #52 printing docs, #53 Wi-Fi kiosk update docs: document features the kiosk doesn't have.
   Leaning no, but the owner decides.
 - Agent skill files from contributors (`skills/…`) were declined (#54, #55): out of scope, and they
