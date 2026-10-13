@@ -17,9 +17,10 @@ the exact firmware below when those tests fail.
 > add your host's `adb_keys`, keep `ro.adb.secure=1`, and start `adbd` on
 > `service.adb.tcp.port=5555`. Then maintenance is just `adb connect <frame-ip>:5555`
 > from one authorised machine, with no DNS changes and no vendor channel, surviving
-> reboots. The Route S ramdisk patch in [#45](https://github.com/wesbos/photo-frame-dashboard/pull/45)
-> does exactly this for this firmware, and [#64](https://github.com/wesbos/photo-frame-dashboard/pull/64)
-> shows the same on another Allwinner A33 Android 6 unit. Reserve the frame's
+> reboots. Route S's ramdisk patch does exactly this; for this firmware it needs the April builder
+> ([unit G](allwinner-a33-sdcard-adb-wifi.md#14-april-20260410-firmware)), and
+> [#64](https://github.com/wesbos/photo-frame-dashboard/pull/64) (not merged) shows the same on another
+> Allwinner A33 Android 6 unit. Reserve the frame's
 > (preferably pinned) Wi-Fi MAC in DHCP so the address is stable. Confirm an
 > unknown host is actually refused before trusting the key check. Read
 [aimor-remote-root-shell.md](aimor-remote-root-shell.md) and the repository's
@@ -286,8 +287,11 @@ move whenever Android rewrites the file.
 - Prefer persistent key-authenticated Wi-Fi ADB (see the note at the top of this
   file) over repeating this temporary route. With a stable `adb connect <frame-ip>:5555`
   in place, you never need the DNS redirect or the vendor channel again, and you can
-  neutralise AiMOR by blocking its traffic (TCP 7806) rather than disabling the package.
+  neutralise AiMOR by blocking its traffic (TCP 7806) instead of disabling the package. Treat that as
+  a stopgap: AiMOR still runs `setenforce 0` at every start and trusts any HTTPS certificate on its
+  other vendor ports. Disable it once you can get back in without it.
 - Before you disable AiMOR, check by hand on the panel: kiosk → Android Settings → Apps → AiMOR.
+  Some builds hide disabled apps there (#69), so this check alone is not enough: have persistent ADB first.
 - Give the kiosk a way out that needs one finger, such as a corner button revealed by a single tap.
   On this unit, such a button appeared after an ADB-injected tap. It has not yet been checked by
   hand, which is the test that counts.

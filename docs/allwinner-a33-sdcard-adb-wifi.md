@@ -425,8 +425,9 @@ it, and AiMOR was disabled next.
 eero can pause a device but can't block one outbound port. The pause also does not survive a
 reboot, because the frame's Wi-Fi MAC changes at each boot.
 
-Not tested, a suggestion only: if your router can't block port 7806, disable AiMOR as your first
-ADB command, before you install a launcher. On unit G, AiMOR was disabled while it was still the
+Not tested, a suggestion only, and **only with persistent ADB like Route S's**: if your router can't
+block port 7806, disable AiMOR as your first ADB command, before you install a launcher. Never do
+this when your only ADB is temporary (T3c): see T8 in the [start page](pf1007l-start-here.md#t8-lock-it-down-before-the-frame-stays-online). On unit G, AiMOR was disabled while it was still the
 only Home app. Settings was then opened with `am start -a android.settings.SETTINGS`, and the frame
 kept working until the kiosk was installed.
 

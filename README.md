@@ -55,11 +55,8 @@ Settings → About before you follow any guide:
 - **Skylight Calendar 150-CAL** (Rockchip RK3566): start with [next-session.md](docs/next-session.md),
   then [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
   intentionally not published; the doc shows where the app checks it.
-- **LOOFII C-3 21.5" calendar** (Allwinner A133, `sun50iw10p1`, Android 10, USB fastboot `1f3a:1010`):
-  [allwinner-a133-loofii-c3.md](docs/allwinner-a133-loofii-c3.md). Root ADB over USB out of the box. Covers the
-  backup, U-Boot fastboot and FEL recovery (reset pinhole), running a phh AOSP 12.1 GSI on the factory vendor and
-  kernel, a two-way firewall and the thermal limits of a fanless 21.5" frame. Tools in `scripts/a133/`; don't run
-  the Rockchip or A33 scripts on it.
+- **LOOFII C-3 21.5" calendar** (Allwinner A133, Android 10): root ADB over USB out of the box. See
+  [allwinner-a133-loofii-c3.md](docs/allwinner-a133-loofii-c3.md); don't run the Rockchip or A33 scripts on it.
 - **Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and others:** see the
   [device index](docs/devices.md).
 - **Something else:** work through the [phase map](#phase-map), create `docs/<device>.md`, and
@@ -101,7 +98,8 @@ section unless the identity checks match exactly.
    access came through, or end an access session, check by hand on the panel that your kiosk can
    reach Android Settings → Apps. An `input tap` or `screencap` over ADB does not prove it. A
    PF1007L was locked out this way; see
-   [the lockout notes](docs/pf1007l-20260410-network-adb.md#6-lockout-after-disabling-aimor-and-offline-recovery).
+   [the lockout notes](docs/pf1007l-20260410-network-adb.md#6-lockout-after-disabling-aimor-and-offline-recovery). Some
+   builds hide disabled apps in Settings, so keep a second way in, such as persistent ADB.
 
 ### Check for updates, and send back what you find
 
