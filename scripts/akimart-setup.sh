@@ -8,6 +8,8 @@
 #   verify-backup <file>  Compare boot, recovery and part of system on the frame with a backup.
 #   apply     Run every setup step (each checks and skips work already done), then reboot.
 #   verify    Check the end state after apply.
+#
+# Every step stops the script on the first failed check.
 
 set -euo pipefail
 
@@ -31,7 +33,6 @@ ISRG_X1_FP="96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A
 ISRG_X2_URL="https://letsencrypt.org/certs/isrg-root-x2.pem"
 ISRG_X2_FP="69:72:9B:8E:15:A8:6E:FC:17:7A:57:AF:B7:17:1D:FC:64:AD:D2:8C:2F:CA:8C:F1:50:7E:34:45:3C:CB:14:70"
 
-# Note: You should add the main photo frame app to this array once you find its package name!
 VENDOR_DISABLE=(net.frameo.frame com.muxintu.app.mxota com.szclink.app.cldevicetest android.rockchip.update.service)
 # Persistent apps that Android 6 still starts at boot when only disabled
 VENDOR_HIDE=(com.muxintu.app.mxota com.szclink.app.cldevicetest)
@@ -72,25 +73,48 @@ wait_boot() {
   die "frame did not finish booting"
 }
 
+# Dynamically lookup partition start/size from sysfs by its uevent PARTNAME
+get_part_info() {
+  local name=$1
+  local pdirs="$(sh_dev "ls -d /sys/block/mmcblk0/mmcblk0p* 2>/dev/null")"
+  for pdir in $pdirs; do
+    if dev_has "PARTNAME=$name" cat "$pdir/uevent" 2>/dev/null; then
+      local pstart="$(sh_dev "cat $pdir/start")"
+      local psize="$(sh_dev "cat $pdir/size")"
+      if [[ "$pstart" =~ ^[0-9]+$ ]] && [[ "$psize" =~ ^[0-9]+$ ]]; then
+        echo "$pstart $psize"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
 cmd_check() {
   say "Checking the frame matches the known Akimart unit"
   command -v adb >/dev/null || die "adb not found"
   local state="$(adb get-state 2>/dev/null || true)"
   [ "$state" = device ] || die "no authorized ADB device. Accept the prompt on the frame."
-  [ "$(sh_dev getprop ro.build.fingerprint)" = "$EXPECT_FINGERPRINT" ] || die "fingerprint differs: $(sh_dev getprop ro.build.fingerprint)"
+  [ "$(sh_dev getprop ro.build.fingerprint)" = "$EXPECT_FINGERPRINT" ] || die "build fingerprint differs: $(sh_dev getprop ro.build.fingerprint)"
   ok "fingerprint $EXPECT_FINGERPRINT"
   [ "$(sh_dev getprop ro.product.model)" = "$EXPECT_MODEL" ] || die "model is not $EXPECT_MODEL"
-  ok "model $EXPECT_MODEL"
+  [ "$(sh_dev getprop ro.product.manufacturer)" = "$EXPECT_MANUFACTURER" ] || die "manufacturer is not $EXPECT_MANUFACTURER"
+  ok "model $EXPECT_MANUFACTURER $EXPECT_MODEL"
   dev_has 'Rockchip RK3126' cat /proc/cpuinfo || die "CPU is not Rockchip RK3126"
   ok "RK3126"
   [ "$(sh_dev "su -c id" | cut -d' ' -f1)" = "uid=0(root)" ] || die "su did not give root"
   ok "su gives root"
+  
+  # Ensure we can find the userdata partition boundary dynamically
+  get_part_info "userdata" >/dev/null || die "Could not locate userdata partition bounds dynamically"
+  ok "partition layout readable via sysfs"
 }
 
 cmd_backup() {
   cmd_check
-  # Dynamically fetch where userdata starts so we can backup everything prior.
-  local backup_sectors=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p13/start")
+  local ud_info="$(get_part_info "userdata")" || die "Could not find userdata partition"
+  local backup_sectors=$(echo "$ud_info" | awk '{print $1}')
+  
   local serial="$(sh_dev getprop ro.serialno)"
   local dir="$ROOT/backups/$serial"
   local out="$dir/emmc-0-$backup_sectors.img.gz"
@@ -118,15 +142,23 @@ cmd_backup() {
 cmd_verify_backup() {
   local out=${1:?usage: verify-backup <backup.img.gz>}
   [ -f "$out" ] || die "$out not found"
-  say "Re-reading boot(p5), recovery(p6) and 16 MiB of system(p11) to compare with $(basename "$out")"
+  say "Re-reading boot, recovery and 16 MiB of system data to compare with $(basename "$out")"
   
-  local b_start=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p5/start")
-  local b_size=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p5/size")
-  local r_start=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p6/start")
-  local r_size=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p6/size")
-  local s_start=$(sh_dev "cat /sys/block/mmcblk0/mmcblk0p11/start")
+  local b_info="$(get_part_info "boot")" || die "boot partition not found"
+  local r_info="$(get_part_info "recovery")" || die "recovery partition not found"
+  local s_info="$(get_part_info "system")" || die "system partition not found"
+
+  local b_start=$(echo "$b_info" | awk '{print $1}')
+  local b_size=$(echo "$b_info" | awk '{print $2}')
+  local r_start=$(echo "$r_info" | awk '{print $1}')
+  local r_size=$(echo "$r_info" | awk '{print $2}')
   
-  for region in "boot $b_start $b_size" "recovery $r_start $r_size" "system $s_start 32768"; do
+  local s_start=$(echo "$s_info" | awk '{print $1}')
+  # system data; the start of system holds the ext4 superblock and journal, which
+  # change while mounted. Skip 16 MiB (32768 sectors) in to safely verify static data.
+  local s_check_start=$((s_start + 32768))
+
+  for region in "boot $b_start $b_size" "recovery $r_start $r_size" "system $s_check_start 32768"; do
     read -r name start count <<<"$region"
     local a="$(adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 skip=$start count=$count 2>/dev/null'" | shasum -a 256 | cut -d' ' -f1)"
     local b="$({ gunzip -c "$out" 2>/dev/null || true; } | dd bs=512 skip="$start" count="$count" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)"
@@ -143,12 +175,18 @@ step_debloat() {
   for p in "${VENDOR_HIDE[@]}"; do
     sh_dev "su -c 'pm hide $p'" >/dev/null
   done
+  for p in "${VENDOR_DISABLE[@]}"; do
+    dev_has 'enabled=[23]' dumpsys package "$p" || die "$p is not disabled"
+  done
+  for p in "${VENDOR_HIDE[@]}"; do
+    dev_has 'hidden=true' dumpsys package "$p" || die "$p is not hidden"
+  done
   ok "${#VENDOR_DISABLE[@]} disabled, ${#VENDOR_HIDE[@]} hidden"
 }
 
 step_zram() {
   say "Swap: zram 128 MB -> 512 MB at every boot"
-  adb push "$ROOT/scripts/akimart-su.d-50zram" "$DEV_TMP/50zram" >/dev/null
+  adb push "$ROOT/scripts/biuframe-su.d-50zram" "$DEV_TMP/50zram" >/dev/null
   root_script <<EOF
 set -e
 mount -o remount,rw /system
@@ -165,7 +203,7 @@ mount -o remount,ro /system
 EOF
   dev_has 50zram "su -c 'tail -1 /system/bin/install-recovery.sh'" || die "boot hook missing"
   dev_has 524280 cat /proc/swaps || die "swap is not 512 MB"
-  ok "swap 512 MB"
+  ok "swap 512 MB, boot hook in install-recovery.sh"
 }
 
 step_apps() {
@@ -205,11 +243,21 @@ chown -R 0:0 \$W/webview.apk \$W/lib
 sync
 mount -o remount,ro /system
 EOF
-  ok "WebView replaced (active after reboot)"
+  local want got f
+  for f in "$apk" "$libs"/*.so; do
+    want="$(md5 -q "$f")"
+    case "$f" in
+      *.apk) got="$(sh_dev "md5sum /system/app/webview/webview.apk" | cut -d' ' -f1)" ;;
+      *) got="$(sh_dev "md5sum /system/app/webview/lib/arm/$(basename "$f")" | cut -d' ' -f1)" ;;
+    esac
+    [ "$want" = "$got" ] || die "$(basename "$f") on the frame does not match"
+  done
+  dev_has '^-rw-r--r--' "ls -l /system/app/webview/lib/arm/libwebviewchromium.so" || die "WebView library is not 0644"
+  ok "APK and $(ls "$libs" | wc -l | tr -d ' ') native libraries in place (active after reboot)"
 }
 
 step_certs() {
-  say "Adding Let's Encrypt roots (ISRG Root X1, X2)"
+  say "Adding Let's Encrypt roots (ISRG Root X1, X2) to the system CA store"
   local tmp="$(mktemp -d)"
   for pair in "$ISRG_X1_URL $ISRG_X1_FP" "$ISRG_X2_URL $ISRG_X2_FP"; do
     read -r url fp <<<"$pair"
@@ -223,14 +271,16 @@ step_certs() {
 set -e
 mount -o remount,rw /system
 cp $DEV_TMP/$h.0 /system/etc/security/cacerts/$h.0
+mount -o remount,rw /system
 chmod 0644 /system/etc/security/cacerts/$h.0
 chown 0:0 /system/etc/security/cacerts/$h.0
 sync
 mount -o remount,ro /system
 EOF
+    dev_has '^-rw-r--r--' "ls -l /system/etc/security/cacerts/$h.0" || die "$h.0 is not 0644"
+    ok "$h.0 $(openssl x509 -in "$pem" -noout -subject | sed 's/.*CN *= *//')"
   done
   rm -rf "$tmp"
-  ok "Roots added"
 }
 
 step_navbar() {
@@ -240,10 +290,12 @@ set -e
 mount -o remount,rw /system
 [ -f /system/build.prop.bak ] || cp /system/build.prop /system/build.prop.bak
 grep -q '^qemu.hw.mainkeys=' /system/build.prop || echo 'qemu.hw.mainkeys=0' >> /system/build.prop
+mount -o remount,rw /system
 chmod 0644 /system/build.prop
 sync
 mount -o remount,ro /system
 EOF
+  dev_has '^qemu.hw.mainkeys=0$' cat /system/build.prop || die "build.prop not updated"
   ok "qemu.hw.mainkeys=0 (active after reboot)"
 }
 
@@ -251,10 +303,17 @@ cmd_verify() {
   say "Verifying end state"
   [ "$(sh_dev "dumpsys package com.android.webview" | grep -m1 versionName | sed 's/.*=//')" = "$WEBVIEW_VERSION" ] || die "WebView is not $WEBVIEW_VERSION"
   ok "WebView $WEBVIEW_VERSION"
+  dev_has 'webviewchromiumloader: Failed to load library' logcat -d && die "WebView native library failed to load"
+  ok "WebView native library loaded"
   dev_has 524280 cat /proc/swaps || die "swap is not 512 MB after boot"
   ok "swap 512 MB after boot"
   dev_has 'Window\{.* NavigationBar\}' dumpsys window windows || die "no navigation bar window"
   ok "navigation bar present"
+  local running="$(sh_dev ps | grep -E 'frameo|mxota|cldevicetest|rockchip.update' || true)"
+  [ -z "$running" ] || die "vendor processes still running: $running"
+  ok "no vendor processes"
+  sh_dev "ls /system/etc/security/cacerts/6187b673.0 /system/etc/security/cacerts/8794b4e3.0" >/dev/null || die "Let's Encrypt roots missing"
+  ok "Let's Encrypt roots present"
 }
 
 cmd_apply() {
