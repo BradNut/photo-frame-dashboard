@@ -9,6 +9,9 @@ Automation: [`scripts/biuframe-setup.sh`](../scripts/biuframe-setup.sh).
 **Check the SoC, not just the brand.** A BIUFRAME-branded PF1007L was also found
 with an Allwinner A33 / AiMOR board. This RK3126 guide and its `apply` script do
 not apply to it; use the [Allwinner PF1007L guide](allwinner-a33-pf1007l.md).
+A `10X1` with manufacturer `incar` and a `user.fyl.20170927` build has the same SoC but a
+different partition layout, so `check`, `backup` and `apply` stop on it; see
+[yiaisign-10x1.md](yiaisign-10x1.md).
 
 **For agents:** follow the steps in order. Stop at the first failed check and report it; do not
 improvise around a mismatch. Every command runs from the repository root on a Mac with the frame
