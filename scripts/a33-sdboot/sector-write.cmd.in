@@ -7,6 +7,7 @@
 #   3. the current sector is saved to the card (sector-before-@MODE@.bin) before writing
 #   4. after the write, the sector is read back and must match @TO@ by SHA-256 and byte compare
 # The eMMC is touched as early as possible: on this board it can stop responding after a while.
+# The status file is saved at the start and just before the write, so a hang shows how far it got.
 
 setenv f 0x48000000
 setenv t 0x48001000
@@ -18,6 +19,8 @@ setenv sha_from @SHA_FROM@
 setenv sha_to @SHA_TO@
 setenv a33_stage started
 setenv result none
+env export -t ${e}
+fatwrite mmc 0:1 ${e} a33-sector-status.txt ${filesize}
 
 if fatload mmc 0:1 ${f} @FROM@ && test "${filesize}" = "200"; then
   hash sha256 ${f} 0x200 h_from
@@ -33,6 +36,9 @@ if fatload mmc 0:1 ${f} @FROM@ && test "${filesize}" = "200"; then
               setenv result ALREADY_APPLIED_NO_WRITE
             else
               if test "${h_before}" = "${sha_from}"; then
+                setenv a33_stage about_to_write
+                env export -t ${e}
+                fatwrite mmc 0:1 ${e} a33-sector-status.txt ${filesize}
                 setenv a33_stage writing
                 mmc dev 1
                 if mmc write ${t} ${sec} 1; then

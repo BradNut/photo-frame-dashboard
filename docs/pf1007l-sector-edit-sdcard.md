@@ -25,8 +25,9 @@ any difference. On other firmware the sector is different: the May report
 ([pf1007l-macos-20260529-report.md](pf1007l-macos-20260529-report.md)) did not match it.
 
 Some April units override the setting from `/data/property/persist.sys.usb.config`
-([start page](pf1007l-start-here.md#known-firmware-and-units)). This unit had just been factory
-reset, so `/data` held no override. If ADB does not appear after the write, see section 7.
+([start page](pf1007l-start-here.md#known-firmware-and-units)). An AiMOR factory reset clears
+`/data/property`, and this unit had just been reset, so it held no override. If ADB does not appear
+after the write, see section 7.
 
 ## 2. What it changes
 
@@ -167,6 +168,9 @@ On this unit every fixed region matched: the first 36 MiB, `env`, `boot`, `syste
 (4 MiB each) matched over two reads.
 
 ## 9. Stock recovery runs root ADB during a factory reset
+
+The same window appears on May `20260519` and `20260529`, and the boot patch has been written in it
+([recovery boot write](pf1007l-macos-20260529-recovery-boot-write.md)).
 
 On this unit, AiMOR's factory reset reboots into stock Android recovery to wipe `/data`. For about
 13 to 20 seconds, recovery runs ADB **as root, with no authorization**. Seen on three resets.
