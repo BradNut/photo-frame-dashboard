@@ -3,6 +3,8 @@
     package="com.wesbos.homehq">
 
   <uses-permission android:name="android.permission.INTERNET" />
+  <!-- Optional; only used if granted with adb (see kiosk README). -->
+  <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
   <application
       android:label="Home HQ"

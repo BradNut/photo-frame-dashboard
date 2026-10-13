@@ -25,6 +25,18 @@ keeps the service enabled across reboots. It requests no accessibility events or
 screen-content access and does not require root. Disable **Home HQ navigation**
 in Accessibility settings to remove the buttons.
 
+On a PF1007L (`20260519` firmware), the vendor `BackgroundManagerService` dropped the
+service from the enabled list after every `adb install -r` or force stop of Home HQ, so the
+buttons silently disappeared. To have Home HQ put the service back each time it starts, grant
+it this permission once:
+
+```sh
+adb shell pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS
+```
+
+The grant survives updates. To turn the buttons off for good, revoke it first
+(`pm revoke` with the same arguments), then disable the service in Accessibility settings.
+
 Keep an ADB connection available while enabling the service on a frame with no
 other way back. If needed, return to the kiosk with:
 
