@@ -79,6 +79,10 @@ Not recorded: SoC (see Guesses), kernel, RAM, USB IDs, the cable used, and the r
 6. **Reboot:** the Frameo boot logo appears, then Home HQ's "Connect to Wi-Fi?" screen for about a
    minute while Wi-Fi connects, then the dashboard. Touch works.
 
+USB ADB still connected after the reboot with Frameo disabled. Whether the kiosk's two-finger
+controls → **Android settings** reached Settings → Apps was not recorded; check it before you rely
+on the kiosk (README rule 9).
+
 ## Undo
 
 ```sh
@@ -88,6 +92,8 @@ adb shell pm enable net.frameo.frame
 adb shell cmd package set-home-activity net.frameo.frame/.ui.activities.AWaitForDeferredInitCompleted
 adb shell wm density reset
 ```
+
+To undo the kiosk as Home, see the [kiosk README](../dashboard/kiosk/README.md#start-at-boot).
 
 ## Guesses
 

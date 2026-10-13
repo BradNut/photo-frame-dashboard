@@ -46,7 +46,7 @@ Settings → Apps → Default apps, then run the first command with `--ez home f
 
 ## Screen density
 
-The dashboard is laid out for 1280×800 at density 160. Most frames ship at 160, but a VESWWE
+The dashboard is laid out for 1280×800 at density 160. Most 1280×800 frames ship at 160, but a VESWWE
 `DP101` shipped at 190 and the bottom of the dashboard was cut off
 ([veswwe-dp101.md](../../docs/veswwe-dp101.md)). Check with `adb shell wm density`. If it isn't 160:
 
