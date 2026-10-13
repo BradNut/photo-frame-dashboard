@@ -9,8 +9,9 @@
 CONF=/data/local/frame-boot.conf
 [ -r $CONF ] && . $CONF
 SAVED=/data/local/frame-lasttime
-REQ=/data/local/tmp/frame-ntpreq
-RESP=/data/local/tmp/frame-ntpresp
+# Not /data/local/tmp: the shell user can write there, and this runs as root.
+REQ=/data/local/frame-ntpreq
+RESP=/data/local/frame-ntpresp
 
 saved=$(cat $SAVED 2> /dev/null)
 if [ -n "$saved" ] && [ "$(date +%s)" -lt "$saved" ]; then

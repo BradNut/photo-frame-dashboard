@@ -13,8 +13,8 @@ B=/system/bin
 # Hide the Wi-Fi driver from Android's boot-time load; frame-wifidefer.sh removes this bind mount
 # and starts Wi-Fi once boot has completed. The mount ends at reboot.
 if [ "$WIFI_DEFER" = 1 ] && [ -n "$WIFI_DRIVER" ] && [ -e "$WIFI_DRIVER" ]; then
-    : > /data/local/tmp/frame-empty.ko
-    mount -o bind /data/local/tmp/frame-empty.ko "$WIFI_DRIVER"
+    : > /data/local/frame-empty.ko
+    mount -o bind /data/local/frame-empty.ko "$WIFI_DRIVER"
 fi
 $B/sh $B/frame-wifidefer.sh &
 $B/sh $B/frame-timesync.sh &

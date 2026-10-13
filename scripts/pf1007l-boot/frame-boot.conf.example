@@ -18,7 +18,9 @@ WIFI_DEFER=1
 WIFI_DRIVER=/system/vendor/modules/aic8800_fdrv.ko
 
 # Lift the AXP223 power chip's 500 mA input limit early in boot (1) or leave it (0).
-POWER_FIX=1
+# Off by default: it removes the chip's USB current limit, and frames on a laptop or bus-powered
+# hub port browned out. Turn it on only with a charger that can supply more than 500 mA.
+POWER_FIX=0
 
 # Only allow network ADB (TCP 5555) from this IPv4 network, for example 192.168.1.0/24.
 # ADB on this firmware is root with no authentication. Empty: no rule is added.

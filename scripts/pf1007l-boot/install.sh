@@ -57,6 +57,11 @@ cmd_check() {
   ok "PF1007L ($EXPECT_DEVICE), Android $EXPECT_RELEASE, firmware $(sh_dev getprop ro.build.display.id)"
   [ "$(sh_dev id | cut -d' ' -f1)" = "uid=0(root)" ] || die "adb shell is not root (see T7 in docs/pf1007l-start-here.md)"
   ok "root ADB"
+  ok "SELinux: $(sh_dev getenforce)"
+  case "$(adb get-serialno 2>/dev/null)" in
+    *:*) warn "ADB is over the network. These fixes replace wpa_supplicant and change Wi-Fi start-up; if
+    that goes wrong you lose network ADB, and on Route S that is your only ADB. Prefer installing over USB." ;;
+  esac
   sh_dev 'test -f /system/bin/install-recovery.sh && echo yes' | grep -q yes || die "/system/bin/install-recovery.sh not found"
   ok "install-recovery.sh present"
   sh_dev 'test -f /system/bin/wpa_supplicant && echo yes' | grep -q yes || die "/system/bin/wpa_supplicant not found"
@@ -198,15 +203,18 @@ set -e
 B=/system/bin
 [ -e \$B/install-recovery.sh.bak ] || { echo "    FAIL: no install-recovery.sh.bak"; exit 1; }
 mount -o remount,rw /system
+want=\$(/sbin/busybox sha256sum \$B/install-recovery.sh.bak | cut -d' ' -f1)
 cp -p \$B/install-recovery.sh.bak \$B/install-recovery.sh
+[ "\$(/sbin/busybox sha256sum \$B/install-recovery.sh | cut -d' ' -f1)" = "\$want" ] || { echo "    FAIL: restored install-recovery.sh does not match the backup"; exit 1; }
 rm \$B/install-recovery.sh.bak
 if [ -e \$B/wpa_supplicant.real ]; then
+    [ "\$(dd if=\$B/wpa_supplicant.real bs=4 count=1 2>/dev/null | od -An -c | tr -d ' ')" = '177ELF' ] || { echo "    FAIL: wpa_supplicant.real is not the original binary"; exit 1; }
     mv \$B/wpa_supplicant.real \$B/wpa_supplicant
 fi
 for s in ${SCRIPTS[*]}; do rm -f \$B/\$s; done
 sync
 mount -o remount,ro /system || echo "    note: /system stays read-write until the next reboot"
-rm -f $DEV_CONF /data/local/frame-lasttime /data/local/frame-nowifi
+rm -f $DEV_CONF /data/local/frame-lasttime /data/local/frame-nowifi /data/local/frame-empty.ko /data/local/frame-ntpreq /data/local/frame-ntpresp
 echo "    ok: removed. Reboot the frame."
 EOF
 }
