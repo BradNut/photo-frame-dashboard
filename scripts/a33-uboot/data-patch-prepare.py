@@ -1,20 +1,37 @@
 #!/usr/bin/env python3
-"""Prepare a guarded userdata patch by diffing two copies of the /data partition.
+"""Build a guarded userdata patch from YOUR OWN verified backup, the same way
+boot-patch.py builds a boot patch: a generated U-Boot script that writes only
+after every payload's CRC-32 matches and the eMMC still holds your recorded
+original bytes. Uses this repo's existing READ-ONLY U-Boot build
+(build-uboot.sh) — it never exposes the eMMC as a writable host disk.
 
-This only reads the two local images and writes payloads + a plan to
-diagnostics/a33-data-patch/. Nothing here touches a device.
-
-Usage:
+Usage (from the repository root):
   python3 -I scripts/a33-uboot/data-patch-prepare.py \
       <orig-data-partition.img> <edited-data-partition.img> <data-partition-start-sector>
 
-<data-partition-start-sector> is the /data partition's start sector within the full
-eMMC (from the MBR/EBR you already parsed), so the plan's offsets are absolute eMMC
-byte offsets the host writer can use directly against the live disk.
+The two images are copies of the SAME /data partition extracted from your own
+verified eMMC backup: one untouched, one with your intended edit (made with
+e.g. `debugfs -w` on the edited copy only, never on the backup itself).
+<data-partition-start-sector> is that partition's start sector within the full
+eMMC, from your own parsed partition table.
+
+This only reads the two local images and writes payloads + guarded scripts to
+diagnostics/a33-data-patch/. Nothing here touches a device. Re-derive your own
+plan from your own backup and partition table; a plan built from one unit's
+diff (offsets, byte counts, CRCs) is not reusable on a different unit.
+
+Writes diagnostics/a33-data-patch/:
+  range-NN.orig, range-NN.new        each changed byte range, before and after
+  plan.json                          sectors, sizes and CRC-32s
+  write-data.cmd / write-data.scr    guarded U-Boot write script
+  restore-data.cmd / restore-data.scr  guarded undo: writes the original bytes back
 """
 import hashlib
 import json
+import struct
 import sys
+import time
+import zlib
 from pathlib import Path
 
 SECTOR = 512
@@ -24,6 +41,14 @@ FINE = SECTOR
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "diagnostics/a33-data-patch"
+
+# RAM load addresses for this script's own payloads. U-Boot itself runs from
+# 0x4A000000; boot-patch.py's own payloads use 0x50000000-0x55FFFFFF. Each
+# range gets three buffers (orig, new, a scratch read-back buffer), spaced
+# 64 KiB apart — generous for payloads this small, and clear of both ranges
+# above regardless of how many ranges a given plan has.
+BASE_ADDR = 0x58000000
+SLOT = 0x10000
 
 
 def fail(message):
@@ -70,6 +95,46 @@ def fine_ranges(orig_path, edited_path, regions):
     return ranges
 
 
+def script_image(text):
+    """Legacy U-Boot script image, as `mkimage -A arm -T script -C none` makes it."""
+    body = struct.pack(">II", len(text), 0) + text
+    header = bytearray(struct.pack(">IIIIIIIBBBB32s", 0x27051956, 0, int(time.time()), len(body),
+                                   0, 0, zlib.crc32(body), 5, 2, 6, 0, b""))
+    struct.pack_into(">I", header, 4, zlib.crc32(header))
+    return bytes(header) + body
+
+
+def guarded_script(writes, title, expect, write):
+    """Nested, fail-stop chain: range i's write only runs if range i's own CRC
+    and `expect`-byte checks pass, and range i+1 only runs if range i's write
+    both happened and read back correctly. One failure anywhere in the chain
+    stops everything after it; nothing past that point is written."""
+    lines = [f"# {title}. Load each range's orig/new payload with sunxi-fel first.",
+             "# Writes a range only if its own CRC-32s match and the eMMC holds the",
+             f"# {expect} bytes for that range; stops at the first check or write that fails.",
+             "mmc dev 1"]
+    closers = []
+    for w in writes:
+        pad = "  " * len(closers)
+        lines.append(f"{pad}mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x}")
+        checks = (f"crc32 -v {w['orig_addr']:#x} {w['length']:#x} {w['orig_crc32']} && "
+                  f"crc32 -v {w['new_addr']:#x} {w['length']:#x} {w['new_crc32']} && "
+                  f"cmp.b {w[f'{expect}_addr']:#x} {w['read_addr']:#x} {w['length']:#x}")
+        lines.append(f"{pad}if {checks}; then")
+        closers.append(f"{pad}fi")
+        pad2 = pad + "  "
+        write_check = (f"mmc write {w[f'{write}_addr']:#x} {w['sector']:#x} {w['sectors']:#x} && "
+                       f"mmc read {w['read_addr']:#x} {w['sector']:#x} {w['sectors']:#x} && "
+                       f"cmp.b {w[f'{write}_addr']:#x} {w['read_addr']:#x} {w['length']:#x}")
+        lines.append(f"{pad2}if {write_check}; then")
+        closers.append(f"{pad2}fi")
+    # The innermost `if` needs a body: an empty then/fi is invalid in U-Boot's hush shell.
+    lines.append(f"{pad2}  echo all ranges written")
+    lines += reversed(closers)
+    lines.append("ums 0 mmc 1")
+    return "\n".join(lines) + "\n"
+
+
 def main():
     if len(sys.argv) != 4:
         sys.exit(__doc__)
@@ -109,16 +174,22 @@ def main():
             abs_byte = partition_start_byte + s
             if abs_byte % SECTOR:
                 fail(f"range {i} is not sector-aligned")
+            base = BASE_ADDR + i * 3 * SLOT
             writes.append({
                 "range": i,
                 "partition_relative_byte": s,
-                "absolute_sector": abs_byte // SECTOR,
+                "sector": abs_byte // SECTOR,
                 "sectors": (e - s) // SECTOR,
                 "length": e - s,
                 "orig_file": orig_file,
                 "new_file": new_file,
                 "orig_sha256": hashlib.sha256(orig_bytes).hexdigest(),
                 "new_sha256": hashlib.sha256(new_bytes).hexdigest(),
+                "orig_crc32": f"{zlib.crc32(orig_bytes):08x}",
+                "new_crc32": f"{zlib.crc32(new_bytes):08x}",
+                "orig_addr": base,
+                "new_addr": base + SLOT,
+                "read_addr": base + 2 * SLOT,
             })
 
     plan = {
@@ -128,10 +199,24 @@ def main():
         "writes": writes,
     }
     (OUT / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
-    print(f"\nWrote plan for {len(writes)} range(s) to {OUT / 'plan.json'}")
+
+    for name, title, expect, write in (
+        ("write-data", "Userdata patch", "orig", "new"),
+        ("restore-data", "Undo the userdata patch", "new", "orig"),
+    ):
+        script = guarded_script(writes, title, expect, write)
+        (OUT / f"{name}.cmd").write_text(script)
+        (OUT / f"{name}.scr").write_bytes(script_image(script.encode()))
+
+    print(f"\nWrote plan and guarded scripts for {len(writes)} range(s) to {OUT}")
     for w in writes:
-        print(f"  range {w['range']}: absolute sector {w['absolute_sector']}, "
-              f"{w['sectors']} sector(s), {w['length']} bytes")
+        print(f"  range {w['range']}: sector {w['sector']}, {w['sectors']} sector(s), "
+              f"{w['length']} bytes, RAM {w['orig_addr']:#x}/{w['new_addr']:#x}/{w['read_addr']:#x}")
+    print("\nLoad every orig/new payload with sunxi-fel, then run write-data.scr the same way")
+    print("this repo's existing write-boot.scr is run: against the READ-ONLY U-Boot build,")
+    print("over FEL. It only writes a range if that range's own checks pass, and stops at")
+    print("the first range whose checks or write-verify fail; nothing past that point is")
+    print("written. Undo the same way with restore-data.scr.")
 
 
 if __name__ == "__main__":

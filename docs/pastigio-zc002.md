@@ -80,8 +80,23 @@ U-Boot build protects its USB disk interface; it still permits controlled intern
 
 Re-derive any userdata patch from your own verified backup and exact partition
 table. The other unit's nine changed ranges and 7,680-byte total describe that
-owner's filesystem edit; they are not reusable offsets or payloads. This report
-does not provide a replacement userdata writer.
+owner's filesystem edit; they are not reusable offsets or payloads.
+[`scripts/a33-uboot/data-patch-prepare.py`](../scripts/a33-uboot/data-patch-prepare.py)
+builds the replacement writer the maintainer asked for: see
+[Guarded userdata-key writer](#guarded-userdata-key-writer) below.
+
+### SOMY ZC002 unit identity
+
+From the unit reported in PR #73, for comparison against another ZC002:
+
+| Item | Observed value |
+| --- | --- |
+| About screen | Hardware brand and model number `DPF ZC002`; `ro.product.brand=SOMY` |
+| eMMC | 31,268,536,320 bytes total addressable (this unit's `/data` declares a larger size than fits; same "listed past the end of the eMMC" pattern as the PF1007L) |
+| Partition starts (sectors) | bootloader 73728, env 139264, **boot 172032**, system 204800 (1 GiB), misc 2301952, recovery 2334720, cache 2400256 (1,572,864 sectors — larger than this Pastigio unit's, so later offsets diverge from here on), `/data` 4268032 |
+| Boot image | Legacy `ANDROID!` header, page 2048, kernel 10,165,848 B, ramdisk 4,741,158 B, `vmalloc=384M` |
+| `default.prop` | `ro.secure=1`, `ro.debuggable=0`, `persist.sys.usb.config=none` — `adbd` still starts unconditionally from `init.rc`, unrelated to `ro.debuggable` |
+| `/misc/adb` | Present, owner `1000:2000` mode `0750`, SELinux context `u:object_r:adb_keys_file:s0`; no `adb_keys` file before the patch |
 
 ## What was tried before the successful route
 
@@ -369,6 +384,45 @@ to expose port 5555 to the internet or a shared untrusted network.
 This report contributes the identity, failed-attempt boundary, working storage
 initialization, guarded boot changes and observed post-root behavior. It does not
 claim that copying another unit's offsets, binary or patched boot hash is safe.
+
+## Guarded userdata-key writer
+
+[`scripts/a33-uboot/data-patch-prepare.py`](../scripts/a33-uboot/data-patch-prepare.py)
+builds the host-key authorization from [above](#prefer-stock-su-after-host-key-authorization)
+into a guarded U-Boot script, the same way
+[`boot-patch.py`](../scripts/a33-uboot/boot-patch.py) builds the PF1007L boot
+patch: it checks every payload's CRC-32 and compares the live eMMC against your
+recorded original bytes before writing anything, reads each write back and
+compares again, and stops at the first check or write that fails — nothing
+past that point is written. It uses this repo's existing **read-only**
+[Route U U-Boot build](allwinner-a33-mainline-uboot.md) (`build-uboot.sh`);
+the eMMC is never exposed as a writable host disk. `mmc write` is a U-Boot
+command, internal to the device, unrelated to the USB mass-storage (`ums`)
+code path that build patches out.
+
+Prepare it from a pristine and an edited copy of your own verified `/data`
+backup (edit the copy with `debugfs -w`, e.g. adding your host's public ADB
+key to `/misc/adb/adb_keys` with the ownership/mode/SELinux context already on
+your device's own files — never the backup itself):
+
+```sh
+python3 -I scripts/a33-uboot/data-patch-prepare.py \
+  data-partition-pristine.img data-partition-edited.img <data-partition-start-sector>
+```
+
+This only reads your two local images. It writes `diagnostics/a33-data-patch/`:
+the changed byte ranges (`range-NN.orig`/`.new`), `plan.json`, and
+`write-data.scr`/`restore-data.scr`. Re-derive your own plan from your own
+backup and partition table — a plan built from one unit's diff describes that
+unit's filesystem edit, not reusable offsets or payloads for another one.
+
+To run it: with the frame in FEL and this repo's existing read-only U-Boot
+loaded (same as the Route U backup above), load every `range-NN.orig`/`.new`
+payload with `sunxi-fel write <addr> <file>` at the addresses `write-data.cmd`
+prints for each range, then load and run `write-data.scr` the same way
+`write-boot.scr` is run. Undo with `restore-data.scr` the same way, loading the
+same payloads. Both scripts end in `ums 0 mmc 1`, so the eMMC is available
+read-only afterward for a whole-partition reread.
 
 ## Offline helper for the historical boot patch
 
