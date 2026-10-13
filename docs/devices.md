@@ -51,6 +51,12 @@ welcome. Missing yours? See the README's
   ship with root ADB open on Wi-Fi with no key check. That is convenient, but anything on the same
   network gets root, so keep these frames on an isolated network.
 - **No SystemUI** (no status or navigation bar) is common. Then an ADB `unauthorized` prompt has
-  nowhere to appear.
+  nowhere to appear. SystemUI may be present but deliberately disabled (`pm disable`), not absent
+  from the firmware — check `/system/priv-app/SystemUI` and `package-restrictions.xml` before
+  assuming it is missing.
+- **When no popup can ever appear**, adding the host's public key straight into
+  `/data/misc/adb/adb_keys` (matching the `adb_keys_file` ownership/mode/SELinux context already
+  on the device) authorizes ADB without one, and without touching the boot image or any binary.
+  Seen on the Uhale SI006 and the SOMY ZC002.
 - **Cables:** several USB-C frames need a USB-A to USB-C data cable. The cable in the box is often
   power only.
