@@ -371,6 +371,9 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 - `BOOT_COMPLETED` goes only to a whitelist. For auto-start, make the kiosk a Home app.
 - No ISRG Root X1 in the trust store, so Let's Encrypt sites fail in WebView. Add the root
   certificate or use a local proxy.
+- One May `20260519` unit also had no GTS Root R1/R4 and no GlobalSign Root CA, so the repo's
+  own dashboard on `*.workers.dev` failed with `net_error -202` too. Add the three roots listed
+  in the [Uhale guide](si006-uhale.md), checked by SHA-256.
 - WebView 106 lacks `oklch()`, `color-mix()`, CSS nesting and `:has()`. Tailwind v4 colours break.
 - The time zone ships as `America/New_York`.
 - `adb reboot` hangs on many units (one rebooted cleanly). Plan to power-cycle instead.
