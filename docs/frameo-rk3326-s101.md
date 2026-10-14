@@ -7,6 +7,9 @@ scripts do not apply here. The [VESWWE DP100](veswwe-10.1.md) uses the same S101
 runs Android 8.1 and ships `su` and `adb root`; this one runs Android 11 and has no root. Compare
 the build strings in section 1 before you follow this page.
 
+An Allwinner A33 frame with the same `Digital Photo Frame` model and a `102K` product name is in
+[frameo-102k-a33.md](frameo-102k-a33.md).
+
 No exploit is needed. Frameo has an official ADB switch, and every step below runs as the
 normal ADB shell user. This unit has no root.
 
