@@ -2,8 +2,11 @@ package com.wesbos.homehq;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -51,6 +54,7 @@ public class MainActivity extends Activity {
   static final String PREF_URL = "url";
   static final long EXIT_HOLD_MS = 1500;
   static final long RETRY_MS = 5000;
+  static final long STALL_MS = 15000;
   static final float EXIT_SLOP_PX = 60;
 
   private WebView web;
@@ -67,7 +71,35 @@ public class MainActivity extends Activity {
   private final Runnable retry = new Runnable() {
     @Override
     public void run() {
-      if (retryUrl != null) web.loadUrl(retryUrl);
+      if (retryUrl == null) return;
+      web.loadUrl(retryUrl);
+      // A retry started while Wi-Fi is joining can hang for about a minute with no error and no
+      // finish, so no further retry is posted. Start a new one if it is still pending.
+      handler.removeCallbacks(stall);
+      handler.postDelayed(stall, STALL_MS);
+    }
+  };
+
+  private final Runnable stall = new Runnable() {
+    @Override
+    public void run() {
+      if (retryUrl == null || offline.getVisibility() != View.VISIBLE) return;
+      Log.w(TAG, "Retry still pending after " + STALL_MS + " ms, starting a new one");
+      retry.run();
+    }
+  };
+
+  // On frames that start Wi-Fi after boot, the error screen is up when Wi-Fi connects. Retry then,
+  // and correct the "Connect to Wi-Fi?" text, instead of waiting for the next error.
+  private final BroadcastReceiver networkChange = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      if (retryUrl == null || offline.getVisibility() != View.VISIBLE || !wifiConnected()) return;
+      Log.i(TAG, "Wi-Fi connected, retrying now");
+      showOffline();
+      handler.removeCallbacks(retry);
+      handler.removeCallbacks(stall);
+      handler.post(retry);
     }
   };
 
@@ -115,7 +147,10 @@ public class MainActivity extends Activity {
 
       @Override
       public void onPageFinished(WebView view, String url) {
-        if (!pageFailed) offline.setVisibility(View.GONE);
+        if (!pageFailed) {
+          offline.setVisibility(View.GONE);
+          handler.removeCallbacks(stall);
+        }
       }
 
       @Override
@@ -126,6 +161,7 @@ public class MainActivity extends Activity {
         showOffline();
         retryUrl = failingUrl;
         handler.removeCallbacks(retry);
+        handler.removeCallbacks(stall);
         handler.postDelayed(retry, RETRY_MS);
       }
     });
@@ -136,6 +172,9 @@ public class MainActivity extends Activity {
 
     String url = urlFrom(getIntent());
     web.loadUrl(url != null ? url : savedUrl());
+    @SuppressWarnings("deprecation")
+    IntentFilter connectivity = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+    registerReceiver(networkChange, connectivity);
   }
 
   @Override
@@ -160,6 +199,7 @@ public class MainActivity extends Activity {
     String url = urlFrom(intent);
     if (url != null) {
       handler.removeCallbacks(retry);
+      handler.removeCallbacks(stall);
       web.loadUrl(url);
     }
   }
@@ -284,6 +324,7 @@ public class MainActivity extends Activity {
 
   @Override
   protected void onDestroy() {
+    unregisterReceiver(networkChange);
     handler.removeCallbacksAndMessages(null);
     if (web != null) web.destroy();
     super.onDestroy();
