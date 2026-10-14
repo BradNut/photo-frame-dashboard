@@ -55,10 +55,14 @@ public class MainActivity extends Activity {
   static final long EXIT_HOLD_MS = 1500;
   static final long RETRY_MS = 5000;
   static final long STALL_MS = 15000;
+  static final long NAV_CHECK_MS = 5000;
+  static final long NAV_REBIND_MS = 1000;
   static final float EXIT_SLOP_PX = 60;
 
   private WebView web;
   private final Handler handler = new Handler(Looper.getMainLooper());
+  // Not cleared in onDestroy, so a navigation rebind that has started always finishes.
+  private final Handler rebindHandler = new Handler(Looper.getMainLooper());
   private final int[] exitIds = new int[2];
   private final float[] exitX = new float[2];
   private final float[] exitY = new float[2];
@@ -297,24 +301,61 @@ public class MainActivity extends Activity {
    * after the kiosk is updated or force-stopped, leaving no way back from Settings. If the owner
    * opted in by granting WRITE_SECURE_SETTINGS, put the service back on the enabled list:
    *   adb shell pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS
+   * Android 6 also leaves the service listed but unbound after the kiosk's process is killed (the
+   * Denver PFF-1015's low-RAM mode kills it on every app switch), so rebind it if it isn't running.
    */
   private void keepNavigationEnabled() {
     if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") != PackageManager.PERMISSION_GRANTED) return;
-    String svc = getPackageName() + "/" + NavigationService.class.getName();
     String cur = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-    if (cur != null) {
-      ComponentName want = new ComponentName(this, NavigationService.class);
-      for (String entry : cur.split(":")) {
-        if (want.equals(ComponentName.unflattenFromString(entry))) return;
-      }
-    }
-    String next = cur == null || cur.isEmpty() ? svc : cur + ":" + svc;
-    try {
-      Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, next);
-      Settings.Secure.putString(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, "1");
+    String others = withoutNavigation(cur);
+    if (!isNavigationListed(cur)) {
+      setNavigationServices(others.isEmpty() ? navigationService() : others + ":" + navigationService());
       Log.i(TAG, "Re-enabled navigation service");
+      return;
+    }
+    handler.postDelayed(() -> {
+      if (NavigationService.isConnected()) return;
+      // Writing the same list doesn't notify Android, so take the service off and put it back.
+      setNavigationServices(others);
+      rebindHandler.postDelayed(() -> setNavigationServices(cur), NAV_REBIND_MS);
+      Log.i(TAG, "Navigation service listed but not running, rebinding");
+    }, NAV_CHECK_MS);
+  }
+
+  private String navigationService() {
+    return getPackageName() + "/" + NavigationService.class.getName();
+  }
+
+  private boolean isNavigationEntry(String entry) {
+    return new ComponentName(this, NavigationService.class).equals(ComponentName.unflattenFromString(entry));
+  }
+
+  private boolean isNavigationListed(String services) {
+    if (services == null) return false;
+    for (String entry : services.split(":")) {
+      if (isNavigationEntry(entry)) return true;
+    }
+    return false;
+  }
+
+  /** The enabled services list without the navigation service. */
+  private String withoutNavigation(String services) {
+    if (services == null) return "";
+    StringBuilder rest = new StringBuilder();
+    for (String entry : services.split(":")) {
+      if (entry.isEmpty() || isNavigationEntry(entry)) continue;
+      if (rest.length() > 0) rest.append(':');
+      rest.append(entry);
+    }
+    return rest.toString();
+  }
+
+  private void setNavigationServices(String services) {
+    try {
+      Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, services);
+      Settings.Secure.putString(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, "1");
     } catch (SecurityException e) {
-      Log.w(TAG, "Could not re-enable navigation service", e);
+      Log.w(TAG, "Could not update navigation service", e);
     }
   }
 
