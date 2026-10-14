@@ -68,6 +68,14 @@ The guide's card commands are for Linux. `fel-card-macos.py` is a port with the 
 checks (MBR only, no partition before sector 8192, independent re-read, refuses to
 overwrite a backup) plus a guard on the exact disk size:
 
+**Use an external USB card reader with this macOS script.** It requires
+`Internal=false` and `BusProtocol=USB`. A card in a MacBook's built-in SDXC reader
+can be removable but marked internal, and will not appear in `diskutil list
+external physical`. Use `diskutil list` and `diskutil info diskN` to diagnose a
+missing card, not to bypass the script's target checks. The Windows script's
+built-in-reader support does not apply to this macOS port. See the
+[additional May-unit observations](pf1007l-macos-20260529-report.md#additional-macos-access-attempt-2026-10-13).
+
 ```sh
 diskutil list external physical          # before and after inserting the card
 diskutil info diskN | grep 'Disk Size'   # the exact byte count
@@ -124,6 +132,14 @@ diagnostics/sunxi-tools/sunxi-fel -v -p uboot diagnostics/a33-uboot-out/u-boot-s
 U-Boot runs `ums 0 mmc 0,1`: the SD card and the eMMC appear as two disks. Identify the
 eMMC by size. Here it was "UMS disk 1", 15,634,268,160 bytes, **Media Read-Only: Yes**.
 If macOS offers to initialize a disk, choose **Ignore**.
+
+Enumeration need not be immediate. On an
+[additional May unit](pf1007l-macos-20260529-report.md#additional-macos-access-attempt-2026-10-13),
+the first USB and disk checks after `Starting U-Boot` were empty, but the read-only
+eMMC appeared on a later check without another power cycle. No exact delay was
+measured. Allow a bounded observation period and repeat the read-only USB/disk
+checks before declaring failure or sending another RAM payload. `Starting U-Boot`
+alone does not prove that UMS is ready. Identify the disk afresh before any backup.
 
 ```sh
 diskutil list external physical
