@@ -69,6 +69,8 @@ tested route, not evidence that those broader changes are required on this build
 PR #73 also verified a full backup through the repository's existing read-only
 [Route U](allwinner-a33-mainline-uboot.md). That route remains untested on this
 Pastigio unit; the failed borrowed U-Boot attempts below used different binaries.
+A [second Pastigio unit](#second-pastigio-unit) completed Route U, and found that
+`su 0` from ADB can't remount `/system`.
 
 The initially submitted key writer exposed the whole eMMC as a writable USB disk.
 The maintainer [requested a replacement](https://github.com/wesbos/photo-frame-dashboard/pull/73#issuecomment-6147848346)
@@ -362,10 +364,34 @@ Root ADB is powerful administration access. Retaining RSA authentication does
 not encrypt Android 6 ADB TCP traffic. This owner's LAN setup is not an instruction
 to expose port 5555 to the internet or a shared untrusted network.
 
+## Second Pastigio unit
+
+Same listing ([Amazon.ca B0D41ZMYB2](https://www.amazon.ca/dp/B0D41ZMYB2)), firmware
+and stock boot hashes as the first Pastigio unit. Host: macOS.
+
+### Route U needed 4-bit 26 MHz eMMC
+
+The `build-uboot.sh` build started, then no USB device appeared. A boot script with
+only `ums 0 mmc 0` (the SD card) enumerated, so the eMMC was the problem. With the
+eMMC at 4-bit 26 MHz ([patch](patches/pf1007l-v2025.10-emmc-4bit-26mhz.patch)),
+Route U and the FEL stub card worked. The SOMY unit in PR #73 didn't need this.
+
+### `su 0` from ADB has no capabilities
+
+The stock `adbd` keeps only `CAP_SETUID` and `CAP_SETGID` (`CapBnd: ffffffe0000000c0`),
+and `su 0` inherits that. `pm` works, but `mount -o remount,rw /system` fails with
+`Operation not permitted`. Apps keep full capabilities, so `su` from an app is full
+root. The first unit's patched `adbd` doesn't have this limit.
+
+### Video
+
+No HEVC or VP9 decoder. H.264 720p60 plays in hardware.
+
 ## What remains untested or unpublished
 
 - The repository's complete PF1007L Route U / Route S on this board, and the FEL
-  stub SD-card alternative that another ZC002 owner reports in issue #38.
+  stub SD-card alternative that another ZC002 owner reports in issue #38. Both work
+  on the [second Pastigio unit](#second-pastigio-unit).
 - The separate `system` inode-bitmap padding-bit observation remains outside the
   completed `/data` validation above.
 - Booting the stock image, any full-device restore, serial diagnostics, a newer
