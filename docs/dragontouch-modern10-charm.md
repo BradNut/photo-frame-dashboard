@@ -155,3 +155,82 @@ The frame fetches the hosted site directly over Wi-Fi; the Mac does not need to 
 The local source checkout used for the trial was
 `9dd323e7974f1d4cc10935044386101f9c18e6d0`. Check the current repository and the identity of
 your own frame before adapting these observations.
+
+## Follow-up, 2026-10-14: reboot behaviour, and the native kiosk on this unit
+
+Same unit, same host family (Apple silicon Mac, macOS 27.0.1). The report above covers the Firefox
+route set up on 12 October; this records what two further days of daily use on the same unit added,
+and answers two things that report left open.
+
+### Root ADB survives a reboot (previously untested)
+
+After a normal reboot, connecting to `<frame-ip>:5555` again succeeded with no authorization prompt
+and the shell was still root. The Android **Settings → Home** choice persisted as well.
+
+### The native kiosk runs on this unit (previously untested here)
+
+The report above notes that the repository's native kiosk APK "has not been tested on this unit".
+It has now run on this unit continuously for two days, with two deliberate differences from
+`dashboard/kiosk/`:
+
+- **GeckoView rather than WebView.** This build ships AOSP WebView `44.0.2403.119`, too old to run
+  the dashboard at all (no ES modules, no CSS `clamp()`). The kiosk is built around **GeckoView
+  `143.0.20251003115653`, armeabi-v7a** — the same engine as the Firefox already installed on the
+  unit — so nothing on `/system` is touched and the stock WebView is left in place. That avoids the
+  WebView-swap route in [biuframe-setup-guide.md](biuframe-setup-guide.md) on this unit.
+- **A `BOOT_COMPLETED` receiver rather than the Home-app route.** The kiosk starts itself from a
+  `BootReceiver` and retries a failed load every 5 s, because Wi-Fi is usually not up yet at boot.
+  VPhoto still claims `HOME`; the launcher's home screen carries a shortcut inserted directly into
+  `launcher.db` (the launcher-database technique already described in [biuframe.md](biuframe.md)).
+
+Observed working on this unit: the board renders full-screen at 1280x800 in the kiosk; the
+two-finger hold for 1.5 s opens the native menu; **Exit Calendar** reaches Rootless Launcher; the
+Accessibility service's floating **Back** / **Dashboard** buttons return to the board from Settings;
+and the board starts itself after a reboot. As the kiosk README warns for other units, the
+two-finger gesture could not be reproduced by injected touch here either — this touch controller is
+protocol A (`gslX680`, no `ABS_MT_SLOT`) and Android rejected a synthetic two-contact frame — so it
+was confirmed by a physical press.
+
+### Force-stopping the app, or installing over it, drops the Accessibility service
+
+The floating-button service was enabled by root ADB as documented above, and was later found **no
+longer on the enabled list** after the kiosk had been force-stopped (`am force-stop`). A
+`pm install -r` of the kiosk on its own did **not** drop it, tested straight afterwards. With no
+navigation bar, those buttons are the way back from Settings, so this is worth checking after
+either. Re-enable by root:
+
+```sh
+adb shell settings put secure enabled_accessibility_services <pkg>/<pkg>.NavigationService
+adb shell settings put secure accessibility_enabled 1
+```
+
+Having the kiosk re-add itself on start, as `dashboard/kiosk`'s `keepNavigationEnabled()` does with
+`WRITE_SECURE_SETTINGS`, is the durable fix. The symptom matches the PF1007L note in the
+[kiosk README](../dashboard/kiosk/README.md#frames-without-home-or-back-buttons), on different
+firmware. Whether a reboot alone also drops it was not isolated.
+
+### One blank board, and a date bug that presents as a device fault
+
+A single blank-white 1280x800 board was seen, with the kiosk activity still focused, no crash and no
+error logged. It was not pinned to one cause: a stalled load and a stalled compositor both fit what
+was observed. What is certain is that GeckoView reports both — `ProgressDelegate.onPageStop(success
+= false)` for a failed load, and `ContentDelegate.onPaintStatusReset`, documented as firing
+"whenever the painted content is no longer being displayed" — and that a kiosk which retries only on
+a *failed* load will sit on a hung one indefinitely. The kiosk on this unit now retries a load that
+has not finished, and rebuilds the session when the painted content stops being displayed.
+
+A trap worth recording while adapting the upstream kiosk's stall retry: **on a load that hangs,
+GeckoView fires `onFirstContentfulPaint` for the empty document.** Its own documentation says that
+callback "may be nothing more than the page background colour. It is not an indication that the
+whole page has been rendered." Treating it as "the page loaded" — the obvious reading of the name,
+and how a WebView port would naturally read it — disables the stall retry exactly when it is
+needed. Key the stall off `ProgressDelegate.onPageStop` instead, and treat
+`ContentDelegate.onPaintStatusReset` as the callback that actually means the board has gone blank.
+
+Separately, worth knowing because it presents as a device fault: **this frame's clock is set from
+the network shortly after boot and can jump by years.** A page loaded before the jump computed its
+date range from the wrong clock, so the calendar came up on an empty week in 1969 and the day view
+read "free" all day, while weather and news (which involve no date) looked perfectly fine.
+`adb shell uptime` reporting **idle time longer than uptime** was the tell.
+
+Still untested on this unit: factory-reset behaviour, and firmware restore.
