@@ -36,9 +36,11 @@ ISRG_X2_FP="69:72:9B:8E:15:A8:6E:FC:17:7A:57:AF:B7:17:1D:FC:64:AD:D2:8C:2F:CA:8C
 PROFILE=""
 EXPECT_MODEL=""
 EXPECT_MANUFACTURER=""
-EXPECT_BOOT_SECTOR=""
-BACKUP_SECTORS=""
 EXPECT_WIFI_DRIVER=""
+EXPECT_BOOT_SECTOR=""
+EXPECT_RECOVERY_SECTOR=""
+EXPECT_SYSTEM_SECTOR=""
+BACKUP_SECTORS=""
 EXPECT_NO_PROCESSES=""
 VENDOR_DISABLE=()
 VENDOR_HIDE=()
@@ -64,7 +66,8 @@ get_md5() {
 
 # Run a script on the frame as root. The script is pushed as a file to avoid quoting problems.
 root_script() {
-  local file="$(mktemp)"
+  local file
+  file="$(mktemp)"
   cat > "$file"
   adb push "$file" "$DEV_TMP/step.sh" >/dev/null
   rm -f "$file"
@@ -72,7 +75,10 @@ root_script() {
 }
 
 fetch() {  # fetch <url> <sha256> <name>
-  local url=$1 sha=$2 out="$CACHE/$3"
+  local url sha out
+  url=$1
+  sha=$2
+  out="$CACHE/$3"
   mkdir -p "$CACHE"
   if [ ! -f "$out" ] || [ "$(shasum -a 256 "$out" | cut -d' ' -f1)" != "$sha" ]; then
     curl -sfL -o "$out.partial" "$url" || die "download failed: $url"
@@ -99,9 +105,11 @@ detect_profile() {
       PROFILE="BIUFRAME"
       EXPECT_MODEL="10X1"
       EXPECT_MANUFACTURER="Synergy"
-      EXPECT_BOOT_SECTOR=90112
-      BACKUP_SECTORS=$((8192 + 0x3B4000))
       EXPECT_WIFI_DRIVER="^ssv6x5x"
+      EXPECT_BOOT_SECTOR=90112
+      EXPECT_RECOVERY_SECTOR=114688
+      EXPECT_SYSTEM_SECTOR=614400
+      BACKUP_SECTORS=3891200 # 8192 + 0x3B4000
       EXPECT_NO_PROCESSES='adups|stresstest|biuframe|rockchip.update|DeviceTest|com.android.rk'
       VENDOR_DISABLE=(com.shenju.biuframe com.adups.fota android.rockchip.update.service
         com.cghs.stresstest com.DeviceTest com.android.rk com.android.rk.mediafloat)
@@ -112,9 +120,11 @@ detect_profile() {
       PROFILE="AKIMART"
       EXPECT_MODEL="ZN-DP1002"
       EXPECT_MANUFACTURER="rockchip"
-      EXPECT_BOOT_SECTOR=90112
-      BACKUP_SECTORS=2859008
       EXPECT_WIFI_DRIVER="^rk915"
+      EXPECT_BOOT_SECTOR=90112
+      EXPECT_RECOVERY_SECTOR=122880
+      EXPECT_SYSTEM_SECTOR=630784
+      BACKUP_SECTORS=2859008
       EXPECT_NO_PROCESSES='frameo|mxota|cldevicetest|rockchip.update'
       VENDOR_DISABLE=(net.frameo.frame com.muxintu.app.mxota com.szclink.app.cldevicetest android.rockchip.update.service)
       VENDOR_HIDE=(com.muxintu.app.mxota com.szclink.app.cldevicetest)
@@ -129,7 +139,8 @@ detect_profile() {
 cmd_check() {
   say "Checking the frame matches a known unit"
   command -v adb >/dev/null || die "adb not found (brew install android-platform-tools)"
-  local state="$(adb get-state 2>/dev/null || true)"
+  local state
+  state="$(adb get-state 2>/dev/null || true)"
   [ "$state" = device ] || die "no authorized ADB device (state: ${state:-none}). Accept the prompt on the frame."
 
   detect_profile
@@ -142,39 +153,50 @@ cmd_check() {
   dev_has 'Rockchip RK3126' cat /proc/cpuinfo || die "CPU is not Rockchip RK3126"
   ok "RK3126"
 
-  if [ -n "$EXPECT_WIFI_DRIVER" ]; then
-    dev_has "$EXPECT_WIFI_DRIVER" lsmod || die "Wi-Fi driver $EXPECT_WIFI_DRIVER not loaded"
-    ok "Wi-Fi driver $EXPECT_WIFI_DRIVER"
-  fi
+  dev_has "$EXPECT_WIFI_DRIVER" lsmod || die "Wi-Fi driver $EXPECT_WIFI_DRIVER not loaded"
+  ok "Wi-Fi driver $EXPECT_WIFI_DRIVER"
 
   [ "$(sh_dev "su -c id" | cut -d' ' -f1)" = "uid=0(root)" ] || die "su did not give root"
   ok "su gives root"
 
-  local boot_start
+  local boot_start recovery_start system_start userdata_start
   boot_start="$(sh_dev "su -c 'cat /sys/block/mmcblk0/mmcblk0p5/start'")"
+  recovery_start="$(sh_dev "su -c 'cat /sys/block/mmcblk0/mmcblk0p6/start'")"
+  system_start="$(sh_dev "su -c 'cat /sys/block/mmcblk0/mmcblk0p11/start'")"
+  userdata_start="$(sh_dev "su -c 'cat /sys/block/mmcblk0/mmcblk0p13/start'")"
+
   [ "$boot_start" = "$EXPECT_BOOT_SECTOR" ] || die "boot partition is not at eMMC sector $EXPECT_BOOT_SECTOR"
-  ok "partition layout (boot at eMMC sector $EXPECT_BOOT_SECTOR)"
+  [ "$recovery_start" = "$EXPECT_RECOVERY_SECTOR" ] || die "recovery partition is not at eMMC sector $EXPECT_RECOVERY_SECTOR"
+  [ "$system_start" = "$EXPECT_SYSTEM_SECTOR" ] || die "system partition is not at eMMC sector $EXPECT_SYSTEM_SECTOR"
+  [ "$userdata_start" = "$BACKUP_SECTORS" ] || die "userdata partition is not at eMMC sector $BACKUP_SECTORS"
+  ok "partition layout (boot/recovery/system/userdata bounds match)"
 }
 
 cmd_backup() {
   cmd_check
-  local serial="$(sh_dev getprop ro.serialno)"
-  local dir="$ROOT/backups/$serial"
-  local out="$dir/emmc-0-$BACKUP_SECTORS.img.gz"
+  local serial dir out size raw
+  serial="$(sh_dev getprop ro.serialno)"
+  dir="$ROOT/backups/$serial"
+  out="$dir/emmc-0-$BACKUP_SECTORS.img.gz"
+  
   mkdir -p "$dir"
   [ -e "$out" ] && die "$out already exists"
   say "Reading $BACKUP_SECTORS sectors ($((BACKUP_SECTORS / 2048)) MiB) over ADB"
+  
   adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 count=$BACKUP_SECTORS 2>/dev/null'" \
     | tee >(shasum -a 256 | cut -d' ' -f1 > "$out.sha256.raw") | gzip -1 > "$out.partial"
   mv "$out.partial" "$out"
-  local size="$(gunzip -c "$out" | wc -c | tr -d ' ')"
+  
+  size="$(gunzip -c "$out" | wc -c | tr -d ' ')"
   [ "$size" = $((BACKUP_SECTORS * 512)) ] || die "backup is $size bytes, expected $((BACKUP_SECTORS * 512))"
-  local raw
+  
   raw="$(cat "$out.sha256.raw")"
   [ "$(gunzip -c "$out" | shasum -a 256 | cut -d' ' -f1)" = "$raw" ] || die "gzip readback does not match stream hash"
+  
   ok "$size bytes, SHA-256 $raw"
   echo "$raw" > "$out.sha256"
   rm -f "$out.sha256.raw"
+  
   cmd_verify_backup "$out"
   ok "backup saved to $out"
 }
@@ -182,13 +204,14 @@ cmd_backup() {
 # Re-read boot, recovery and the start of system from the frame and compare with a backup image.
 cmd_verify_backup() {
   [ -n "$PROFILE" ] || detect_profile
-  local out=${1:?usage: verify-backup <backup.img.gz>}
+  local out region name start count a b
+  out=${1:?usage: verify-backup <backup.img.gz>}
   [ -f "$out" ] || die "$out not found"
   say "Re-reading boot, recovery and 16 MiB of system data to compare with $(basename "$out")"
-  local region name start count a b
   for region in "${VERIFY_REGIONS[@]}"; do
     read -r name start count <<<"$region"
     a="$(adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 skip=$start count=$count 2>/dev/null'" | shasum -a 256 | cut -d' ' -f1)"
+    # dd stops reading early; ignore gunzip's broken pipe.
     b="$({ gunzip -c "$out" 2>/dev/null || true; } | dd bs=512 skip="$start" count="$count" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)"
     [ "$a" = "$b" ] || die "$name differs between backup and re-read"
     ok "$name matches"
@@ -253,7 +276,7 @@ step_apps() {
 
 step_webview() {
   say "System WebView 44 -> $WEBVIEW_VERSION"
-  local apk libs
+  local apk libs want got f
   apk="$(fetch "$WEBVIEW_URL" "$WEBVIEW_SHA256" webview-$WEBVIEW_VERSION.apk)"
   libs="$CACHE/webview-libs"
   rm -rf "$libs"
@@ -278,7 +301,6 @@ chown -R 0:0 \$W/webview.apk \$W/lib
 sync
 mount -o remount,ro /system
 EOF
-  local want got f
   for f in "$apk" "$libs"/*.so; do
     want="$(get_md5 "$f")"
     case "$f" in
@@ -293,7 +315,7 @@ EOF
 
 step_certs() {
   say "Adding Let's Encrypt roots (ISRG Root X1, X2) to the system CA store"
-  local pem fp h tmp
+  local pem fp h tmp url pair
   tmp="$(mktemp -d)"
   for pair in "$ISRG_X1_URL $ISRG_X1_FP" "$ISRG_X2_URL $ISRG_X2_FP"; do
     read -r url fp <<<"$pair"
@@ -346,10 +368,12 @@ cmd_verify() {
   ok "swap 512 MB after boot"
   dev_has 'Window\{.* NavigationBar\}' dumpsys window windows || die "no navigation bar window"
   ok "navigation bar present"
+  
   local running
   running="$(sh_dev ps | grep -E "$EXPECT_NO_PROCESSES" || true)"
   [ -z "$running" ] || die "vendor processes still running: $running"
   ok "no vendor processes"
+  
   sh_dev "ls /system/etc/security/cacerts/6187b673.0 /system/etc/security/cacerts/8794b4e3.0" >/dev/null || die "Let's Encrypt roots missing"
   ok "Let's Encrypt roots present"
 }
@@ -378,5 +402,5 @@ case "${1:-}" in
   verify-backup) cmd_verify_backup "${2:-}" ;;
   apply) cmd_apply ;;
   verify) cmd_verify ;;
-  *) sed -n '5,12p' "$0"; exit 1 ;;
+  *) sed -n '2,13p' "$0"; exit 1 ;;
 esac
