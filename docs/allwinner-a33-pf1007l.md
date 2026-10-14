@@ -515,14 +515,14 @@ measure again; do not assume the Rockchip swap prescription applies.
 This setup does not update Android, remove the root exposure, configure automatic
 startup, or integrate real calendar data. Those are separate tasks.
 
-## May firmware: sensors and native UI
+## Sensor and native UI observations
 
-Tested on one PF1007L over USB from Linux: AiMOR 6.0.78, firmware
-`V10-1680.0.20260529`, Android 6.0.1 / SDK 23, A33, about 1 GiB RAM,
+Tested on one PF1007L over USB from Linux: AiMOR 6.0.78, reported firmware
+suffix `V10-1680.0.20260529`, Android 6.0.1 / SDK 23, A33, about 1 GiB RAM,
 1280 × 800 display and nominal 16 GB eMMC. Inventory used read-only
 `dumpsys`, `/proc` and `/sys`; no board teardown or bus writes.
 
-The [May firmware report](pf1007l-macos-20260529-no-mmc-hs-report.md) lists
+An [existing PF1007L report](pf1007l-macos-20260529-no-mmc-hs-report.md) lists
 the same sensor names. Additional checks distinguish working behavior from
 advertised interfaces:
 
