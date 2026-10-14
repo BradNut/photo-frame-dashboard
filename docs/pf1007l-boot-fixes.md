@@ -111,6 +111,11 @@ needs a reboot. The backups from `apply` are in `backups/pf1007l-boot/`.
   `restrict default kod limited`), exempt the frame. A frame that retries quickly can stay
   limited. On pfSense: Services → NTP → ACLs, add the frame's address with only "No Modify",
   "No Peer" and "No Trap". That produces `restrict <frame IP> mask 255.255.255.255 nomodify nopeer notrap`.
+- **NTP, no answer:** many home routers do not answer NTP at all. Then the clock sync never
+  succeeds: `/data/local/frame-lasttime` is never written, and after a power cut the clock starts
+  in 1969 again. Set `NTP_SERVER` to a public server, such as `time.google.com`. Before the 3 s
+  limit on each try, a router with no NTP answer also left `nc` spinning at about 45 % CPU, which
+  overheated one frame to 75 °C and made it hang.
 - **IPv6:** if the network advertises an IPv6 DNS server that the frame cannot reach (for example
   a documentation address such as `2001:db8::`, left from a test), fix the router or set
   `IGNORE_IPV6_RA=1`.
