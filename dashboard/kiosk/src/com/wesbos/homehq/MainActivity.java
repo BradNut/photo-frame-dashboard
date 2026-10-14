@@ -146,6 +146,12 @@ public class MainActivity extends Activity {
       }
 
       @Override
+      public void onPageCommitVisible(WebView view, String url) {
+        // The retry reached the server and is drawing; let a slow page finish.
+        handler.removeCallbacks(stall);
+      }
+
+      @Override
       public void onPageFinished(WebView view, String url) {
         if (!pageFailed) {
           offline.setVisibility(View.GONE);
@@ -200,6 +206,7 @@ public class MainActivity extends Activity {
     if (url != null) {
       handler.removeCallbacks(retry);
       handler.removeCallbacks(stall);
+      retryUrl = url;
       web.loadUrl(url);
     }
   }
