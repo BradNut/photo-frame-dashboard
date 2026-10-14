@@ -21,6 +21,7 @@ welcome. Missing yours? See the README's
 | <a href="https://www.amazon.com/dp/B0CQN2PKQR?tag=webo080-20"><img src="images/devices/B0CQN2PKQR.jpg" width="120" alt="Pastigio 15.6 inch Frameo frame"></a><br>Pastigio FRAME156 15.6" (Frameo) | Rockchip RK3326, Android 8.1 | Frameo Settings → Beta → ADB Access | Shipped `su` | [pastigio-frame156.md](pastigio-frame156.md) | [Amazon](https://www.amazon.com/dp/B0CQN2PKQR?tag=webo080-20) (sold as FRAME156; not confirmed as the tested listing) |
 | Pastigio FRAME157 15-inch (Frameo) | Rockchip RK3326, Android 8.1 | No. Frameo ADB Access gives `unauthorized` with no prompt; host key written to userdata `adb_keys` from Loader after a verified backup | Shipped `su` | [pastigio-frame157.md](pastigio-frame157.md) | Not recorded |
 | Rollei Smart Frame WiFi 107 10.1" (`SmartFrameWiFi107`, Frameo) | Rockchip RK3126, Android 6.0.1 | **Yes, USB, no prompt; key check appears to be skipped** (one computer tested; needs a USB-A to USB-C cable) | Shipped `su` | [rollei-smartframe-107.md](rollei-smartframe-107.md) | [Verkkokauppa.com, Finland](https://www.verkkokauppa.com/fi/product/1019555/Rollei-Smart-Frame-WiFi-107-digitaalinen-valokuvakehys-musta) |
+| Denver PFF-1015 10.1" (Frameo, firmware `F608D_V10_ZhiHeXing-PFF-1015-V1.0.1202302221059`), **512 MB RAM** | Rockchip RK3126, Android 6.0.1, low-RAM build (`ro.config.low_ram=true`) | Frameo Settings → Beta program → ADB access, USB. Authorized with no prompt and no `adb_keys`; key check appears to be skipped (one computer tested) | Shipped SuperSU `su`, no prompt | [denver-pff-1015.md](denver-pff-1015.md). Its low-RAM mode kills any app you leave unless it is whitelisted in `/system/etc/lowmem_package_filter.xml` | Not recorded |
 | Veidoo Frame 10.1" (F10, firmware `F606C_WeiDu_Frameo-V1.0.1202603071359`) | Rockchip RK3126, Android 6.0.1 | Frameo Settings → About → Beta Program → ADB Access, USB. `adbd` also listens on 5555; key check untested | Shipped SuperSU `su`, no prompt | [veidoo-f10.md](veidoo-f10.md) | Not recorded |
 | VESWWE DP100 10.1" (Frameo), `ro.product.model` `DP100`. Same About screen as the next row: check the model | Rockchip RK3326 (S101 board), Android 8.1, NAND | Frameo beta menu, USB | Shipped `su` and `adb root` | [veswwe-10.1.md](veswwe-10.1.md) | Not recorded |
 | VESWWE DP100 10.1" (Frameo), `ro.product.model` `DP101`, build `DP101_Frameo_V02_26061607` | `ceres` platform (SoC not confirmed), Android 10, WebView 113 | Frameo Settings → About → Beta Program → ADB access, USB | Not needed; not tested | [veswwe-dp101.md](veswwe-dp101.md) | [Amazon.ca](https://www.amazon.ca/dp/B0H2FC19YB) |
@@ -61,5 +62,8 @@ welcome. Missing yours? See the README's
   `/data/misc/adb/adb_keys` (matching the `adb_keys_file` ownership/mode/SELinux context already
   on the device) authorizes ADB without one, and without touching the boot image or any binary.
   Seen on the Uhale SI006 and the SOMY ZC002.
+- **Low-RAM Rockchip builds** (`ro.config.low_ram=true`) can kill every app the moment you switch
+  away from it, including the kiosk and its navigation buttons, unless the app is listed in
+  `/system/etc/lowmem_package_filter.xml`. See [denver-pff-1015.md](denver-pff-1015.md#low-ram-mode-kills-every-app-you-leave).
 - **Cables:** several USB-C frames need a USB-A to USB-C data cable. The cable in the box is often
   power only.

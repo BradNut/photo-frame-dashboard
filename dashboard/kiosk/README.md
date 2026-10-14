@@ -82,6 +82,11 @@ it this permission once:
 adb shell pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS
 ```
 
+With the grant, Home HQ also rebinds the service if it is still listed but not running, which is
+what Android 6 leaves behind when Home HQ's process is killed. If the buttons keep disappearing
+whenever you leave Home HQ, the firmware may be killing every app you switch away from; see
+[the Denver PFF-1015 notes](../../docs/denver-pff-1015.md#low-ram-mode-kills-every-app-you-leave).
+
 The grant survives updates. To turn the buttons off for good, revoke it first
 (`pm revoke` with the same arguments), then disable the service in Accessibility settings.
 
