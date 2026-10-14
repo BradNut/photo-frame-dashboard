@@ -67,7 +67,7 @@ boot on the Pastigio unit recorded here. The boot patch below is a historical
 tested route, not evidence that those broader changes are required on this build.
 
 PR #73 also verified a full backup through the repository's existing read-only
-[Route U](allwinner-a33-mainline-uboot.md). That route remains untested on this
+[Route U](allwinner-a33-mainline-uboot.md). That route remains untested on the first
 Pastigio unit; the failed borrowed U-Boot attempts below used different binaries.
 A [second Pastigio unit](#second-pastigio-unit) completed Route U, and found that
 `su 0` from ADB can't remount `/system`.
@@ -380,8 +380,8 @@ Route U and the FEL stub card worked. The SOMY unit in PR #73 didn't need this.
 
 The stock `adbd` keeps only `CAP_SETUID` and `CAP_SETGID` (`CapBnd: ffffffe0000000c0`),
 and `su 0` inherits that. `pm` works, but `mount -o remount,rw /system` fails with
-`Operation not permitted`. Apps keep full capabilities, so `su` from an app is full
-root. The first unit's patched `adbd` doesn't have this limit.
+`Operation not permitted`. Guess, not tested here: `su` from an app may keep full
+capabilities, and the first unit's patched `adbd` may not have this limit.
 
 ### Video
 
@@ -389,9 +389,9 @@ No HEVC or VP9 decoder. H.264 720p60 plays in hardware.
 
 ## What remains untested or unpublished
 
-- The repository's complete PF1007L Route U / Route S on this board, and the FEL
-  stub SD-card alternative that another ZC002 owner reports in issue #38. Both work
-  on the [second Pastigio unit](#second-pastigio-unit).
+- On the first Pastigio unit: the repository's complete PF1007L Route U / Route S, and
+  the FEL stub SD-card alternative that another ZC002 owner reports in issue #38. (Both
+  worked on the [second Pastigio unit](#second-pastigio-unit).)
 - The separate `system` inode-bitmap padding-bit observation remains outside the
   completed `/data` validation above.
 - Booting the stock image, any full-device restore, serial diagnostics, a newer

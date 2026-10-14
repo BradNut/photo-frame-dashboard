@@ -335,8 +335,7 @@ change to the U-Boot source, and its reports are the reference.
 
 | Symptom | What fixed it | Reports |
 | --- | --- | --- |
-| Read errors, `ums` drops, slow or failing backup | eMMC **4-bit at 26 MHz**, or 8-bit at 25 MHz | #16, #18, #24, #27, #29, #6 (8-bit high speed hung), #81 (8-bit dropped 42–172 MB in; 4-bit at 26 MHz with START STOP finished two passes) |
-| Pastigio ZC002: no USB device at all after U-Boot starts, while a script with only `ums 0 mmc 0` (SD card) enumerates | eMMC **4-bit at 26 MHz**: [patch](patches/pf1007l-v2025.10-emmc-4bit-26mhz.patch) | [Second Pastigio unit](pastigio-zc002.md#second-pastigio-unit) |
+| Read errors, `ums` drops, slow or failing backup, or no USB device at all after U-Boot starts while an SD-only `ums 0 mmc 0` script enumerates | eMMC **4-bit at 26 MHz** ([patch](patches/pf1007l-v2025.10-emmc-4bit-26mhz.patch)), or 8-bit at 25 MHz | #16, #18, #24, #27, #29, #6 (8-bit high speed hung), #81 (8-bit dropped 42–172 MB in; 4-bit at 26 MHz with START STOP finished two passes), #96 (Pastigio ZC002, no USB device at 8-bit: [report](pastigio-zc002.md#second-pastigio-unit)) |
 | The disk disappears when the computer sends "eject" or "stop" | Ignore START STOP UNIT unless it is a real unload: [patch](patches/pf1007l-v2025.10-start-stop.patch) | #28, #16, #24, #81 |
 | Drops through a bus-powered hub | Direct port or powered hub; low-power build (`CONFIG_SUNXI_NO_PMIC=y`, CPU at 408 MHz) | #16, #24, #29 |
 | Single read errors | Retry each read up to 8 times | #24 |

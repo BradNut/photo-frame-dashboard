@@ -45,7 +45,8 @@ ADB over Wi-Fi.
 ## Boot patch and Wi-Fi ADB
 
 Before any write, the full eMMC was backed up and verified by a full independent
-re-read over U-Boot USB mass storage. The first USB-action-only patch was tried
+re-read over U-Boot USB mass storage, using the repo's read-only
+[Route U](allwinner-a33-mainline-uboot.md) build from `scripts/a33-uboot/`. The first USB-action-only patch was tried
 and reverted; the restored boot range matched the original backup.
 
 The working boot ramdisk has three changes:
@@ -60,7 +61,8 @@ authorization dialog appeared. With it, `adb connect <frame-ip>:5555` works and
 reconnects after reboot. A connection from a different, unregistered key was not
 tested, so rejection of other hosts remains unverified.
 
-The patched boot partition was read back and compared with the intended image.
+This report doesn't record which write path was used for the boot writes. Use a guarded
+on-device U-Boot script, never a writable USB disk. The patched boot partition was read back and compared with the intended image.
 The local extension of `scripts/a33-uboot/boot-patch.py` used to build it is not
 included in this report; the repository version should not be assumed to support
 these changes. No patched image or host key is published here.
@@ -80,7 +82,8 @@ read-only and the temporary maintenance script was absent.
 ## Working dashboard setup
 
 - Installed Rootless Launcher 3.9.1 and Home HQ 1.1.
-- Replaced WebView 44 with 106.0.5249.126 and its ARM libraries. The complete
+- Replaced WebView 44 with 106.0.5249.126 and its ARM libraries. Pinned sources and hashes for
+  the WebView, launcher and certificates are in [si006-uhale.md](si006-uhale.md). The complete
   original APK and oat tree was retained for restoration.
 - Added ISRG Root X1, GTS Root R1 and GTS Root R4 to the system certificate store.
 - Disabled FOTA (`com.adups.fota`) and Uhale (`com.zeasn.frame`) for user 0.
