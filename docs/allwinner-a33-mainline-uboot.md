@@ -74,7 +74,7 @@ can be removable but marked internal, and will not appear in `diskutil list
 external physical`. Use `diskutil list` and `diskutil info diskN` to diagnose a
 missing card, not to bypass the script's target checks. The Windows script's
 built-in-reader support does not apply to this macOS port. See the
-[additional May-unit observations](pf1007l-macos-20260529-report.md#additional-macos-access-attempt-2026-10-13).
+[additional May-unit observations](pf1007l-macos-20260529-report.md#second-unit-larger-emmc-2026-10-13-access-only-no-backup).
 
 ```sh
 diskutil list external physical          # before and after inserting the card
@@ -134,7 +134,7 @@ eMMC by size. Here it was "UMS disk 1", 15,634,268,160 bytes, **Media Read-Only:
 If macOS offers to initialize a disk, choose **Ignore**.
 
 Enumeration need not be immediate. On an
-[additional May unit](pf1007l-macos-20260529-report.md#additional-macos-access-attempt-2026-10-13),
+[additional May unit](pf1007l-macos-20260529-report.md#second-unit-larger-emmc-2026-10-13-access-only-no-backup),
 the first USB and disk checks after `Starting U-Boot` were empty, but the read-only
 eMMC appeared on a later check without another power cycle. No exact delay was
 measured. Allow a bounded observation period and repeat the read-only USB/disk
@@ -381,7 +381,9 @@ usbipd policy remove --guid <guid>
 
 ### FEL card
 
-`fel-card-windows.ps1` has been tested on disk images only, not yet on a real card in a reader.
+`fel-card-windows.ps1` has passed backup, write and readback on one real 4 GB card (#98). Windows'
+default partition on that card started at 1 MiB; the script needs no partition before 4 MiB
+(sector 8192), so recreate the partition at 4 MiB first.
 
 Run these in an Administrator PowerShell from the repository root. `Get-Disk` before and after
 inserting the card identifies it (Number, Size).

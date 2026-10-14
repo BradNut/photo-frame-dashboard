@@ -12,86 +12,8 @@ Observed on 2026-10-11 with macOS 26.5.1, Apple silicon, and Android platform-to
 plus issues and open PRs. **The local U-Boot and write-script changes described
 below are not included in that revision's build scripts.** This records one
 successful experiment; it does not extend the April-only tools or make another
-unit's flash offsets safe to reuse.
-
-## Additional macOS access attempt (2026-10-13)
-
-This is a **different unit** from the successful 2026-10-11 report below. It had
-the same About-screen firmware, but the larger eMMC. These observations cover
-identification, FEL and read-only UMS access only. They do not establish a completed
-backup or a successful flash operation in this session.
-
-```text
-About model / firmware: PF1007;
-  YHK.F-null-A33-1001-D1024-PF1007L-V10-1680.0.20260529
-AiMOR version: 6.0.78
-Ports (DC jack, or USB-C only): USB-C and microSD/TF;
-  DC-jack presence not retained in this session's record
-Cable and port that gave USB data: direct Mac connection;
-  dock connection did not work in this session;
-  exact cable connector type not confirmed in the retained record
-T3 USB IDs seen / adb devices output: 1f3a:1000; adb devices empty
-T3b network ADB result (port 5555): connection refused at the confirmed frame IP
-T4 sunxi-fel version output: AWUSBFEX; soc=00001667(A33)
-T5 check-dump stage / chunks: skipped; Route U read-only access attempted
-eMMC size in sectors: 30,777,344 (15,758,000,128 bytes)
-Boot partition start sector: not established during this access attempt
-Boot image SHA-256: not established during this access attempt
-Route used and result: Route U RAM-only loader; 1f3a:1010,
-  UMS disk 1, WritableMedia=false; backup did not start successfully
-Host OS: macOS, Apple silicon MacBook Pro;
-  exact macOS version not retained in this session's record
-First failed access step after FEL: Executing SPL completed, then
-  usb_bulk_send ERROR -7 before Starting U-Boot
-```
-
-### Built-in SDXC reader versus an external USB reader
-
-The recovery card was in the MacBook's built-in SDXC reader. `diskutil list
-external physical` did not show it. The full `diskutil list` and `diskutil info`
-identified removable Secure Digital media with `Internal=true` and an exact size
-of 125,671,833,600 bytes. This does not make an internal system disk safe to use.
-
-The repository's `fel-card-macos.py` requires an external USB disk, so it does not
-accept this built-in-reader case. A locally reviewed card-preparation script
-explicitly recognised that reader while retaining the exact-size, removable-media,
-MBR/partition-start, independent prefix-read, exclusive backup and write-readback
-checks. The owner reported completion, and subsequent A33 FEL detection confirmed
-that the card booted the frame into FEL. This is not a hardware test of the
-repository script with a built-in reader. No alternative card-writing script is
-published here; use an external USB reader with the existing script rather than
-removing its guards.
-
-### SPL failures and delayed UMS enumeration
-
-Several loader attempts stopped with `usb_bulk_send ERROR -7` after SPL, before
-the main U-Boot transfer. Later RAM-only diagnostic checkpoints returned to FEL
-both before and after DRAM initialisation. A separate 537,792-byte DRAM
-transfer/readback matched. These checks demonstrated that those particular runs
-could return to FEL and round-trip RAM; they did not prove the cause of earlier
-timeouts or validate flash writes.
-
-With the START STOP correction and null-console configuration already present,
-the read-only loader eventually exposed `UMS disk 1`, 15,758,000,128 bytes,
-`WritableMedia=false`. On one later successful load, immediate USB and disk checks
-were empty, then the disks appeared on a subsequent check **without another power
-cycle**. The exact elapsed time was not recorded. A single empty check immediately
-after `Starting U-Boot` was therefore insufficient to declare that load failed.
-
-### Unmount refusal and later disconnect
-
-The attempted backup stopped before its first read because `storagekitd` dissented
-from the normal `diskutil unmountDisk`. A locally guarded retry path would have
-rechecked disk identity before and after a forced unmount. In the observed retry,
-`diskutil info` failed before that forced-unmount step, and fresh USB/disk checks
-showed that the frame had disappeared. The backup did not complete.
-
-The START STOP handler correction was already in the loaded source, so this is
-not evidence that adding it fixes this disconnect. Power, USB, U-Boot and macOS
-causes were not distinguished. No successful forced-unmount procedure or backup
-is claimed. If a disk disappears, stop and re-establish its exact size, USB identity,
-media name and read-only state rather than reusing its previous disk number or
-weakening the backup guards.
+unit's flash offsets safe to reuse. An access-only attempt on a
+[second unit](#second-unit-larger-emmc-2026-10-13-access-only-no-backup) is at the end.
 
 ## Unit report
 
@@ -607,6 +529,85 @@ for the demo; a correct dashboard date is not evidence of working NTP while offl
    `exit` leaves the interactive shell. Compare screenshots with the owner's panel
    observation before diagnosing a display failure. Record WebView/kiosk/network
    tests separately from successful root and Home startup.
+
+## Second unit (larger eMMC), 2026-10-13: access only, no backup
+
+This is a **different unit** from the successful 2026-10-11 report below. It had
+the same About-screen firmware, but the larger eMMC. These observations cover
+identification, FEL and read-only UMS access only. They do not establish a completed
+backup or a successful flash operation in this session.
+
+```text
+About model / firmware: PF1007;
+  YHK.F-null-A33-1001-D1024-PF1007L-V10-1680.0.20260529
+AiMOR version: 6.0.78
+Ports (DC jack, or USB-C only): USB-C and microSD/TF;
+  DC-jack presence not retained in this session's record
+Cable and port that gave USB data: direct Mac connection;
+  dock connection did not work in this session;
+  exact cable connector type not confirmed in the retained record
+T3 USB IDs seen / adb devices output: 1f3a:1000; adb devices empty
+T3b network ADB result (port 5555): connection refused at the confirmed frame IP
+T4 sunxi-fel version output: AWUSBFEX; soc=00001667(A33)
+T5 check-dump stage / chunks: skipped; Route U read-only access attempted
+eMMC size in sectors: 30,777,344 (15,758,000,128 bytes)
+Boot partition start sector: not established during this access attempt
+Boot image SHA-256: not established during this access attempt
+Route used and result: Route U RAM-only loader; 1f3a:1010,
+  UMS disk 1, WritableMedia=false; backup did not start successfully
+Host OS: macOS, Apple silicon MacBook Pro;
+  exact macOS version not retained in this session's record
+First failed access step after FEL: Executing SPL completed, then
+  usb_bulk_send ERROR -7 before Starting U-Boot
+```
+
+### Built-in SDXC reader versus an external USB reader
+
+The recovery card was in the MacBook's built-in SDXC reader. `diskutil list
+external physical` did not show it. The full `diskutil list` and `diskutil info`
+identified removable Secure Digital media with `Internal=true` and an exact size
+of 125,671,833,600 bytes. This does not make an internal system disk safe to use.
+
+The repository's `fel-card-macos.py` requires an external USB disk, so it does not
+accept this built-in-reader case. A locally reviewed card-preparation script
+explicitly recognised that reader while retaining the exact-size, removable-media,
+MBR/partition-start, independent prefix-read, exclusive backup and write-readback
+checks. The owner reported completion, and subsequent A33 FEL detection confirmed
+that the card booted the frame into FEL. This is not a hardware test of the
+repository script with a built-in reader. No alternative card-writing script is
+published here; use an external USB reader with the existing script rather than
+removing its guards.
+
+### SPL failures and delayed UMS enumeration
+
+Several loader attempts stopped with `usb_bulk_send ERROR -7` after SPL, before
+the main U-Boot transfer. Later RAM-only diagnostic checkpoints returned to FEL
+both before and after DRAM initialisation. A separate 537,792-byte DRAM
+transfer/readback matched. These checks demonstrated that those particular runs
+could return to FEL and round-trip RAM; they did not prove the cause of earlier
+timeouts or validate flash writes.
+
+With the START STOP correction and null-console configuration already present,
+the read-only loader eventually exposed `UMS disk 1`, 15,758,000,128 bytes,
+`WritableMedia=false`. On one later successful load, immediate USB and disk checks
+were empty, then the disks appeared on a subsequent check **without another power
+cycle**. The exact elapsed time was not recorded. A single empty check immediately
+after `Starting U-Boot` was therefore insufficient to declare that load failed.
+
+### Unmount refusal and later disconnect
+
+The attempted backup stopped before its first read because `storagekitd` dissented
+from the normal `diskutil unmountDisk`. A locally guarded retry path would have
+rechecked disk identity before and after a forced unmount. In the observed retry,
+`diskutil info` failed before that forced-unmount step, and fresh USB/disk checks
+showed that the frame had disappeared. The backup did not complete.
+
+The START STOP handler correction was already in the loaded source, so this is
+not evidence that adding it fixes this disconnect. Power, USB, U-Boot and macOS
+causes were not distinguished. No successful forced-unmount procedure or backup
+is claimed. If a disk disappears, stop and re-establish its exact size, USB identity,
+media name and read-only state rather than reusing its previous disk number or
+weakening the backup guards.
 
 ## Related reports
 
