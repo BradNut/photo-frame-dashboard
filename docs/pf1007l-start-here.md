@@ -21,6 +21,7 @@ Detailed guides behind this page:
 | [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) | **Route S:** root ADB over Wi-Fi from the SD card only, no USB data (Windows + WSL, or macOS) |
 | [pf1007l-macos-20260529-recovery-boot-write.md](pf1007l-macos-20260529-recovery-boot-write.md) | **May firmware:** the Route U boot patch written over USB in stock recovery's root-ADB window, no SD card. Erases user data; tight timing |
 | [pf1007l-boot-fixes.md](pf1007l-boot-fixes.md) | **After root:** one Wi-Fi MAC, the clock after power cuts, no freeze at Wi-Fi start, fast DHCP |
+| [January remote-management report](allwinner-a33-pf1007l.md#9-january-unit-remote-management-and-background-services) | **After root, one unit:** native Tailscale SSH, vendor background exceptions and navigation master-switch reset; custom startup helpers not included |
 
 Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.md),
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),

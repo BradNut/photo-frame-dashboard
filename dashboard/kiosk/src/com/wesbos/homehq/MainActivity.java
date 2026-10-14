@@ -302,16 +302,25 @@ public class MainActivity extends Activity {
     if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") != PackageManager.PERMISSION_GRANTED) return;
     String svc = getPackageName() + "/" + NavigationService.class.getName();
     String cur = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+    boolean selected = false;
     if (cur != null) {
       ComponentName want = new ComponentName(this, NavigationService.class);
       for (String entry : cur.split(":")) {
-        if (want.equals(ComponentName.unflattenFromString(entry))) return;
+        if (want.equals(ComponentName.unflattenFromString(entry))) {
+          selected = true;
+          break;
+        }
       }
     }
-    String next = cur == null || cur.isEmpty() ? svc : cur + ":" + svc;
     try {
-      Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, next);
-      Settings.Secure.putString(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, "1");
+      // Some firmware keeps the selected service but resets only the master switch at boot.
+      int enabled = Settings.Secure.getInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, 0);
+      if (selected && enabled == 1) return;
+      if (!selected) {
+        String next = cur == null || cur.isEmpty() ? svc : cur + ":" + svc;
+        Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, next);
+      }
+      if (enabled != 1) Settings.Secure.putString(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, "1");
       Log.i(TAG, "Re-enabled navigation service");
     } catch (SecurityException e) {
       Log.w(TAG, "Could not re-enable navigation service", e);
