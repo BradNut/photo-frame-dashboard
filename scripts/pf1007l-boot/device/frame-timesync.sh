@@ -4,7 +4,7 @@
 # a rate-limit reply (NTP Kiss-o'-Death) as the time and then waited a day to try again.
 # At boot: restore the last saved time (close enough for TLS), then ask NTP_SERVER (or the Wi-Fi
 # gateway) every 2 s until it answers (20 s after a refusal, so a rate limiter can recover), then
-# every 6 h. The time is saved every 10 minutes. Uses SNTP over toybox nc.
+# every 6 h. The time is saved every 10 minutes. Uses SNTP over nc, limited to 3 s per try.
 # mksh arithmetic is 32-bit, so the NTP-to-Unix epoch shift is done in 16-bit halves.
 CONF=/data/local/frame-boot.conf
 [ -r $CONF ] && . $CONF
@@ -31,7 +31,8 @@ while true; do
         continue
     fi
     rm -f $RESP
-    nc -u -w 1 $server 123 < $REQ > $RESP 2> /dev/null
+    # toybox timeout: /system/xbin/nc -u -w 1 spins forever when the server sends no reply.
+    toybox timeout 3 /system/xbin/nc -u -w 1 $server 123 < $REQ > $RESP 2> /dev/null
     if [ "$(wc -c < $RESP 2> /dev/null)" -ge 48 ]; then
         set -- $(od -An -tu1 -N2 $RESP)
         mode=$(($1 & 7))

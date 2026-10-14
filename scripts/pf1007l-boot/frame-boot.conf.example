@@ -9,7 +9,8 @@
 # Empty: install.sh makes one from the frame's serial number, so it stays the same on reinstall.
 MAC=
 
-# NTP server for the clock. Empty: the Wi-Fi gateway from DHCP.
+# NTP server for the clock. Empty: the Wi-Fi gateway from DHCP. Many home routers do not answer
+# NTP; if yours does not, set a public server, for example time.google.com.
 NTP_SERVER=
 
 # Start Wi-Fi only after boot has finished (1) or leave it to Android (0).
