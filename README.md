@@ -54,7 +54,8 @@ Settings → About before you follow any guide:
   changes nothing and confirms the hardware matches; `backup` and `apply` do the rest.
 - **Skylight Calendar 150-CAL** (Rockchip RK3566): start with [next-session.md](docs/next-session.md),
   then [app-analysis.md](docs/app-analysis.md) for the hidden menu. The manufacturer code is
-  intentionally not published; the doc shows where the app checks it.
+  intentionally not published; the doc shows where the app checks it. Check Settings → About
+  first: firmware `D156.V0.10` ships with ADB and `su` on ([skylight-d156.md](docs/skylight-d156.md)).
 - **LOOFII C-3 21.5" calendar** (Allwinner A133, Android 10): root ADB over USB out of the box. See
   [allwinner-a133-loofii-c3.md](docs/allwinner-a133-loofii-c3.md); don't run the Rockchip or A33 scripts on it.
 - **Frameo, Dragon Touch, Joyhong, Uhale, VESWWE, Pastigio and others:** see the
