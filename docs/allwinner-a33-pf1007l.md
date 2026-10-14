@@ -627,10 +627,10 @@ set it to `:0`, then deleted it, and only changed it if it still matched the
 helper's loopback proxy. Save a prior proxy before testing and do not overwrite a
 different proxy installed by someone else.
 
-Undo for the tested setup was to stop only the matching supervisor/daemon,
-disable Tailscale SSH while control remained available, restore the saved proxy
-and Home destination, then remove only the newly installed helpers. Keep a
-working launcher, on-panel access to Settings and independent USB recovery.
+Planned undo (not exercised): verify independent USB access; keep a working
+launcher and on-panel Settings. Prevent helper autostart, disable Tailscale SSH while its
+daemon is running, then stop only the matching supervisor/daemon. Restore the
+saved proxy and Home destination before removing the newly installed helpers.
 Do not copy our private startup paths, policies or authenticated state.
 
 ### Vendor background cleanup: the list is an exception list on this build
@@ -662,11 +662,12 @@ The owner-approved repair appended only the installed network/navigation helper,
 launcher and Firefox packages, retaining existing entries and leaving cleanup
 enabled for other apps. It saved the exact original value (including absence),
 compared it before writing, verified readback and the live Binder allow results,
-and checked that an unlisted probe was still disallowed. The repair would restore
-the original value on verification failure, only if the key still held its own
-candidate. Undo likewise restored the saved value, or deleted the key if it was
-originally absent, refusing to overwrite a later change. No vendor firmware was
-edited and no blanket cleanup-disable was needed.
+and checked that an unlisted probe was still disallowed. The writer attempts
+restoration only on the live-allow timeout, while the setting still matches its
+candidate. Readback/probe and transport failures have no automatic rollback.
+Planned undo (not exercised): restore the saved value, or delete the key if it
+was originally absent, only while it still matches the candidate. No vendor
+firmware was edited and no blanket cleanup-disable was needed.
 
 The Binder transaction number and allowlist writer are intentionally not offered
 as generic paste-in commands. Confirm the implementation and transaction on the
