@@ -515,6 +515,49 @@ measure again; do not assume the Rockchip swap prescription applies.
 This setup does not update Android, remove the root exposure, configure automatic
 startup, or integrate real calendar data. Those are separate tasks.
 
+## Sensor and native UI observations
+
+Tested on one PF1007L over USB from Linux: AiMOR 6.0.78, reported firmware
+suffix `V10-1680.0.20260529`, Android 6.0.1 / SDK 23, A33, about 1 GiB RAM,
+1280 × 800 display and nominal 16 GB eMMC. Inventory used read-only
+`dumpsys`, `/proc` and `/sys`; no board teardown or bus writes.
+
+An [existing PF1007L report](pf1007l-macos-20260529-no-mmc-hs-report.md) lists
+the same sensor names. Additional checks distinguish working behavior from
+advertised interfaces:
+
+| Interface | Observed | Unverified |
+| --- | --- | --- |
+| SC7A20 accelerometer | Live XYZ samples; `sc7a20` at I2C `1-0019`. Physical portrait/landscape rotation worked with `SCREEN_ORIENTATION_FULL_SENSOR`. | Calibration and accuracy. |
+| LTR-C216R-14 light | SensorService sends values 63–64 to AutomaticBrightnessController. | Response to changing light; physical part identity. |
+| AW. ambient temperature | Type 13 advertised; no samples or active client. | A working ambient sensor. |
+| SoC thermal | `sunxi-therm` reports raw 43 in thermal and hwmon nodes. | Scaling and calibration; distinct from ambient temperature. |
+| Silead touch | `gslX680new` at I2C `0-0040`; multitouch advertised. Taps and swipes worked. | Reliable close two-finger gestures. |
+| Audio | `SUNXI-CODEC` exposes playback/capture; speaker playback works. | Fitted microphone or working capture. |
+| Camera | Camera HAL present; camera service reports zero devices. | Physical inspection. |
+| Bluetooth | Feature flags present; no sysfs/rfkill controller, Bluetooth app or connected framework service. | Working Android stack or fitted radio; Linux BLE support is reported below. |
+| Power | USB online. Battery node reports present/charging with zero voltage/capacity. Reconnecting USB power caused a cold boot. | A usable battery. |
+
+No gyroscope, magnetometer or proximity sensor was listed. SensorService's
+"9-axis fusion disabled" message and Android feature flags do not establish
+fitted hardware. USB data and power worked; host peripherals were not tested.
+
+VirtualSoftKeys intercepted roughly the bottom 64 pixels even when invisible.
+Moving controls above the overlay restored taps. Keep an accessible exit to
+the launcher and Settings.
+
+Firefox reported software WebRender and `FEATURE_FAILURE_NO_GLES_3` on the
+Mali-400. Dashboard app PSS was about 265 MiB in Firefox, 46 MiB in stock
+WebView and 10–12 MiB in a native board. A native RGB565 photo viewer used
+23–25 MiB with one decoded next photo, bounded thumbnail workers and a 4 MiB
+thumbnail cache. These are short-run snapshots of different implementations,
+not a controlled benchmark. PSS excludes GPU allocations and memory attributed
+to shared compositor/media services.
+
+scrcpy 5.0.1 AOA HID worked without video/audio mirroring. Over 30 key presses,
+the native board's event-to-draw interval was median 13 ms, p95 22 ms. This
+excludes USB transit, scanout and pixel response; it is not end-to-end latency.
+
 ## Native Linux / Omarchy SD build
 
 Paolo Rosson ([`@redp314`](https://x.com/redp314)) built a separate, experimental
