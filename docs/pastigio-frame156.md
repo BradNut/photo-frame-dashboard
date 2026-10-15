@@ -287,6 +287,18 @@ Undo: remount `/system` read-write, move `/system/app/webview` aside, move `/sys
 back to `/system/app/webview`, remount read-only and reboot. Repeated `ffmExtractor ... libffmpeg_utils.so not found`
 lines in logcat come from the media server, not WebView.
 
-Not tested on this unit: whether a Frameo or `com.muxintu.app.mxota` OTA would restore the vendor
+### Disabling Frameo and the updater
+
+After checking that the kiosk's two-finger hold -> **Android settings** reaches Settings -> Apps,
+`pm disable-user --user 0` for `com.muxintu.app.mxota` and `net.frameo.frame` printed
+`new state: disabled-user`. However, an `adb reboot` run straight after it brought both back:
+`enabled=0` and both processes running. Nothing in logcat re-enabled them. Running the same two commands again, waiting about 30 seconds and checking
+`/data/system/users/0/package-restrictions.xml` (both `enabled="3"`) before rebooting made the
+change survive the reboot, with neither app running afterwards. This is probably Android's
+delayed write of package restrictions, not anything the vendor does. Wait, or check the file, before
+rebooting. The system copy's `User 0` line in `dumpsys package` stays at `enabled=0`. That is normal;
+the first `User 0` line is the one that counts.
+
+Not tested on this unit: whether a Frameo or `com.muxintu.app.mxota` OTA (both now disabled) would restore the vendor
 WebView, a full eMMC backup, and loader mode.
 
