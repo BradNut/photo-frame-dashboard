@@ -263,9 +263,26 @@ The dashboard's fixed 1280x800 stage again showed 96-pixel side bars at 1920x108
 
 `adb install -r` of the LineageOS `com.android.webview` 138.0.7204.63 (armeabi-v7a, minSdk 26) failed with
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (signatures do not match), so the vendor WebView cannot be updated as
-an app. 138 is the newest build for Android 8.1: LineageOS 139 requires minSdk 29. Its APK came from the
-[LineageOS `android_external_chromium-webview_prebuilt_arm`](https://review.lineageos.org/admin/repos/LineageOS/android_external_chromium-webview_prebuilt_arm)
-Git LFS objects (GitHub's mirror only serves LFS pointer files).
+an app. 138 is the newest build for Android 8.1: LineageOS 139 requires minSdk 29.
+
+| File | Source | SHA-256 |
+| --- | --- | --- |
+| `webview.apk` 138.0.7204.63 ARM | LineageOS [`android_external_chromium-webview_prebuilt_arm` at `b2639126d02b`](https://github.com/LineageOS/android_external_chromium-webview_prebuilt_arm/commit/b2639126d02b401ae8a8a7f3ca302633713a12e6), Git LFS object on LineageOS Gerrit | `b7268786318f404bdad53eaaec889619ff30100b935541a9e393e32efed3cf11` |
+| `lib/arm/libwebviewchromium.so` | extracted from that APK (`lib/armeabi-v7a/`) | `d217fc3847fad5cecc1f37ffa8461b95fc2bb32586f63f01285381239c11b03d` |
+| `lib/arm/libcrashpad_handler_trampoline.so` | extracted from that APK (`lib/armeabi-v7a/`) | `e16d7cd6d1669d6da68997099425501f8bb6d6f0ae3bb6c8dbbb0bc8e0f4441d` |
+
+GitHub serves only the 133-byte LFS pointer for this file (its `oid` is the SHA-256 above). The
+object downloads from LineageOS's Gerrit LFS endpoint (tested 2026-10-15):
+
+```bash
+href=$(curl -s -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" \
+  -d '{"operation":"download","transfers":["basic"],"objects":[{"oid":"b7268786318f404bdad53eaaec889619ff30100b935541a9e393e32efed3cf11","size":90257078}]}' \
+  https://review.lineageos.org/LineageOS/android_external_chromium-webview_prebuilt_arm/info/lfs/objects/batch \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["objects"][0]["actions"]["download"]["href"])')
+curl -sfL "$href" -o webview-138.0.7204.63-arm.apk   # signed link, valid for 60 seconds
+shasum -a 256 webview-138.0.7204.63-arm.apk          # must match the table
+unzip -j webview-138.0.7204.63-arm.apk 'lib/armeabi-v7a/*' -d lib-arm && shasum -a 256 lib-arm/*.so
+```
 
 Because `/system` on this unit is a plain ext4 mount with no dm-verity device, the whole
 `/system/app/webview` tree was replaced through root, following the
