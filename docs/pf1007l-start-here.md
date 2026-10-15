@@ -289,8 +289,9 @@ If no `a33-status.txt` appears on the card at all, U-Boot did not run. Stop and 
 Hosts: Windows uses `fel-sdcard.py` and builds U-Boot in WSL; macOS uses `card-macos.py` and
 `build-macos.sh` (Docker). See the [SD card guide](allwinner-a33-sdcard-adb-wifi.md). If the dump
 stops with `FAIL first read`, see [U-Boot settings](#u-boot-settings-that-fixed-ums-problems).
-One unit built and wrote Route S from macOS with Docker and `dd`:
-see the [May `20260519` macOS report](pf1007l-macos-20260519-route-s-report.md).
+One macOS unit whose `ums` kept resetting dumped Route S with a 12 MHz build and patched Route U
+over FEL: see the [May `20260519` macOS report](pf1007l-macos-20260519-route-s-report.md). Its
+manual card write is kept only as a record — use `card-macos.py` above, not `dd`.
 
 ### T6. Compatibility gate: is your boot image the tested one?
 

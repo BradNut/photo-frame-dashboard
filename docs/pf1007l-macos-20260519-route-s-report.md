@@ -76,8 +76,22 @@ Card: 62.5 GB, MBR, one FAT32 partition **starting at sector 8192**. It worked a
 for 32 GB or smaller. macOS Disk Utility starts the partition at sector 2048, which is too close
 to the U-Boot area: do not reformat the card with Disk Utility.
 
-Write U-Boot at 8 KiB without touching the partition table or FAT. Identify `diskN` by size with
-`diskutil list` first, and unmount it (`diskutil unmountDisk /dev/diskN`).
+Use the repository's guarded path for this step — `scripts/a33-sdboot/build-macos.sh`, then
+`card-macos.py prepare` (see the [SD card guide](allwinner-a33-sdcard-adb-wifi.md)):
+
+```sh
+diskutil list external physical
+diskutil info diskN | grep 'Disk Size'   # <exact-bytes> is the number of bytes shown
+sudo python3 -I scripts/a33-sdboot/card-macos.py prepare diskN <exact-bytes>
+```
+
+It formats the card with the FAT partition at sector 8192 (not Disk Utility's 2048, which is too
+close to the U-Boot area), verifies the card by exact byte size, keeps a backup of what it
+overwrites, writes U-Boot at 8 KiB, and reads the write back. This unit's 12 MHz build differs
+from the repository build, so what actually ran is recorded below.
+
+**Record of what this unit actually ran** (a copy of the contributor's manual `dd`; it has no
+exact-size or confirmation guard, so do not copy it — use `card-macos.py` above):
 
 ```sh
 mkdir -p backups
@@ -116,9 +130,11 @@ python3 -I scripts/a33-uboot/boot-patch.py backups/a33-emmc-first2g.img 172032
 ```
 
 `boot-patch.py` reads only the MBR/EBR chain and the boot partition, so the first 2 GiB are
-enough. It reported a ramdisk slot of 4,853,760 bytes at +10,143,744, write ranges ramdisk
-`[191844, 201324)` and header `[172032, 172034)`, and all checks passed. These values are for
-this unit; let the script compute yours.
+enough for it. As a backup this is **partial** (everything past 2 GiB was not captured), so this
+unit's backup does not meet the repo's complete-device backup rule; the Route S dump covers every
+sector the patch wrote. It reported a ramdisk slot of 4,853,760 bytes at +10,143,744, write ranges
+ramdisk `[191844, 201324)` and header `[172032, 172034)`, and all checks passed. These values are
+for this unit; let the script compute yours.
 
 Loaded with the repository's command and the read-only Route U build (the write script uses
 `mmc write` directly, not `ums`):
@@ -150,6 +166,12 @@ adb -d shell pm disable com.yhk.qeota
 adb -d shell pm disable com.DeviceTest
 adb -d shell 'mount -o remount,rw /system && chmod 4750 /system/xbin/su && mount -o remount,ro /system'
 ```
+
+The `chmod` tightens `su` from world-executable to group-only (root:shell). The original mode was
+not recorded before the change; the undo is `chmod 6755` (the shipped setuid mode) or `chmod 755`
+with root-only ownership if you want no shell `su` at all. A post-root readback of the boot
+partition (`dd` it back over ADB and compare hashes) would also close the verification gap above;
+it was not done on this unit.
 
 ## macOS notes
 

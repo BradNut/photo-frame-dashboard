@@ -69,6 +69,10 @@ From `mtdparts` on the kernel command line; eMMC sector = loader sector + 8192. 
 
 ### Backup (verified)
 
+This is a **partial backup**: `userdata` was excluded, so it does not meet the repo's
+complete-device backup rule, and restore is untested. It covers every partition this record
+writes to.
+
 eMMC sectors 0-2,842,624 (everything before `userdata`), 1,455,423,488 bytes, 349.5 MB gzipped,
 streamed with `adb exec-out "su -c 'dd if=/dev/block/mmcblk0 bs=512 count=2842624'"` in 202 s. The
 raw stream SHA-256 equals the gzip readback; no 512-byte sector is all `0xCC`; independent re-reads of
