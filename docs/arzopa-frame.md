@@ -5,8 +5,9 @@ Record of one unit, tested from Windows 11 (WSL2 Ubuntu + usbipd-win for loader 
 left out.
 
 **Result:** ADB over USB through a code-protected toggle in the Arzopa app, and shipped SuperSU
-root. A verified loader-mode backup of everything before `userdata` was taken first. No write
-to flash was needed.
+root. A verified loader-mode backup of everything before `userdata` was taken first. No partition
+was written. Every step of the [BIUFRAME setup guide](biuframe-setup-guide.md) then worked, run
+one at a time, and the frame boots into the `dashboard/kiosk` app (see [Setup](#setup-phase-6)).
 
 ## How it relates to the known RK3126 frames
 
@@ -111,10 +112,50 @@ From the parameter block (`mtdparts=rk29xxnand:…`). Loader LBAs in 512-byte se
 | SoC | Rockchip RK3126 | `/proc/cpuinfo`, chip query |
 | Wi-Fi | AICSemi AIC8800 on SDIO (vendor `0xc8a1`) | `lsmod`: `aic8800_fdrv`, `aic8800_bsp`; `/sys/bus/sdio/devices` |
 
-## Not done yet
+## Setup (phase 6)
 
-- Phase 6 (launcher, browser, kiosk) and disabling `com.adups.fota` before the frame goes online.
-  The [BIUFRAME setup guide](biuframe-setup-guide.md) applies to this platform, but
-  `biuframe-setup.sh check` is expected to fail (different fingerprint and manufacturer), as on
-  the YIAISIGN; run its steps one at a time.
-- Whether the ADB setting survives a reboot.
+`biuframe-setup.sh check` does not match this frame (different fingerprint and manufacturer), so
+`apply` refuses to run, as on the YIAISIGN. Every step function works unchanged when run one at a
+time, done before the frame ever joined Wi-Fi:
+
+1. **ADB survives a reboot** with the Arzopa app still enabled: `settings get global adb_enabled`
+   stays `1` and `su` still works, so disabling the app does not close the way in.
+2. `step_apps`: Firefox 143.0.4 and Rootless Pixel Launcher 3.9.1.
+3. Checked by hand on the panel: launcher → Settings (stock Android) → Apps opens
+   ([rule 9](../README.md#rules-we-learned-the-hard-way)).
+4. `step_debloat` with `VENDOR_DISABLE=(com.arzopa.frame.server com.adups.fota com.DeviceTest)` and
+   `VENDOR_HIDE=(com.adups.fota)`. Those are the only vendor packages on this build. The running
+   FOTA process needed `am force-stop` (or a reboot) to go away.
+5. `su -c 'stop daemonsu'`, then `step_zram`, `step_webview`, `step_certs`, `step_navbar`.
+6. After a reboot `cmd_verify` passed: WebView 106.0.5249.126 loads, swap 512 MB, navigation bar
+   (Back and volume, no Home, as on the BIUFRAME), no vendor processes, Let's Encrypt roots. ADB
+   and `su` still work with the Arzopa app disabled.
+
+Then the `dashboard/kiosk` app with its default demo URL, set as the Home app with
+`--ez home true` and **Home HQ → Always** in the chooser. It boots into the dashboard; while
+Wi-Fi is still connecting it shows the offline screen and reloads on connect. The display is
+already 1280 × 800 at 160 dpi, so no density change was needed. Wi-Fi (AIC8800) joined the owner's IoT
+network and the clock synced over the network (there is no RTC: it starts at 1969 until then).
+
+After setup, with the frame online, the only app processes were Home HQ, SystemUI, Gboard and
+Android's media/storage providers. The only outside connections were Home HQ's HTTPS to the
+dashboard host and DHCP; nothing listened on the network. `daemonsu` (SuperSU) still runs as
+root, so any app still gets root without a prompt.
+
+### From Windows
+
+- **Git Bash** runs the step functions (`sed '/^case /,$d' scripts/biuframe-setup.sh` to load
+  them, as in the YIAISIGN notes) with three adjustments: `MSYS_NO_PATHCONV=1` so device paths
+  like `/data/local/tmp` are not rewritten, `TMPDIR` and `BIUFRAME_CACHE` as Windows-style paths
+  (`cygpath -m`) so `adb.exe` can read the temp files, and an LF copy of
+  `scripts/biuframe-su.d-50zram`, which a `core.autocrlf=true` checkout gives CRLF line endings
+  that the frame's shell cannot run (pass it by pointing `ROOT` at the copy's parent folder).
+- **Kiosk build:** in WSL2 Ubuntu with `openjdk-17-jdk-headless`, and build-tools 34 and
+  platform 34 from Ubuntu's `sdkmanager` package (it checks Google's downloads against F-Droid's
+  signed checksum log). Run `dashboard/kiosk/build.sh` from a Linux-side copy after stripping its
+  CRLFs, then `adb install` the APK from Windows.
+
+## Not tested
+
+- Whether the PIR sensor some RK3126 frames have exists here.
+- `scripts/kioskwatch` and the floating navigation service.
