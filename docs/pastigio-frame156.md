@@ -101,7 +101,7 @@ Restore would need Rockchip loader mode and `rkdeveloptool`; neither has been tr
 
 ## Guesses (unverified)
 
-- Whether `/system` can be remounted read-write the way the BIUFRAME steps assume, given `veritymode=enforcing`.
+- Whether `/system` can be remounted read-write the way the BIUFRAME steps assume, given `veritymode=enforcing`. (Answered on a [third unit](#third-unit-dpf-frame-156-firmware-v2026051219-2026-10-15): yes, `/system` is not on a dm-verity device there.)
 - Whether Frameo re-launches itself over a third-party HOME or kiosk app.
 - Whether Frameo's cloud or the OTA app can replace system files on their own.
 
@@ -218,4 +218,75 @@ is only reported here; this contribution does not change the dashboard implement
 
 Motion/PIR support, firmware restoration, other units and other firmware versions were not
 tested in this report.
+
+## Third unit: "DPF Frame 156", firmware v2026051219 (2026-10-15)
+
+A third unit, bought on Amazon.ca as the Pastigio 15.6" listing. Frameo **Settings -> About** names it
+`DPF Frame 156` rather than `FRAME156`, but the ADB properties match the earlier units' model on newer
+firmware. Host: macOS through a USB hub.
+
+| Observation | Value |
+| --- | --- |
+| `ro.product.model` / `ro.product.device` | `FRAME156` / `FRAME156` |
+| Firmware | `FrameO.DP105F.v2026051219` (earlier units: `v2026010414`) |
+| Fingerprint | `rockchip/rk3326_32bit/rk3326_32bit:8.1.0/OC/192521:user/release-keys` |
+| ABI | `armeabi-v7a,armeabi` |
+| Display | 1920x1080, 170 dpi |
+| Frameo | `net.frameo.frame` v1.32.16 (updated), system copy v1.30.19 |
+| WebView as shipped | `com.android.webview` 106.0.5249.126 at `/system/app/webview/webview.apk`, vendor-signed |
+| `/system` mount | `/dev/block/mmcblk2p11` ext4 `ro`, **no `/dev/block/dm-*` devices**, although `ro.boot.veritymode=enforcing` |
+| Root | Shipped `su -c` returns root without a prompt |
+
+### ADB
+
+With computer photo transfer off and **Settings -> About -> Beta -> ADB access** on, the host first
+showed `unauthorized`. Turning ADB access off and on again with the cable connected, then accepting
+Frameo's ADB warning, changed it to `device`. No key injection or loader was needed. `adb tcpip 5555`
+drops the USB connection for a few seconds, so ADB commands run straight after it fail with
+`no devices/emulators found`.
+
+### Kiosk as device owner and Home app
+
+With `dumpsys account` showing `Accounts: 0`, `dashboard/kiosk` (`com.wesbos.homehq`) installed and
+`dpm set-device-owner com.wesbos.homehq/.AdminReceiver` succeeded. `pm grant ... WRITE_SECURE_SETTINGS`
+also succeeded. The `.Home` alias ships disabled, so `cmd package set-home-activity com.wesbos.homehq/.Home`
+fails with `cannot be home on user 0` until the app has enabled it. This order works:
+
+```bash
+adb shell am start -n com.wesbos.homehq/.MainActivity --ez home true
+adb shell cmd package set-home-activity com.wesbos.homehq/.Home
+```
+
+The dashboard's fixed 1280x800 stage again showed 96-pixel side bars at 1920x1080, as on the second unit.
+
+### WebView 138 in place of the vendor WebView 106
+
+`adb install -r` of the LineageOS `com.android.webview` 138.0.7204.63 (armeabi-v7a, minSdk 26) failed with
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE` (signatures do not match), so the vendor WebView cannot be updated as
+an app. 138 is the newest build for Android 8.1: LineageOS 139 requires minSdk 29. Its APK came from the
+[LineageOS `android_external_chromium-webview_prebuilt_arm`](https://review.lineageos.org/admin/repos/LineageOS/android_external_chromium-webview_prebuilt_arm)
+Git LFS objects (GitHub's mirror only serves LFS pointer files).
+
+Because `/system` on this unit is a plain ext4 mount with no dm-verity device, the whole
+`/system/app/webview` tree was replaced through root, following the
+[PF1007L procedure](allwinner-a33-pf1007l.md#6-upgrade-webview-before-using-the-kiosk):
+
+1. Pulled the stock tree to the host (`adb pull /system/app/webview`, 3 files, about 211 MB).
+2. Extracted `lib/armeabi-v7a/libwebviewchromium.so` and `libcrashpad_handler_trampoline.so` from the APK
+   on the host and pushed `webview.apk`, `lib/arm/*.so` and their MD5 list to `/data/local/tmp`.
+3. A root script checked the staged MD5s and refused existing staging or rollback paths. It checked
+   free space (about 700 MB free on `/system`), ran `mount -o remount,rw /system`, built
+   `/system/homehq-new-webview` (root:root, 0755 directories, 0644 files, `u:object_r:system_file:s0`)
+   and re-checked the MD5s. It then moved the stock tree to `/system/homehq-stock-webview`, moved the new
+   tree to `/system/app/webview`, checked the MD5s again, ran `sync` and remounted `/system` read-only.
+4. After `adb reboot`: `dumpsys webviewupdate` reported `com.android.webview, 138.0.7204.63`,
+   `codePath=/system/app/webview`, and logcat had no WebView `dlopen` errors. The device booted normally,
+   and the kiosk dashboard rendered on 138 with the frame's CA store.
+
+Undo: remount `/system` read-write, move `/system/app/webview` aside, move `/system/homehq-stock-webview`
+back to `/system/app/webview`, remount read-only and reboot. Repeated `ffmExtractor ... libffmpeg_utils.so not found`
+lines in logcat come from the media server, not WebView.
+
+Not tested on this unit: whether a Frameo or `com.muxintu.app.mxota` OTA would restore the vendor
+WebView, a full eMMC backup, and loader mode.
 
