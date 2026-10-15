@@ -129,7 +129,7 @@ Notes for frames that can't reach an NTP server:
 | `com.adups.fota` 5.28 | `/system/app/FotaUpdate` | Adups FOTA. Holds `RECOVERY` and `REBOOT`, starts at boot, has an FCM push service. `ro.fota.oem=alongA33_6.0` |
 | `com.softwinner.dragonfire` | `/system/app/DragonFire` | Allwinner factory test. Holds `INSTALL_PACKAGES`, `DELETE_PACKAGES` and `REBOOT` |
 | `com.softwinner.dragonaging`, `dragonphone`, `com.along.factorytest`, `com.android.agingtest` | `/system/app`, `/system/priv-app` | Factory and aging tests |
-| `com.android.launcher` (Launcher2) | `/system/priv-app/Launcher2` | A second Home app, so the kiosk's **Open launcher** has somewhere to go |
+| `com.android.launcher` (Launcher2) | `/system/priv-app/Launcher2` | **Not a Home app on this build.** Its `com.android.launcher2.Launcher` intent filter is only `MAIN` + `MONKEY` (no `HOME`), so the kiosk's **Open launcher** falls back to Android Settings |
 | `com.android.browser` | `/system/app/Browser` | Stock browser |
 | `com.android.systemui` | `/system/priv-app/SystemUI` | Present, disabled out of the box |
 
@@ -185,6 +185,9 @@ nothing written in this session needed it, because all changes are in `/data`.
 | Persistent Wi-Fi ADB | `su 0 setprop persist.adb.tcp.port 5555` | `su 0 setprop persist.adb.tcp.port ""`, reboot |
 | Disable the vendor updater | `su 0 pm disable com.adups.fota` | `su 0 pm enable com.adups.fota` |
 | Install the kiosk alongside Frameo | `adb install homehq.apk` (only change: `DEFAULT_URL`) | `adb uninstall com.wesbos.homehq` |
+| Navigation buttons | Owner enabled Settings → Accessibility → Home HQ navigation; `pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS` | `pm revoke` the same, turn the service off |
+| Offer the kiosk as Home | `am start -n com.wesbos.homehq/.MainActivity --ez home true` | the same with `--ez home false` |
+| Disable Frameo | `su 0 pm disable net.frameo.frame` | `su 0 pm enable net.frameo.frame` |
 
 **`pm disable` was lost on the first try.** The package showed `enabled=2` and its process stopped,
 but after an `adb reboot` it was enabled and running again, with no entry for it in
@@ -197,7 +200,7 @@ reboot came before PackageManager's delayed write of that file.
 
 The kiosk was built with `kiosk/build.sh` (Homebrew `openjdk@17`, `android-commandlinetools`,
 build-tools 34.0.0, platform 34) without problems. `test-navigation.py` passed. Installing it did not
-make it a Home app. Frameo is still installed, enabled and the default Home app.
+make it a Home app.
 
 The dashboard is a Home Assistant page over plain HTTP on the LAN, so the 2016 certificate store
 did not matter. Home Assistant's login page and dashboard render in WebView 106. With "Keep me
@@ -208,13 +211,29 @@ at start, with no visible effect.
 The owner checked by hand on the panel that the two-finger hold opens the Home HQ menu with
 **Open launcher**, **Android settings**, **Wi-Fi settings** and **Reload dashboard**.
 
-At launch the screen was off. Guess, not verified: Frameo's night sleep schedule
+The floating **Back** and **Dashboard** buttons from the navigation service worked in Android Settings
+(checked by the owner on the panel).
+
+At the first launch the screen was off. Guess, not verified: Frameo's night sleep schedule
 (`net.frameo.frame/.feature.sleep_schedule.StandbyBroadcastReceiver` holds an alarm).
 `input keyevent KEYCODE_WAKEUP` turned it on.
 
+### Kiosk as Home, Frameo disabled
+
+Out of the box there is no saved Home preference, yet Frameo starts as Home with no chooser:
+Frameo was the only Home app, because Launcher2 has no `HOME` category here (see
+[Software of interest](#software-of-interest)). Enabling the kiosk's Home alias while Frameo was
+enabled changed nothing visible. After `pm disable net.frameo.frame` (checked on disk in
+`package-restrictions.xml` first), the Home key went straight to `com.wesbos.homehq/.Home`. No
+chooser appeared and no preferred activity was saved, because Home HQ was the only Home app.
+
+After a 30-second power cut the frame booted into the dashboard on its own. Home HQ started about
+30 s after power-on, its first loads failed with `ERR_INTERNET_DISCONNECTED`, it retried every 5 s,
+logged `Wi-Fi connected, retrying now` about 15 s later, and then showed the dashboard, still logged
+in. NTP set the clock, Wi-Fi ADB came back and the navigation service was bound.
+
 ## Not tested
 
-- Making the kiosk the Home app, and disabling Frameo.
 - Whether `ro.config.low_ram=true` kills the kiosk when it is in the background.
 - Whether a second computer is accepted over USB without a prompt (see [USB](#usb)).
 - `service call alarm 2` as a way to set the clock without NTP.
