@@ -17,6 +17,9 @@ The kiosk opens the hosted demo dashboard by default. To show your own, save its
 adb shell am start -n com.wesbos.homehq/.MainActivity --es url https://your-dashboard/
 ```
 
+`scripts/set-kiosk-url.sh <url>` from the repository root does the same, and prints the saved
+URL when run without one.
+
 Every later launch, including after a reboot, opens the saved URL. Links that other apps open
 in the kiosk, such as a sign-in page, are shown but not saved.
 
