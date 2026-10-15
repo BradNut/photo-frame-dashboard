@@ -427,6 +427,11 @@ Then, in WSL, `diagnostics/sunxi-tools/sunxi-fel version` must show `soc=0000166
 power cycle re-enumerates the frame, so attach again each time. On #6, FEL from the reset button
 alone, without the card, lasted a second or two: too short to attach.
 
+Two WSL gotchas from #119: clone this repo with `git -c core.autocrlf=false`, because CRLF
+checkouts break `build-uboot.sh` and `git apply`; and if Docker Desktop has no WSL integration,
+the `docker` in PATH is `docker.exe`, which needs Windows-style paths for `-v` — a small shim that
+rewrites `/mnt/<drive>/` to `<DRIVE>:/` lets `build-uboot.sh` run unchanged.
+
 ### Load U-Boot and back up
 
 From WSL, load U-Boot as in section 4. The frame drops off WSL and comes back as U-Boot's mass

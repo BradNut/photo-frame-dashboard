@@ -67,7 +67,8 @@ October 2026, on a 2 A wall supply:
 
    `apply` copies `install-recovery.sh`, `wpa_supplicant` and any old settings to
    `backups/pf1007l-boot/<time>/`, checks each file by SHA-256 after it is written, and leaves
-   `/system` read-only.
+   `/system` read-only. If earlier `sudo` runs left files in `backups/` owned by root, `chown`
+   them back to your user first — one unit's `apply` failed until then (#110).
 
 3. Power-cycle the frame (`adb reboot` hangs on many units), then:
 
