@@ -169,7 +169,7 @@ small browser that uses the system WebView (useful for testing WebView).
 
 ## Akimart ZN-DP1002 (RK3126)
 
-Frames sold under the Akimart brand can have completely different logic boards. This script supports the RK3126 version (`ro.build.fingerprint` contains `rk312x` and `user.cdm`). If your frame is the RK3326 version (logical `rknand0` storage, Android 8.1, fingerprint contains `rk3326_go`), do not use this script.
+Frames sold under the Akimart brand can have completely different logic boards. This script supports the RK3126 version, selected by an **exact** `ro.build.fingerprint` match (`rk312x … user.cdm`; the script refuses anything else, including other RK3126 fingerprints). If your frame is the RK3326 version (logical `rknand0` storage, Android 8.1, fingerprint contains `rk3326_go`), do not use this script.
 
 Units matching the RK3126 `AKIMART` profile share this same setup pipeline with these differences:
 - **Model property:** `ZN-DP1002`, manufacturer `rockchip`.

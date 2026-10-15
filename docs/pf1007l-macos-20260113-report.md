@@ -5,7 +5,8 @@ This USB-C-only PF1007L on January `20260113` firmware reached root ADB over USB
 WebView 106. It needed two changes to the repository's Route U build, both already written up
 elsewhere but not in the default build:
 
-- the **warm-up SPL** from [PR #74](https://github.com/wesbos/photo-frame-dashboard/pull/74).
+- the **warm-up SPL** from [PR #74](https://github.com/wesbos/photo-frame-dashboard/pull/74)
+  (now merged into the repository build; see [section 4 of the U-Boot guide](allwinner-a33-mainline-uboot.md#4-expose-the-emmc-read-only-and-back-it-up)).
   Without it, every `sunxi-fel uboot` stopped with `usb_bulk_send() ERROR -7` right after the
   SPL, including on a cold start;
 - the **no-HS patch** ([`pf1007l-v2025.10-no-mmc-hs.patch`](patches/pf1007l-v2025.10-no-mmc-hs.patch),
@@ -34,7 +35,7 @@ eMMC size in sectors: 30,777,344
 Boot partition start sector: 172032
 Boot image SHA-256 (sector 172032, 31,028 sectors):
   d71c313ddaa4693948acb20af7740ccb56c88bf9376746a47fce2d00c14fc6a4
-Route used and result: Route U with the PR #74 warm-up SPL, the no-HS patch and the
+Route used and result: Route U with the warm-up SPL from PR #74 (now merged), the no-HS patch and the
   START STOP correction. Root ADB over USB (1f3a:1002, uid=0)
 Host OS: macOS 12.7.6, Intel (x86_64)
 First failed step and its exact output: section 4, sunxi-fel uboot:

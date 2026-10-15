@@ -736,7 +736,7 @@ advertised interfaces:
 | Silead touch | `gslX680new` at I2C `0-0040`; multitouch advertised. Taps and swipes worked. | Reliable close two-finger gestures. |
 | Audio | `SUNXI-CODEC` exposes playback/capture; speaker playback works. | Fitted microphone or working capture. |
 | Camera | Camera HAL present; camera service reports zero devices. | Physical inspection. |
-| Bluetooth | Feature flags present; no sysfs/rfkill controller, Bluetooth app or connected framework service. | Working Android stack or fitted radio; Linux BLE support is reported below. |
+| Bluetooth | Feature flags present; no sysfs/rfkill controller, Bluetooth app or connected framework service. | Working Android stack or fitted radio; Linux BLE support is reported below on a different unit (the Omarchy SD build). |
 | Power | USB online. Battery node reports present/charging with zero voltage/capacity. Reconnecting USB power caused a cold boot. | A usable battery. |
 
 No gyroscope, magnetometer or proximity sensor was listed. SensorService's
@@ -749,14 +749,14 @@ the launcher and Settings.
 
 Firefox reported software WebRender and `FEATURE_FAILURE_NO_GLES_3` on the
 Mali-400. Dashboard app PSS was about 265 MiB in Firefox, 46 MiB in stock
-WebView and 10–12 MiB in a native board. A native RGB565 photo viewer used
+WebView and 10–12 MiB in a native framebuffer app. A native RGB565 photo viewer used
 23–25 MiB with one decoded next photo, bounded thumbnail workers and a 4 MiB
 thumbnail cache. These are short-run snapshots of different implementations,
 not a controlled benchmark. PSS excludes GPU allocations and memory attributed
 to shared compositor/media services.
 
 scrcpy 5.0.1 AOA HID worked without video/audio mirroring. Over 30 key presses,
-the native board's event-to-draw interval was median 13 ms, p95 22 ms. This
+the native app's event-to-draw interval was median 13 ms, p95 22 ms. This
 excludes USB transit, scanout and pixel response; it is not end-to-end latency.
 
 ## Native Linux / Omarchy SD build

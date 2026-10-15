@@ -23,6 +23,12 @@ case "$url" in
   http://*|https://*) ;;
   *) echo "URL must start with http:// or https://" >&2; exit 1 ;;
 esac
+# The URL travels through adb and the device shell; keep it to characters that
+# cannot break out of the quoting there. Percent-encode anything else.
+if printf '%s' "$url" | LC_ALL=C grep -q '[^A-Za-z0-9./:?=%~_+,#@&-]'; then
+  echo "URL contains characters it cannot take through adb shell; percent-encode them" >&2
+  exit 1
+fi
 
 adb_ shell am start -n "$PKG/.MainActivity" --es url "'$url'" >/dev/null
 echo "Saved and opened: $url"
