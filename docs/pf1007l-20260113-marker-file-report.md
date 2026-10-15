@@ -12,6 +12,7 @@ This is a newly tested entry route on this unit, not evidence that ADB was enabl
 
 | Field | Observed result |
 | --- | --- |
+| Purchase source | Owner purchased through [Amazon USA, ASIN B0GHR65YYX](https://www.amazon.com/dp/B0GHR65YYX); the listing alone does not identify the shipped board/firmware |
 | Owner's model description | PF1007; rear label confirmed **PF1007**; retail brand not recorded |
 | Firmware | `YHK.F-null-A33-1001-D1024-PF1007L-321-OS-AIMOR.0.20260113` |
 | AiMOR | `6.0.78`, version code 78; `com.efercro.os.aimor` |
