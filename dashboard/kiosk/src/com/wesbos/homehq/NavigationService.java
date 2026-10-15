@@ -23,6 +23,10 @@ public class NavigationService extends AccessibilityService {
   private WindowManager.LayoutParams position;
   private boolean attached;
 
+  static boolean isConnected() {
+    return instance != null;
+  }
+
   static void setDashboardVisible(boolean visible) {
     dashboardVisible = visible;
     if (instance != null) instance.updateVisibility();

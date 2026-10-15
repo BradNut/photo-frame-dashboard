@@ -19,7 +19,8 @@ HARNESS = r'''
 package com.wesbos.homehq;
 import java.util.Objects;
 
-class NavigationService {}
+class NavigationService { static boolean isConnected() { return true; } }
+class Handler { void postDelayed(Runnable r, long delayMillis) {} }
 class PackageManager { static final int PERMISSION_GRANTED = 0; }
 class Log {
   static void i(String tag, String msg) {}
@@ -68,6 +69,10 @@ class Settings {
 }
 public class NavigationHarness {
   static final String TAG = "test";
+  static final long NAV_CHECK_MS = 5000;
+  static final long NAV_REBIND_MS = 1000;
+  final Handler handler = new Handler();
+  final Handler rebindHandler = new Handler();
   static final String OWN = "com.wesbos.homehq/com.wesbos.homehq.NavigationService";
   static final String SHORT = "com.wesbos.homehq/.NavigationService";
   static final String OTHER = "example.other/.NavigationService";
