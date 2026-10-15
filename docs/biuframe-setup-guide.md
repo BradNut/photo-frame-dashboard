@@ -166,3 +166,23 @@ small browser that uses the system WebView (useful for testing WebView).
 | CA roots | `mount -o remount,rw /system; rm /system/etc/security/cacerts/6187b673.0 /system/etc/security/cacerts/8794b4e3.0` |
 | Navigation bar | `mount -o remount,rw /system; cp /system/build.prop.bak /system/build.prop`, reboot |
 | Apps | `adb uninstall org.mozilla.firefox`, `adb uninstall amirz.rootless.nexuslauncher` |
+
+## Akimart ZN-DP1002 (RK3126)
+
+Frames sold under the Akimart brand can have completely different logic boards. This script supports the RK3126 version (`ro.build.fingerprint` contains `rk312x` and `user.cdm`). If your frame is the RK3326 version (logical `rknand0` storage, Android 8.1, fingerprint contains `rk3326_go`), do not use this script.
+
+Units matching the RK3126 `AKIMART` profile share this same setup pipeline with these differences:
+- **Model property:** `ZN-DP1002`, manufacturer `rockchip`.
+- **Vendor Apps:** Preloaded with Frameo (`net.frameo.frame`), Muxintu OTA (`com.muxintu.app.mxota`), and Device Test (`com.szclink.app.cldevicetest`). All are disabled and hidden.
+- **Wi-Fi Driver:** Uses `rk915` instead of `ssv6x5x`.
+- **Partition Bounds:** `boot` is at 90112, `recovery` at 122880, `system` at 630784, and `userdata` at 2859008 (backup covers 2,859,008 sectors).
+
+**Results:** On the tested unit, the script successfully backed up 1.36 GiB of eMMC, debloated Frameo, expanded swap to 512 MB, injected WebView 106, and enabled the navigation bar and Let's Encrypt certificates.
+
+**One-unit observations:**
+- **system verify:** On the tested unit, reading the `system` partition starting at sector 630784 failed the post-write verification because the ext4 superblock/journal changed while mounted. The `verify-backup` step skips 16 MiB (32768 sectors) past the start of the partition to avoid this dynamic area.
+- **Cable note:** On one unit, the supplied cable was power-only, and a USB-C to USB-C cable from a computer's USB-C port provided no power or data. A USB-A to USB-C data cable was required.
+
+**Undo instructions specific to the Akimart profile:**
+- **Vendor Apps:** `pm unhide com.muxintu.app.mxota; pm unhide com.szclink.app.cldevicetest`, then `pm enable <pkg>` for them and `net.frameo.frame`, `android.rockchip.update.service`
+- **Swap / ZRAM:** `mount -o remount,rw /system; cp /system/bin/install-recovery.sh.bak /system/bin/install-recovery.sh; rm -f /system/su.d/50zram; mount -o remount,ro /system`, reboot
