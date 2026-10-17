@@ -103,6 +103,57 @@ With another app as Home, **AiMOR doesn't start at all**: no process after boot,
 `CommunicationService`, no 2-minute return to its screen, and Wi-Fi stayed off after
 `cmd wifi set-wifi-enabled disabled` and a reboot. Nothing was disabled to get there.
 
+It still starts if something opens it. The kiosk's **Open launcher** starts the first other Home
+app Android lists, and while AiMOR is enabled that's AiMOR, not the installed launcher. AiMOR then
+ran its `CommunicationService` again and turned Wi-Fi on. Disabling it (next section) fixed that.
+
+## Turn off the vendor apps
+
+One package at a time, each with a 30-second wait (Android saves package state a few seconds
+later; see #139) and a reboot with ADB connected. After each reboot: ADB back without a prompt,
+the Home app in front, Wi-Fi still off, and an empty crash log.
+
+```sh
+adb shell pm disable-user --user 0 com.efercro.os.aimor      # AiMOR
+adb shell pm disable-user --user 0 com.yhk.qeota             # vendor OTA, BOOT_COMPLETED receiver
+adb shell pm disable-user --user 0 com.softwinner.update     # Allwinner updater
+adb shell pm uninstall -k --user 0 com.softwinner.runin      # factory burn-in, see below
+# undo: adb shell pm enable <package>; adb shell cmd package install-existing com.softwinner.runin
+```
+
+- Before disabling the OTA app, the framework was checked for a hook like the Joyhong C-2's (where
+  disabling the updater crashed every activity). There's no `persist.sys.start_ac`, and the only
+  vendor string in `framework.jar` is a patch in `android.webkit.WebViewFactory.getProvider`: it
+  lets privileged processes (uid 0, 1000, 1001, 1002, 1027) load WebView when their package name
+  contains `com.yhk` or `efercro`. Stock Android refuses ("For security reasons, WebView is not
+  allowed in privileged processes"). It isn't a boot hook.
+- `com.softwinner.runin` is flagged `PERSISTENT`, so Android started its process at boot even
+  while it was disabled (idle: no CPU time, services or receivers, about 95 MB). Uninstalling it
+  for user 0 stopped that. The APK stays in `/system`.
+- The firmware uses A/B updates (`ro.product.ab_ota_partitions` includes `system`, `vendor` and
+  `boot`). Developer options also has **Automatic system updates** on by default;
+  `adb shell settings put global ota_disable_automatic_update 1` turns it off.
+- Afterwards the Home handlers are the kiosk, KISS and `FallbackHome`, so **Open launcher** reaches
+  KISS (checked by hand). No `efercro`, `yhk` or `softwinner` processes run.
+
+## The way back without AiMOR
+
+The test-app password screen lives in AiMOR, so with AiMOR disabled use Android's own Developer
+options:
+
+- Settings → About tablet → tap **Build number** 7 times. No "You are now a developer" message
+  appears on this firmware, but it works (`development_settings_enabled` becomes 1). Developer
+  options is slow to open.
+- **USB debugging** is under Debugging. It was on, matching the test app's switch.
+- Scrolling Developer options on the panel once turned USB debugging **off**, with no prompt (a row
+  tap toggles it, and turning it off doesn't ask). Turning it back on there restored ADB with the
+  saved key. Don't scroll that screen more than needed.
+- **Disable adb authorization timeout** is off by default, so Android forgets the computer's key
+  after 7 days without a connection. `adb shell settings put global adb_allowed_connection_time 0`
+  keeps it.
+
+A factory reset brings AiMOR and the test-app route back.
+
 ## The kiosk app on Android 15
 
 The kiosk from `dashboard/kiosk` (built unchanged, targetSdk 23) doesn't install:
@@ -111,17 +162,33 @@ The kiosk from `dashboard/kiosk` (built unchanged, targetSdk 23) doesn't install
 Failure [INSTALL_FAILED_DEPRECATED_SDK_VERSION: App package must target at least SDK version 24, but found 23]
 ```
 
-`adb install --bypass-low-target-sdk-block` installs it. Each launch then shows Android's "This
-app was built for an older version of Android" dialog. After **OK**, the kiosk runs full screen
-and showed its "Connect to Wi-Fi?" screen (the frame was offline). The dashboard itself wasn't
-loaded.
+`adb install --bypass-low-target-sdk-block` installs it. The first launch shows Android's "This
+app was built for an older version of Android" dialog; it didn't come back after a force-stop or
+a reboot. After **OK**, the kiosk runs full screen and showed its "Connect to Wi-Fi?" screen (the
+frame was offline).
+
+Built with target SDK 28 instead (`--target-sdk-version 28` in `build.sh`; a kiosk PR will
+follow), it installs normally with no dialog. As Home it boots into the kiosk, but wait about 30
+seconds after `--ez home true` and `set-home-activity` before rebooting: a reboot 2 seconds later
+lost the Home alias and the frame booted into KISS. With the frame still offline,
+the demo dashboard was served from the computer over `adb reverse tcp:8080 tcp:8080` and saved
+with `--es url http://127.0.0.1:8080/`; it rendered full screen. Without Google Fonts (offline)
+the large clock and titles overflow; not checked online yet.
+
+This firmware has no navigation bar, so turn on the kiosk's navigation service:
+
+```sh
+adb shell settings put secure enabled_accessibility_services com.wesbos.homehq/com.wesbos.homehq.NavigationService
+adb shell settings put secure accessibility_enabled 1
+# undo: adb shell settings delete secure enabled_accessibility_services
+```
+
+Its **Back** and **Dashboard** buttons showed over KISS and Android Settings, and **Dashboard**
+returned to the kiosk. By hand on the panel: the two-finger hold → **Android settings** → **Apps**,
+then **Dashboard** back (README rule 9).
 
 ## Not tested
 
-- The dashboard on the frame, and the kiosk as Home.
-- By hand on the panel: KISS → Android Settings → Apps (README rule 9).
-- Disabling AiMOR, `com.yhk.qeota` or `com.softwinner.update`. On the Joyhong C-2, disabling a
-  vendor updater made every activity crash at boot, so do one package at a time with ADB
-  connected.
+- The hosted dashboard over Wi-Fi.
 - Network ADB, root, factory reset, OTA behavior, and whether the USB-C port does host mode.
 - Exactly how many taps on **Model** open the password box.
