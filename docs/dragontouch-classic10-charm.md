@@ -85,10 +85,12 @@ re-verifying produced the matching hashes.
 
 The complete `dumpsys package` output contains **zero** `android.intent.category.HOME`
 filters on this build — Frameo included — and `<preferred-activities />` in
-`package-restrictions.xml` is empty. Frameo may start by its own mechanism at boot, but it
-does not claim HOME, so the HOME intent always resolves to the kiosk once its alias is
-enabled; Frameo only appears if started explicitly (e.g. from the kiosk's
-**Open launcher** menu). Consequences:
+`package-restrictions.xml` is empty. Frameo ships a `BOOT_COMPLETED` receiver
+(`net.frameo.frame/.core.BootCompleteReceiver`) — that, not HOME, is how it starts itself
+at boot, which is where the boot "Welcome, <name>" screen came from. The HOME intent
+always resolves to the kiosk once the kiosk's alias is enabled. Frameo is disabled and its
+data cleared on this unit (owner-approved; see the change table), so neither path runs.
+Consequences:
 
 - After installing the kiosk and running it with the `home` extra, it is the **only**
   HOME handler: no chooser ever appears and `am start -c android.intent.category.HOME`
@@ -104,9 +106,9 @@ enabled; Frameo only appears if started explicitly (e.g. from the kiosk's
   ```
 
   The service was confirmed bound (`dumpsys accessibility`) and the buttons visible in a
-  Settings screenshot outside the kiosk. The two-finger gesture itself was not tested;
-  per README rule 9 the owner should still check the menu and buttons by hand on the
-  panel, since screencaps do not prove touch input.
+  Settings screenshot outside the kiosk. The two-finger gesture was confirmed by the owner
+  on the panel, not by screencap — injected touch does not prove input here, and screencaps
+  alone do not either (README rule 9).
 
 ## What was set up (all owner-approved writes)
 
@@ -117,21 +119,25 @@ enabled; Frameo only appears if started explicitly (e.g. from the kiosk's
 | `WRITE_SECURE_SETTINGS` grant, so the kiosk re-adds its navigation service itself | `pm revoke com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS` |
 | Accessibility service enabled (commands above) | disable in Settings → Accessibility |
 | `pm disable com.waophoto.fota` (updater disabled while the frame is online) | `pm enable com.waophoto.fota` |
+| `pm clear net.frameo.frame` (wipes the setup name and all Frameo data — removes the boot "Welcome" screen) + `pm disable net.frameo.frame` (kills its `BOOT_COMPLETED` autostart) | `pm enable net.frameo.frame` (data is not restored; re-setup re-asks the name) |
 | `settings put global stay_on_while_plugged_in 7` (previous value `0`) | `adb shell settings put global stay_on_while_plugged_in 0` |
 
-The dashboard was verified rendering full-screen by screenshot after install, with the
-correct date and time (the clock-jump behaviour seen on the Modern10 Charm has not been
-observed here, but it was only checked once; this unit's `idle` time exceeding `uptime`
-after a reboot suggests the same quirk). The owner has since confirmed on the panel that
-the two-finger hold opens the kiosk menu and that the dashboard comes back by itself after
-a reboot; the floating Back/Dashboard buttons were additionally visible in a Settings
-screenshot. Frameo and the vendor test app remain installed and enabled.
+The dashboard was verified rendering full-screen by screenshot after install. The clock
+was checked against the host twice (after install and after a reboot): correct date, time
+and timezone both times — but the Modern10 Charm's clock-jump behaviour may only strike
+occasionally, and this unit's `idle` time exceeding `uptime` after a reboot shows the same
+underlying quirk, so a wrong date can still present as a silent calendar bug. The owner
+has confirmed on the panel that the two-finger hold opens the kiosk menu and that the
+dashboard comes back by itself after a reboot; the floating Back/Dashboard buttons were
+additionally visible in a Settings screenshot. The vendor test app (`com.joyhong.test`)
+remains installed and enabled; Frameo is disabled with its data cleared.
 
 ## Not tested
 
 - Factory-reset behaviour and firmware restore (backups exist; restore is unproven).
-- Whether Frameo's own boot-time autostart also runs behind the kiosk after a reboot
-  (the kiosk is the foreground app; Frameo's state behind it was not inspected).
+- That the boot "Welcome" screen is gone after the Frameo disable — first post-disable
+  reboot not yet observed (the disable was verified in package state, and its data with
+  the owner's name is gone).
 - USB ADB through other cables, or the `mtp,adb` gadget config on a device-mode port.
 - A second computer with a fresh ADB key (the no-key-check observation is one host only).
 - Whether other units from this listing ship this firmware.
