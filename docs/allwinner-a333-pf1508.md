@@ -167,8 +167,7 @@ app was built for an older version of Android" dialog; it didn't come back after
 a reboot. After **OK**, the kiosk runs full screen and showed its "Connect to Wi-Fi?" screen (the
 frame was offline).
 
-Built with target SDK 28 instead (`--target-sdk-version 28` in `build.sh`; a kiosk PR will
-follow), it installs normally with no dialog. As Home it boots into the kiosk, but wait about 30
+Built with target SDK 28 instead (`--target-sdk-version 28` in `build.sh`, #169), it installs normally with no dialog. As Home it boots into the kiosk, but wait about 30
 seconds after `--ez home true` and `set-home-activity` before rebooting: a reboot 2 seconds later
 lost the Home alias and the frame booted into KISS. With the frame still offline,
 the demo dashboard was served from the computer over `adb reverse tcp:8080 tcp:8080` and saved
