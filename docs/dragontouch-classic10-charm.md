@@ -87,7 +87,9 @@ The complete `dumpsys package` output contains **zero** `android.intent.category
 filters on this build — Frameo included — and `<preferred-activities />` in
 `package-restrictions.xml` is empty. Frameo ships a `BOOT_COMPLETED` receiver
 (`net.frameo.frame/.core.BootCompleteReceiver`) — that, not HOME, is how it starts itself
-at boot, which is where the boot "Welcome, <name>" screen came from. The HOME intent
+at boot. The boot "Welcome, <name>" screen the owner saw presumably comes from this
+receiver (the name was in Frameo's prefs); confirm the screen is gone after the next
+post-disable reboot. The HOME intent
 always resolves to the kiosk once the kiosk's alias is enabled. Frameo is disabled and its
 data cleared on this unit (owner-approved; see the change table), so neither path runs.
 Consequences:
@@ -119,7 +121,7 @@ Consequences:
 | `WRITE_SECURE_SETTINGS` grant, so the kiosk re-adds its navigation service itself | `pm revoke com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS` |
 | Accessibility service enabled (commands above) | disable in Settings → Accessibility |
 | `pm disable com.waophoto.fota` (updater disabled while the frame is online) | `pm enable com.waophoto.fota` |
-| `pm clear net.frameo.frame` (wipes the setup name and all Frameo data — removes the boot "Welcome" screen) + `pm disable net.frameo.frame` (kills its `BOOT_COMPLETED` autostart) | `pm enable net.frameo.frame` (data is not restored; re-setup re-asks the name) |
+| `pm clear net.frameo.frame` (wipes the setup name and all Frameo data — presumably removes the boot "Welcome" screen; confirm after the next reboot) + `pm disable net.frameo.frame` (kills its `BOOT_COMPLETED` autostart) | `pm enable net.frameo.frame` (data is not restored; re-setup re-asks the name) |
 | `settings put global stay_on_while_plugged_in 7` (previous value `0`) | `adb shell settings put global stay_on_while_plugged_in 0` |
 
 The dashboard was verified rendering full-screen by screenshot after install. The clock
