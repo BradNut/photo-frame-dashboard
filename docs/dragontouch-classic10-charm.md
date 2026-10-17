@@ -43,14 +43,16 @@ the partitions after it sit at different offsets. The eMMC user area is 30,777,3
 
 ## ADB access
 
-With the frame on Wi-Fi, TCP port 5555 was open at boot (`service.adb.tcp.port=5555`) and
+Throughout this session TCP port 5555 was open with `service.adb.tcp.port=5555` set, and
 `adb connect <frame-ip>:5555` returned a root shell immediately — no authorization prompt,
 and none could appear: `com.android.systemui` is disabled, so there is no UI to show one.
 The same no-AUTH-over-Wi-Fi signature was reported for the Modern10 Charm and for the
-Classic15 Pro (issue #146). `persist.sys.usb.config=mtp,adb` suggests a USB gadget config,
-but the only USB port observed is a USB-A receptacle, and a USB-A-to-USB-C cable to the
-Mac enumerated nothing — the same result as the Modern10 Charm report. USB ADB was not
-pursued further; Wi-Fi was enough.
+Classic15 Pro (issue #146). After one owner-initiated reboot the connection came back the
+same way: root, no prompt, same address, with the FOTA disable and the enabled
+accessibility service intact. `persist.sys.usb.config=mtp,adb` suggests a USB gadget
+config, but the only USB port observed is a USB-A receptacle, and a USB-A-to-USB-C cable
+to the Mac enumerated nothing — the same result as the Modern10 Charm report. USB ADB was
+not pursued further; Wi-Fi was enough.
 
 **Security hand-off:** this is an unauthenticated root shell open to anyone who can reach
 the frame on the network. Keep it on a trusted LAN, never port-forward it, and re-check
@@ -59,13 +61,16 @@ network.
 
 ## Backup
 
-Before installing anything, every partition except `UDISK` (`/data`) and `cache` was read
-over ADB and verified: exact byte counts, SHA-256, gzip readback hash, and fresh re-reads
-of each partition plus a 16 MiB sample 128 MiB into `system` (avoiding the mutable ext4
-superblock). All checks matched, and a second `system` sample read an hour later was
-byte-identical, so the filesystem was not being written while running. `mmcblk0boot0` and
-`mmcblk0boot1` (4 MiB each) were captured too. `/sbin/busybox dd` was used throughout, so
-the >2 GiB `dd` limit noted for the Modern10 Charm never applied.
+Before installing anything, the critical partitions were read over ADB and verified:
+`bootloader`, `env`, `boot`, `system`, `recovery`, `misc`, `frp`, plus `mmcblk0boot0` and
+`mmcblk0boot1` — checked for exact byte counts, SHA-256, gzip readback hash, and fresh
+re-reads of each partition plus a 16 MiB sample 128 MiB into `system` (avoiding the mutable
+ext4 superblock). All checks matched, and a second `system` sample read an hour later was
+byte-identical, so the filesystem was not being written while running. `/sbin/busybox dd`
+was used throughout, so the >2 GiB `dd` limit noted for the Modern10 Charm never applied.
+Not captured: `UDISK` (`/data`), `cache`, and the small `metadata`, `private`, `empty`,
+`alog` and `media_data` partitions — the owner-approved scope covered the static
+partitions a restore would need, since the kiosk changes land in `/data`.
 
 A pipeline trap worth recording: **this device's `adbd` appends busybox `dd`'s statistics
 line to `adb exec-out` stdout** (`32+0 records in` / `32+0 records out`, 25–41 trailing
@@ -80,8 +85,10 @@ re-verifying produced the matching hashes.
 
 The complete `dumpsys package` output contains **zero** `android.intent.category.HOME`
 filters on this build — Frameo included — and `<preferred-activities />` in
-`package-restrictions.xml` is empty. Frameo starts by its own mechanism at boot, not via
-the HOME intent. Consequences:
+`package-restrictions.xml` is empty. Frameo may start by its own mechanism at boot, but it
+does not claim HOME, so the HOME intent always resolves to the kiosk once its alias is
+enabled; Frameo only appears if started explicitly (e.g. from the kiosk's
+**Open launcher** menu). Consequences:
 
 - After installing the kiosk and running it with the `home` extra, it is the **only**
   HOME handler: no chooser ever appears and `am start -c android.intent.category.HOME`
@@ -114,14 +121,20 @@ the HOME intent. Consequences:
 
 The dashboard was verified rendering full-screen by screenshot after install, with the
 correct date and time (the clock-jump behaviour seen on the Modern10 Charm has not been
-observed here, but it was only checked once). Frameo and the vendor test app remain
-installed and enabled; Frameo just does not claim HOME on this build, so it never comes
-back unless started explicitly.
+observed here, but it was only checked once; this unit's `idle` time exceeding `uptime`
+after a reboot suggests the same quirk). The owner has since confirmed on the panel that
+the two-finger hold opens the kiosk menu and that the dashboard comes back by itself after
+a reboot; the floating Back/Dashboard buttons were additionally visible in a Settings
+screenshot. Frameo and the vendor test app remain installed and enabled.
 
 ## Not tested
 
 - Factory-reset behaviour and firmware restore (backups exist; restore is unproven).
+- Whether Frameo's own boot-time autostart also runs behind the kiosk after a reboot
+  (the kiosk is the foreground app; Frameo's state behind it was not inspected).
 - USB ADB through other cables, or the `mtp,adb` gadget config on a device-mode port.
 - A second computer with a fresh ADB key (the no-key-check observation is one host only).
 - Whether other units from this listing ship this firmware.
-- The kiosk HOME role and the FOTA disable across a real reboot (state verified only).
+- Long-term behaviour beyond one owner reboot: FOTA staying disabled, the navigation
+  service surviving force-stops of the kiosk (it did survive one reboot), and network
+  ADB after a change of Wi-Fi network or DHCP address.
