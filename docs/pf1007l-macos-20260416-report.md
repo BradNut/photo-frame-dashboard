@@ -1,5 +1,12 @@
-# PF1007L / AiMOR 6.0.78 / 20260416: USB data yes, no ADB over USB or network (T3, T3b)
+# PF1007L / AiMOR 6.0.78 / 20260416: USB data yes, no ADB over USB or network, no FEL from the stub card (T3, T3b, T4)
 
+One USB-C-only unit on April `20260416` firmware, tested from macOS. Stock ADB was off, network
+ADB was refused, and the FEL stub card darkened the screen but never produced a FEL device.
+No route completed and nothing was written to the frame.
+
+## Unit report
+
+```text
 About model / firmware: PF1007L, firmware 321-OS-AIMOR.0.20260416 (full string as shown in Settings → About)
 AiMOR version: 6.0.78 (code 78)
 Ports (DC jack, or USB-C only): USB-C only
@@ -14,8 +21,27 @@ Boot image SHA-256 (sector 172032, 31,028 sectors): not read
 Route used and result: none completed. T3b failed; T3c not tried (needs the vendor server reachable; conflicts with the router block). Route U (FEL stub on TF card) was started and stopped at T4: the FEL device never enumerated, so no eMMC backup was attempted.
 Host OS: macOS (Darwin 27.0.0), adb from Homebrew android-platform-tools
 First failed step and its exact output: T3b: "nc: connectx to <frame-ip> port 5555 (tcp) failed: Connection refused"
+```
 
 Later failed step: T4 `sunxi-fel version`: "ERROR: Allwinner USB FEL device not found!"
 
-Notes: the frame's USB device dropped for about 3 seconds at one point and came back as 1f3a:1000, then stayed up. Stock ADB was off on this unit. Its Wi-Fi MAC changed at each boot, and its address changed with it.
+## Notes
 
+- The frame's USB device dropped for about 3 seconds at one point and came back as `1f3a:1000`,
+  then stayed up.
+- Its Wi-Fi MAC changed at each boot, and its address changed with it.
+- Only the adapter chain ever gave USB data. The FEL attempts used both that chain and the direct
+  cable, so a cable or port problem has not been ruled out for T4.
+
+## Compared with other reports (not tested on this unit)
+
+- [#119](https://github.com/wesbos/photo-frame-dashboard/issues/119), the same `20260416`
+  firmware on Windows, did get FEL and finished Route U with a 12 MHz low-power U-Boot. So the
+  firmware alone does not explain the missing FEL device.
+- A dark screen with the stub card and no USB device also matches the second unit in
+  [allwinner-a33-pf1007l.md](allwinner-a33-pf1007l.md#second-unit-usb-c-only-no-dc-jack). That unit had no USB
+  data at all. This one shows `1f3a:1000` in Android.
+- Not tried yet: [T3c](pf1007l-start-here.md#t3c-temporary-adb-through-the-aimor-connection)
+  (tested on `20260410` and `20260529`, not `20260416`), and the read-only
+  [T5](pf1007l-start-here.md#t5-route-s-sd-boot-and-emmc-dump-test-read-only-on-the-frame)
+  Route S dump, which needs no USB. Route S's write accepts only the January boot image, so stop after the dump.
