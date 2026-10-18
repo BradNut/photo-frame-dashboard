@@ -219,3 +219,80 @@ is only reported here; this contribution does not change the dashboard implement
 Motion/PIR support, firmware restoration, other units and other firmware versions were not
 tested in this report.
 
+
+## Unit on firmware v2026051219, tested on macOS (2026-10-18)
+
+Another `FRAME156` on the same firmware as the unit in
+[PR #139](https://github.com/wesbos/photo-frame-dashboard/pull/139). Host: Intel Mac, USB through a
+Thunderbolt dock. The frame stayed offline until after the backup and the OTA app was disabled.
+
+| Observation | Value |
+| --- | --- |
+| Model / firmware | `FRAME156`, `FrameO.DP105F.v2026051219` |
+| Fingerprint | `rockchip/rk3326_32bit/rk3326_32bit:8.1.0/OC/192521:user/release-keys` |
+| USB (ADB) | `2218:0006`, vendor string `rockchip`, product `FRAME156`, interface class `ff/42/01` |
+| Frameo | `net.frameo.frame` v1.30.19 at `/system/priv-app/DP_Frameo` (not updated; kept offline) |
+| Launcher3 | Already disabled when received |
+| WebView | `com.android.webview` 106.0.5249.126 |
+| Root / SELinux | Shipped `su -c id` gives uid 0 without a prompt; `Permissive` |
+| eMMC | 31,268,536,320 bytes (61,071,360 sectors) |
+| Partitions | p1-p15 identical to the [table above](#partition-table-emmc-mmcblk2-512-byte-sectors); `userdata` is 55,458,752 sectors (first unit: 55,450,560) |
+
+The ADB USB vendor ID differs between units: `18D1` (first unit), `2211` (second unit), `2218`
+(this one). Match on product `FRAME156` and the ADB interface class, not on the vendor ID.
+
+### ADB authorization
+
+With ADB Access on and computer photo transfer off, the host showed `unauthorized`. **No prompt or
+Frameo warning appeared on the screen** at any point. It stayed `unauthorized` through a server
+restart and three minutes of polling. After ADB Access was turned off and on again, the state did
+not change by itself within a minute, but `adb kill-server` followed by `adb start-server` turned it
+into `device` within about 4 seconds. No key injection or loader was needed.
+
+The host's old SDK `adb` 1.0.36 also saw the frame as `unauthorized` but logged
+`Unable to create an interface plug-in (e00002be)`. Current platform-tools (37.0.1, ADB 1.0.41)
+was used for everything else.
+
+### Backup of everything before userdata (verified)
+
+Sectors 0-5,612,544 (2,873,622,528 bytes) were captured with the base64 method from
+[Backup](#backup-2026-10-09-verified):
+
+```sh
+adb exec-out "su -c 'dd if=/dev/block/mmcblk2 bs=524288 count=5481 2>/dev/null | gzip -1 | base64'" \
+  | tr -d '\r' | base64 -D > emmc-0-5612544.img.gz
+```
+
+A 1 MiB probe of `uboot` first matched its device-side SHA-256. The full capture took about 10
+minutes (568 MB gzipped). The gzip readback was exactly 2,873,622,528 bytes, and its SHA-256 matched
+a separate device-side read of the same range. No 1 MiB block was entirely `0xCC`. Per-partition
+re-reads on the device matched the backup for `uboot` through `frp`, except `oem`, which differed in
+exactly one byte at partition offset `0x1702b` (`0x00` in the backup, `0x02` later), inside the JBD
+journal superblock (magic `c03b3998`). This is the same byte as on both earlier units. Here it
+changed within minutes, between two reads, while `/oem` was mounted read-only. `userdata`,
+`mmcblk2boot0/1` and `rpmb` were not captured. Restore was not tested.
+
+### Kiosk, Frameo and reboot
+
+The kiosk was installed and made Home with the `--ez home true` and `set-home-activity` order from
+the [kiosk README](../dashboard/kiosk/README.md#start-at-boot). Before Frameo was disabled, ADB was
+confirmed to depend on Android settings rather than Frameo (`settings get global adb_enabled` = `1`,
+`persist.sys.usb.config` = `adb`), and the kiosk's two-finger hold -> **Android settings** was
+checked on the panel.
+
+`pm disable-user --user 0` was run for `com.muxintu.app.mxota` (well before the reboot)
+and `net.frameo.frame` (shortly before it; neither delay was measured). After `adb reboot` the frame
+booted into the kiosk, both apps stayed disabled and not running, and ADB was back in about 18
+seconds **without replugging USB**. The kiosk WebView kept its login across the reboot. Compare
+[PR #139](https://github.com/wesbos/photo-frame-dashboard/pull/139), where an immediate reboot
+undid `disable-user`.
+
+### Networking
+
+Onboard Wi-Fi joined the network and reconnected after the reboot. Network ADB (port 5555) was
+not listening. **mDNS `.local` names do not resolve** on this Android 8.1 build
+(`ping homeassistant.local` gives `unknown host`), so a kiosk URL like
+`http://homeassistant.local:8123/...` fails. Use an IP address or a regular DNS name. A Home
+Assistant dashboard over plain `http://` loaded in the kiosk on WebView 106.
+
+Motion/PIR, loader mode, firmware restore and a WebView upgrade were not tested on this unit.
