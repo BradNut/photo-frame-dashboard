@@ -97,6 +97,17 @@ run moved the new live tree *into* `/system/homehq-stock-webview/webview` and le
 `/system/app/webview` at all. It was fixed with one `mv` back before rebooting. Refuse to run
 the swap if `/system/homehq-stock-webview` already exists.
 
+## Boot fixes
+
+[pf1007l-boot-fixes.md](pf1007l-boot-fixes.md) installed over USB ADB with `install.sh apply`
+(`MAC` empty, so derived from the serial; `WIFI_DEFER=1`; `POWER_FIX=0`, since the frame was
+on a Mac USB-A port). The TP-Link Deco did not answer NTP (`sntp` timed out), so
+`NTP_SERVER=time.google.com`. `install.sh check` passed on this firmware. After one power-cycle,
+`install.sh verify` passed: the configured MAC replaced the driver's random `88:00:33:…` address
+before association, Wi-Fi started at 39.9 s uptime, the clock was right and
+`/data/local/frame-lasttime` was written. One boot only; repeated and power-cut boots were not
+tested.
+
 ## Earlier attempts compared with other reports
 
 - [#119](https://github.com/wesbos/photo-frame-dashboard/issues/119), the same `20260416`
