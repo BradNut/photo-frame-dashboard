@@ -81,6 +81,22 @@ After a cold boot: Rootless was Home, USB root ADB worked, the three packages st
 and not running, and `netstat` showed nothing on 7806 or 5555. `getenforce` reported `Disabled`
 with AiMOR off.
 
+## WebView 106 and the kiosk
+
+Stock WebView was 44.0.2403.119. Section 6 of the
+[PF1007L guide](allwinner-a33-pf1007l.md#6-upgrade-webview-before-using-the-kiosk) worked as
+written: the APK hash matched, the three `lib/armeabi-v7a` libraries went to `lib/arm`, and
+`/system` had 405,820 KiB free. After a cold boot `dumpsys package` reported
+`versionName=106.0.5249.126`, `WebViewFactory` loaded `/system/app/webview/lib/arm/libwebviewchromium.so`
+with no `dlopen failed`, and the Home HQ kiosk (built with JDK 17 and build-tools 34 on macOS)
+rendered the demo over `adb reverse` on the panel. Density was already 160. External HTTPS
+images failed with `net_error -202`, as the guide warns.
+
+**Run the two `mv` commands once.** Here the swap command was run twice by accident: the second
+run moved the new live tree *into* `/system/homehq-stock-webview/webview` and left no
+`/system/app/webview` at all. It was fixed with one `mv` back before rebooting. Refuse to run
+the swap if `/system/homehq-stock-webview` already exists.
+
 ## Earlier attempts compared with other reports
 
 - [#119](https://github.com/wesbos/photo-frame-dashboard/issues/119), the same `20260416`
