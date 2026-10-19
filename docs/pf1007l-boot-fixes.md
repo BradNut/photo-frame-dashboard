@@ -42,6 +42,10 @@ October 2026, on a 2 A wall supply:
   supply of 2 A or more.
 - Observed: one freeze on the wall supply during development had no log, and did not happen again
   in more than 60 later boots. Its cause is unknown.
+- Observed on a second unit, April `20260416` firmware, macOS host, on a Mac USB-A port: `check`,
+  `apply` and `verify` passed on one boot (configured MAC, Wi-Fi started at 39.9 s, clock saved).
+  Its TP-Link Deco router did not answer NTP, so it used `time.google.com`
+  ([report](pf1007l-macos-20260416-report.md#boot-fixes)).
 - Guess: the Wi-Fi start freeze is a power problem (current spike with no battery), not a driver
   bug. The kernel log ends at different points of the Wi-Fi start, and the frame survived the
   same start when it ran after boot.
