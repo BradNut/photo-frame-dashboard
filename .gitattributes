@@ -1,0 +1,17 @@
+# Scripts run on the frame, in U-Boot or in Docker must keep LF endings (#185, #119).
+* text=auto
+*.sh          text eol=lf
+*.py          text eol=lf
+*.cmd         text eol=lf
+*.in          text eol=lf
+*.rc          text eol=lf
+*.patch       text eol=lf
+*.dts         text eol=lf
+*.config      text eol=lf
+*.example     text eol=lf
+*.cil         text eol=lf
+Dockerfile    text eol=lf
+*.Dockerfile  text eol=lf
+scripts/biuframe-su.d-50zram text eol=lf
+*.jpg binary
+*.png binary

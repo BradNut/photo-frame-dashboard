@@ -1,7 +1,9 @@
 # PF1007L: boot fixes (one MAC, correct clock, no freeze at Wi-Fi start)
 
 These fixes make a rooted PF1007L boot straight to the kiosk, every time, even after a power cut.
-They also apply to other AIC8800 / AXP223 A33 frames, but they were tested on one unit only.
+They also apply to other AIC8800 / AXP223 A33 frames. The 30-boot test below is from one unit;
+`install.sh check`, `apply` and `verify` have since passed on January, April `20260416` and May
+units (see [Tested on](#tested-on)).
 
 You must have root ADB (T7 in [pf1007l-start-here.md](pf1007l-start-here.md)) and a kiosk set as
 the Home app. Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner
@@ -22,7 +24,7 @@ would need the SD card to get back in. `install.sh check` warns when ADB is over
 | About 1 boot in 10: connected to Wi-Fi but no IP address for ~36 s | The access point sent a group-key update right after the handshake; then no DHCP offer arrived. Reconnecting fixed it | If associated with no address for 2 s, disconnect and reconnect (about 4 s) | always on |
 | Every DNS lookup takes 6-10 s | The network's IPv6 router advertisements listed a DNS server the frame could not reach; Android tried it first | Drop IPv6 router advertisements on Wi-Fi | `IGNORE_IPV6_RA` |
 | "Select a Home app" chooser at boot instead of the kiosk | A power cut corrupted `package-restrictions.xml`; Android reset it and lost the "Always" choice | Start the kiosk if the chooser is showing. Also consider `pm disable-user` on other launchers | `KIOSK` |
-| Network ADB is root with no authentication | `ro.adb.secure=0` on this firmware. Other devices on the same network reach it without passing the router | Allow TCP 5555 only from one network, on the frame itself | `ADB_ALLOW` |
+| Network ADB is root with no authentication | `ro.adb.secure=0` on this firmware. Other devices on the same network reach it without passing the router | Allow TCP 5555 only from one network, on the frame itself. `ADB_ALLOW` only adds the firewall rule; it does not turn network ADB on (#172). Turning it on with `persist.adb.tcp.port` opens root ADB with no key check at every boot (see [T3c](pf1007l-start-here.md#t3c-temporary-adb-through-the-aimor-connection)) | `ADB_ALLOW` |
 
 ## Tested on
 
@@ -42,6 +44,15 @@ October 2026, on a 2 A wall supply:
   supply of 2 A or more.
 - Observed: one freeze on the wall supply during development had no log, and did not happen again
   in more than 60 later boots. Its cause is unknown.
+- Observed on other units, one or a few boots each: `check`, `apply` and `verify` passed on January
+  `20260113` (#137, #164, #172, #179) and April `20260416`
+  ([report](pf1007l-macos-20260416-report.md#boot-fixes)), with `WIFI_DEFER=1` and `POWER_FIX=0`.
+  Wi-Fi started at 39.9 to 44 s uptime. Repeated and power-cut boots were not tested on most of them.
+- Observed before the fixes, the same freeze on other units: a January unit went dark about 30 s
+  into a boot from a laptop port (#137); a January unit on a 5 W USB-A charger stayed black after
+  the boot logo (#164); an April unit boot-looped on a Mac port when Wi-Fi started (#187).
+- Observed: a TP-Link Deco did not answer NTP (#190); `NTP_SERVER=time.google.com` worked there
+  and on #137, #164 and #172.
 - Guess: the Wi-Fi start freeze is a power problem (current spike with no battery), not a driver
   bug. The kernel log ends at different points of the Wi-Fi start, and the frame survived the
   same start when it ran after boot.

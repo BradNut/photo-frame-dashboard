@@ -19,7 +19,8 @@ below is from one unit. Check each value on your own unit; stop at the first mis
 Scripts are in [`scripts/a33-uboot/`](../scripts/a33-uboot).
 `emmc-macos.py` also supports Linux: use the bare whole-disk name (for example `sdb`,
 not `/dev/sdb`) and the exact byte count from `lsblk -b`, keeping all its identity,
-read-only and mount checks. Windows has its own
+read-only and mount checks. If the host runs USBGuard, the `ums` disk can show up as
+`authorized=0` and never get a block device: allow that one device for the session (#157). Windows has its own
 `-windows.ps1` scripts, see [section 9](#9-windows-host-wsl2--usbipd).
 
 A later [May 2026 macOS unit report](pf1007l-macos-20260529-report.md) reached root
@@ -388,8 +389,9 @@ FEL over usbipd, a RAM-loaded U-Boot, Windows reading the `ums` disk, and a full
 two matching passes. That unit used an earlier, writable U-Boot build (v2025.01, eMMC 4-bit at
 26 MHz), not this repository's read-only build. Both scripts were tested against disk images:
 backup, gzip readback, resume, the fingerprint, the `0xCC` filler check, verify against a
-plan, and card write and restore. Neither has run against a frame yet. The boot-partition
-write (section 6) has not been done from Windows.
+plan, and card write and restore. Since then, #141 ran the whole route from native Windows on a
+January unit with the larger eMMC, including the boot-partition write (section 6) and `verify`,
+with the no-HS patch, the START STOP correction and the warm-up SPL.
 
 ### Set up the host
 
