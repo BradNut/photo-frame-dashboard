@@ -24,6 +24,7 @@ Detailed guides behind this page:
 | [January remote-management report](allwinner-a33-pf1007l.md#9-january-unit-remote-management-and-background-services) | **After root, one unit:** native Tailscale SSH, vendor background exceptions and navigation master-switch reset; custom startup helpers not included |
 
 Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.md),
+[macOS report for AiMOR `20260519`](pf1007l-aimor-20260519-macos-root-report.md),
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),

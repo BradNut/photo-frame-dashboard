@@ -225,13 +225,28 @@ def checked_dump(card):
     env = check.status(card)
     require(env.get('a33_stage') == 'finished' and env.get('emmc_dev') == 'ok',
             'Backup did not finish')
-    require({k for k in env if k.startswith('st_')} == {f'st_{i:02x}' for i in range(32)},
-            'Expected all 32 backup chunks')
-    for i in range(32):
+    if env.get('full_dump') == 'yes':
+        sizes = {'30535680': (233, 126976), '30777344': (235, 106496)}
+        require(env.get('size_name') in sizes, 'Unsupported full-dump eMMC size')
+        chunk_count, final_sectors = sizes[env['size_name']]
+        require(int(env.get('total', '0'), 16) == int(env['size_name']),
+                'Full-dump capacity probe disagrees with its size label')
+        expected = {f'st_{i:02x}' for i in range(chunk_count)}
+        require({k for k in env if k.startswith('st_')} == expected,
+                f'Expected all {chunk_count} full-dump chunks')
+    else:
+        chunk_count, final_sectors = 32, 131072
+        require({k for k in env if k.startswith('st_')} == {f'st_{i:02x}' for i in range(32)},
+                'Expected all 32 backup chunks')
+    for i in range(chunk_count):
         fields = env[f'st_{i:02x}'].split()
-        require(len(fields) >= 3 and fields[0] == 'ok' and int(fields[1], 16) == i * 131072,
+        want_sectors = final_sectors if i == chunk_count - 1 else 131072
+        count_ok = (len(fields) >= 4 and int(fields[3], 16) == want_sectors) \
+            if env.get('full_dump') == 'yes' else True
+        require(len(fields) >= 3 and fields[0] == 'ok' and int(fields[1], 16) == i * 131072
+                and count_ok,
                 f'Backup chunk {i:02x} failed')
-        require((card / f'emmc-{i:02x}.bin').stat().st_size == check.CHUNK,
+        require((card / f'emmc-{i:02x}.bin').stat().st_size == want_sectors * 512,
                 f'Backup chunk {i:02x} has the wrong size')
     check.main(card)
     (check.DEST / 'a33-status.txt').write_bytes((card / 'a33-status.txt').read_bytes())
@@ -255,7 +270,7 @@ def backup(disk):
     _, mount = checked_mount(disk)
     checked_dump(mount)
     subprocess.run(['diskutil', 'eject', disk], check=True)
-    print('All 32 chunks verified and saved in backups/pf1007-emmc/. Card ejected.')
+    print('All dump chunks verified and saved in backups/pf1007-emmc/. Card ejected.')
 
 
 def clean(disk):
