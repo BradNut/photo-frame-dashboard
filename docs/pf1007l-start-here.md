@@ -470,7 +470,7 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 ## For agents
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
-  The firmware table was last updated on 2026-10-13. A newer report may cover your unit.
+  The firmware table was last updated on 2026-10-17. A newer report may cover your unit.
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
