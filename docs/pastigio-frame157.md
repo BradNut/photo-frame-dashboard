@@ -197,7 +197,7 @@ identifiers (serial, MAC, IP) are omitted.
 | Item | Observed value |
 | --- | --- |
 | About model / Android model | `DPF Frame 157` / `FRAME157` |
-| Firmware | `FrameO.DP105F.v2025122915` (newer than the `v2026051219` above) |
+| Firmware | `FrameO.DP105F.v2025122915` (older than the `v2026051219` above: built 2025-12-29) |
 | Fingerprint | `rockchip/rk3326_32bit/rk3326_32bit:8.1.0/OC/150203:user/release-keys` |
 | SoC / Android / patch | Rockchip RK3326 / 8.1.0 / 2020-11-05 |
 | Display | 1920x1080, 170 dpi |

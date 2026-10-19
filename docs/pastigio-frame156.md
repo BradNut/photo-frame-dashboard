@@ -221,6 +221,10 @@ tested in this report.
 
 ## Third unit: "DPF Frame 156", firmware v2026051219 (2026-10-15)
 
+> **Record, not a procedure.** This unit had no full eMMC backup, so the `/system` WebView swap below
+> does not meet README rule 2. The root script that did the swap is not in this repo, and the undo
+> below was not run. Read it as what one owner did, not as steps to follow.
+
 A third unit, bought on Amazon.ca as the Pastigio 15.6" listing. Frameo **Settings -> About** names it
 `DPF Frame 156` rather than `FRAME156`, but the ADB properties match the earlier units' model on newer
 firmware. Host: macOS through a USB hub.
@@ -245,11 +249,12 @@ Frameo's ADB warning, changed it to `device`. No key injection or loader was nee
 drops the USB connection for a few seconds, so ADB commands run straight after it fail with
 `no devices/emulators found`.
 
-### Kiosk as device owner and Home app
+### Kiosk as Home app
 
-With `dumpsys account` showing `Accounts: 0`, `dashboard/kiosk` (`com.wesbos.homehq`) installed and
-`dpm set-device-owner com.wesbos.homehq/.AdminReceiver` succeeded. `pm grant ... WRITE_SECURE_SETTINGS`
-also succeeded. The `.Home` alias ships disabled, so `cmd package set-home-activity com.wesbos.homehq/.Home`
+`dashboard/kiosk` (`com.wesbos.homehq`) installed and `pm grant ... WRITE_SECURE_SETTINGS` succeeded.
+The owner's local build was also made device owner with `dpm set-device-owner`. The repo's kiosk has
+no device admin receiver, so that step doesn't apply to it. Don't make an app device owner: it
+can't be removed without the app's help or a factory reset. The `.Home` alias ships disabled, so `cmd package set-home-activity com.wesbos.homehq/.Home`
 fails with `cannot be home on user 0` until the app has enabled it. This order works:
 
 ```bash
@@ -280,7 +285,8 @@ href=$(curl -s -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Typ
   https://review.lineageos.org/LineageOS/android_external_chromium-webview_prebuilt_arm/info/lfs/objects/batch \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["objects"][0]["actions"]["download"]["href"])')
 curl -sfL "$href" -o webview-138.0.7204.63-arm.apk   # signed link, valid for 60 seconds
-shasum -a 256 webview-138.0.7204.63-arm.apk          # must match the table
+echo "b7268786318f404bdad53eaaec889619ff30100b935541a9e393e32efed3cf11  webview-138.0.7204.63-arm.apk" \
+  | shasum -a 256 -c - &&
 unzip -j webview-138.0.7204.63-arm.apk 'lib/armeabi-v7a/*' -d lib-arm && shasum -a 256 lib-arm/*.so
 ```
 
@@ -288,7 +294,8 @@ Because `/system` on this unit is a plain ext4 mount with no dm-verity device, t
 `/system/app/webview` tree was replaced through root, following the
 [PF1007L procedure](allwinner-a33-pf1007l.md#6-upgrade-webview-before-using-the-kiosk):
 
-1. Pulled the stock tree to the host (`adb pull /system/app/webview`, 3 files, about 211 MB).
+1. Pulled the stock tree to the host (`adb pull /system/app/webview`, 3 files, about 211 MB). Its
+   hashes were not recorded, so there is nothing to compare the stock tree against before a write.
 2. Extracted `lib/armeabi-v7a/libwebviewchromium.so` and `libcrashpad_handler_trampoline.so` from the APK
    on the host and pushed `webview.apk`, `lib/arm/*.so` and their MD5 list to `/data/local/tmp`.
 3. A root script checked the staged MD5s and refused existing staging or rollback paths. It checked
@@ -300,7 +307,8 @@ Because `/system` on this unit is a plain ext4 mount with no dm-verity device, t
    `codePath=/system/app/webview`, and logcat had no WebView `dlopen` errors. The device booted normally,
    and the kiosk dashboard rendered on 138 with the frame's CA store.
 
-Undo: remount `/system` read-write, move `/system/app/webview` aside, move `/system/homehq-stock-webview`
+Undo (described, never run, and not guarded: the stock tree's hashes were not recorded): remount
+`/system` read-write, move `/system/app/webview` aside, move `/system/homehq-stock-webview`
 back to `/system/app/webview`, remount read-only and reboot. Repeated `ffmExtractor ... libffmpeg_utils.so not found`
 lines in logcat come from the media server, not WebView.
 
