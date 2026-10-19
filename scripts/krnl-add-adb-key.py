@@ -3,16 +3,20 @@
 
 A KRNL image is: b"KRNL" + uint32 LE payload length + payload (gzip'd newc
 cpio ramdisk) + uint32 LE Rockchip CRC32 of the payload. Everything after
-that is padding up to the partition size.
+that is padding up to the partition size; the script keeps the input's bytes there.
 
 The script checks the input's magic and CRC, refuses an image that already
 has /adb_keys, appends one cpio entry (root:root 0644) before the trailer and
 keeps every other entry byte for byte. The output is the same size as the
-input, so it can be written back over the whole partition.
+input, so it can be written back over the whole partition. It refuses to overwrite an
+existing file, so the stock backup can't be replaced by mistake. The key's comment
+(user@host) is dropped. Tested on the Denver PFF-711 only.
 
-  krnl-add-adb-key.py boot.img ~/.android/adbkey.pub boot-patched.img
+  krnl-add-adb-key.py [--expect-sha256 <hex>] boot.img ~/.android/adbkey.pub boot-patched.img
 """
 import gzip
+import hashlib
+import os
 import struct
 import sys
 
@@ -71,10 +75,17 @@ def cpio_entry(name, data, ino, mtime):
 
 
 def main():
-    if len(sys.argv) != 4:
+    args, expect = sys.argv[1:], None
+    if args[:1] == ["--expect-sha256"] and len(args) > 1:
+        expect, args = args[1].lower(), args[2:]
+    if len(args) != 3:
         sys.exit(__doc__)
-    src, key_path, dst = sys.argv[1:]
+    src, key_path, dst = args
+    if os.path.exists(dst):
+        sys.exit(f"{dst} already exists; refusing to overwrite it (is it your stock backup?)")
     image = open(src, "rb").read()
+    if expect and hashlib.sha256(image).hexdigest() != expect:
+        sys.exit("input SHA-256 does not match --expect-sha256, stopping")
     if image[:4] != b"KRNL":
         sys.exit("input is not a KRNL image (an ANDROID! boot image needs a different tool)")
     length = struct.unpack("<I", image[4:8])[0]
@@ -88,11 +99,10 @@ def main():
     if any(name == b"adb_keys" for name, _ in entries):
         sys.exit("ramdisk already has /adb_keys; edit it by hand instead")
 
-    key = open(key_path, "rb").read()
+    key = open(key_path, "rb").read().strip()
     if not key.startswith(b"QAAAA"):
         sys.exit(f"{key_path} does not look like an ADB public key (adbkey.pub)")
-    if not key.endswith(b"\n"):
-        key += b"\n"
+    key = key.split()[0] + b"\n"   # drop the user@host comment
 
     ino = max(int(e[6:14], 16) for _, e in entries) + 1
     mtime = int(entries[0][1][46:54], 16)
@@ -102,7 +112,8 @@ def main():
     blob = b"KRNL" + struct.pack("<I", len(new_payload)) + new_payload + struct.pack("<I", rk_crc(new_payload))
     if len(blob) > len(image):
         sys.exit("patched image is larger than the partition image")
-    open(dst, "wb").write(blob + image[len(blob):])
+    with open(dst, "xb") as f:
+        f.write(blob + image[len(blob):])
     print(f"wrote {dst}: payload {length} -> {len(new_payload)} bytes, {len(entries) + 1} cpio entries")
 
 

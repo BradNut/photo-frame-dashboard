@@ -2,7 +2,7 @@
 
 Report from **one unit**, tested on **16–17 October 2026** using an **Apple silicon Mac,
 macOS 27.0** with platform-tools 37.0.1. The owner bought it from
-[Amazon US, ASIN B0GTLPX5LC](https://a.co/d/0elUZPxy). The listing identifies the
+[Amazon US, ASIN B0GTLPX5LC](https://www.amazon.com/dp/B0GTLPX5LC?tag=webo080-20). The listing identifies the
 purchase, not a guarantee that another unit has this firmware.
 
 **Verified result:** root ADB was reachable over Wi-Fi with no authorization prompt, and
@@ -52,10 +52,13 @@ same way: root, no prompt, same address, with the FOTA disable and the enabled
 accessibility service intact. `persist.sys.usb.config=mtp,adb` suggests a USB gadget
 config, but the only USB port observed is a USB-A receptacle, and a USB-A-to-USB-C cable
 to the Mac enumerated nothing — the same result as the Modern10 Charm report. USB ADB was
-not pursued further; Wi-Fi was enough.
+not pursued further; Wi-Fi was enough. **Wi-Fi ADB is the only way in on this unit.** Before
+changing Wi-Fi settings or disabling vendor apps, check by hand on the panel that you can still
+reach Android Settings (README rule 9).
 
 **Security hand-off:** this is an unauthenticated root shell open to anyone who can reach
-the frame on the network. Keep it on a trusted LAN, never port-forward it, and re-check
+the frame on the network. Keep it on an isolated network (a guest or IoT network with no other
+devices you care about), never port-forward it, and re-check
 the ADB toggle in the vendor app (or block the port) before putting it on an untrusted
 network.
 
@@ -120,7 +123,7 @@ Consequences:
 | `WRITE_SECURE_SETTINGS` grant, so the kiosk re-adds its navigation service itself | `pm revoke com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS` |
 | Accessibility service enabled (commands above) | disable in Settings → Accessibility |
 | `pm disable com.waophoto.fota` (updater disabled while the frame is online) | `pm enable com.waophoto.fota` |
-| `pm clear net.frameo.frame` (wipes the setup name and all Frameo data) + `pm disable net.frameo.frame` (kills its `BOOT_COMPLETED` autostart). The boot "Welcome" screen is gone after a reboot — owner-confirmed | `pm enable net.frameo.frame` (data is not restored; re-setup re-asks the name) |
+| Optional and destructive: `pm clear net.frameo.frame` (wipes the setup name and all Frameo data; only needed to remove the boot "Welcome" screen). Then `pm disable net.frameo.frame` (kills its `BOOT_COMPLETED` autostart). The boot "Welcome" screen is gone after a reboot — owner-confirmed | `pm enable net.frameo.frame` (data is not restored; re-setup re-asks the name) |
 | `settings put global stay_on_while_plugged_in 7` (previous value `0`) | `adb shell settings put global stay_on_while_plugged_in 0` |
 
 The dashboard was verified rendering full-screen by screenshot after install. The clock

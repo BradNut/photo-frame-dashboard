@@ -22,7 +22,7 @@ time of writing).
 | --- | --- | --- | --- |
 | Model / manufacturer | `10X1` / `incar` | `10X1` / `Synergy` | `102KZ` / `incar` |
 | Build fingerprint | `…/user.fyl.20170927.202757:userdebug/test-keys` | `…/user.thzy.20240919.143320:user/release-keys` | same as this frame |
-| Partition layout | userdata at sector 2,846,720 | userdata at 3,891,200 | same as this frame |
+| Partition layout | userdata at sector 2,846,720 (loader LBA `0x2B5000`) | userdata at 3,891,200 | same as this frame (its table lists loader LBAs) |
 | Home app | `com.shenju.biuframe` (Biu Frame) | same as this frame | Uhale `com.zeasn.frame` |
 | ADB prompt | Shown, could be accepted | Shown | Hidden behind the kiosk |
 | Wi-Fi chip | Realtek SDIO (see below) | SSV6020C (`ssv6x5x` module) | not recorded |

@@ -10,7 +10,8 @@ the differences below (1 GB RAM, Realtek Wi-Fi, microSD slot, no light sensor).
 
 End result: a native Android dashboard (Kotlin and Jetpack Compose, no WebView) running as Device
 Owner in lock task mode, Uhale disabled, a per-UID firewall, and ADB over Wi-Fi from one host only.
-The code and setup scripts are in [eusonlito/Planify-Dashboard](https://github.com/eusonlito/Planify-Dashboard).
+The code and setup scripts are in [eusonlito/Planify-Dashboard](https://github.com/eusonlito/Planify-Dashboard)
+(the contributor's own repo, not reviewed here).
 The stock Android stays; nothing was flashed except the boot logo (see below).
 
 **Tested on:** one unit, bought from [Amazon Spain B0G2MJBR3M](https://www.amazon.es/dp/B0G2MJBR3M),
@@ -101,10 +102,11 @@ Its FAT16 declares **262144 sectors (128 MB)**, but the partition is only **6553
 (32 MB)**, and `env` comes right after it. If you mount it on the frame and write to it, a file can
 land past the end of the partition and overwrite `env` or `boot`.
 
-To change the boot logo, read the whole partition, edit it on the computer with mtools, check that
+The boot-logo change below is a **one-unit record, not a procedure**: the tools used aren't in this
+repo. To change the boot logo, read the whole partition, edit it on the computer with mtools, check that
 the last cluster of `bootlogo.bmp` ends before sector 65536 and that `fsck.vfat` reports nothing
-new (the volume label warning is there from the factory), then write it back with `dd` and read it
-back to compare. The logo is a 24-bit BMP of **1200×1920 (portrait)**, the way the panel scans.
+new (the volume label warning is there from the factory), then compare the current partition with that backup before
+writing (refuse on any difference), write it back with `dd` and read it back to compare. The logo is a 24-bit BMP of **1200×1920 (portrait)**, the way the panel scans.
 
 ## Things that bit
 
@@ -157,10 +159,11 @@ Check `success` and `fail` in `/sys/kernel/debug/suspend_stats` to confirm there
 - The ISRG Root X1 CA is in the system store, so Let's Encrypt certificates validate without
   extra roots.
 
-## What was set up (all over ADB, reversible)
+## What was set up (all over ADB)
 
 - Device Owner (`dpm set-device-owner`, no accounts on the device) and lock task with only
-  Android Settings allowed, for Wi-Fi.
+  Android Settings allowed, for Wi-Fi. **Not easily reversible:** removing a device owner needs the
+  app's own cooperation or a factory reset.
 - Vendor apps disabled with `pm disable-user` (Uhale, Allwinner tools), `com.example` removed for
   user 0, Allwinner persistent logs off.
 - A boot script in `/system/etc` with an `init` `.rc` (`adb remount` works): the wakelock above,

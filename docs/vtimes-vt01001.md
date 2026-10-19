@@ -9,14 +9,14 @@ The firmware is the same Spreadtrum product as the [Uhale SI006](si006-uhale.md)
 (`si006asb` / `sp7731g_1h10`) with a VTimes vendor app and a newer build. The SI006 WebView
 overlay and CA root steps worked unchanged. The way in was different: ADB was already on over
 USB, but the vendor app has no working hidden menu, so the
-[HSB / F10 USB keyboard route (PR #194)](https://github.com/wesbos/photo-frame-dashboard/pull/194)
+[HSB / F10 USB keyboard route](uhale-hsb-f10.md#1-open-the-browser-through-usb-hid)
 was used to reach the browser. The Allwinner FEL routes and Rockchip loaders do not apply.
 
 ## Confirmed identity
 
 | Field | Observed value | Source |
 | --- | --- | --- |
-| Listing | [Amazon US B0FLJTNRPH](https://www.amazon.com/dp/B0FLJTNRPH), brand VTIMES, model number `SMXK-003`, sold as "10.1" Digital Calendar, 1280 \* 800 WiFi Digital Picture Frame" | Amazon listing |
+| Listing | [Amazon US B0FLJTNRPH](https://www.amazon.com/dp/B0FLJTNRPH?tag=webo080-20), brand VTIMES, model number `SMXK-003`, sold as "10.1" Digital Calendar, 1280 \* 800 WiFi Digital Picture Frame" | Amazon listing |
 | Vendor app | VTimes 1.5.0, package `com.rino.instaview` (`/system/priv-app/VtimesSmart`) | About page, `pm` |
 | Brand / model | `VTimes` / `VT01001` | About page, `ro.product.model` |
 | Firmware | `VTimes_VT01001_V01_202511101224` | About page |
@@ -62,11 +62,11 @@ was used to reach the browser. The Allwinner FEL routes and Rockchip loaders do 
 
 ### 1. Open the browser with an AOA USB keyboard
 
-This follows the HSB / F10 report in PR #194. The frame answered AOA `GET_PROTOCOL` (request 51)
+This follows the [HSB / F10 report](uhale-hsb-f10.md#1-open-the-browser-through-usb-hid). The frame answered AOA `GET_PROTOCOL` (request 51)
 with version `2`, so it accepts HID input over USB. The host registered a standard boot-keyboard
-HID with requests 54 and 56 (the descriptor in PR #194) and sent eight-byte keyboard reports
+HID with requests 54 and 56 (the descriptor in the [HSB / F10 report](uhale-hsb-f10.md#1-open-the-browser-through-usb-hid)) and sent eight-byte keyboard reports
 with request 57. This needs no app on the frame and writes nothing to it. The host helper
-(Python `ctypes` with `libusb-1.0`) is not included here; PR #194 lists the protocol details.
+(Python `ctypes` with `libusb-1.0`) is not included here; the [HSB / F10 report](uhale-hsb-f10.md#1-open-the-browser-through-usb-hid) lists the protocol details.
 
 - `Esc` worked as Back, which also gave a way out of the Personal dictionary page.
 - **Meta+B** opened the stock Android 6 browser. Offline it shows `ERR_INTERNET_DISCONNECTED`.
@@ -75,7 +75,7 @@ with request 57. This needs no app on the frame and writes nothing to it. The ho
 
 ### 2. Copy the APK over MTP, not over the network
 
-Unlike PR #194, the frame stayed offline. MTP worked with GNOME's `gvfs-mtp` (`gio mount`), and
+Unlike the [HSB / F10 unit](uhale-hsb-f10.md), the frame stayed offline. MTP worked with GNOME's `gvfs-mtp` (`gio mount`), and
 the APK was copied to **Internal storage/Download** with `gio copy`. The SHA-256 read back from
 the frame matched.
 
@@ -106,9 +106,11 @@ The host's **public** key (`~/.android/adbkey.pub`) was copied to Download over 
 terminal:
 
 ```sh
-su -c 'cp -p /data/misc/adb/adb_keys /data/local/tmp/adb_keys.orig && (echo; cat /data/media/0/Download/adbkey.pub) >> /data/misc/adb/adb_keys'
+su -c 'cp -p /data/misc/adb/adb_keys /data/misc/adb/adb_keys.orig && (echo; cat /data/media/0/Download/adbkey.pub) >> /data/misc/adb/adb_keys'
 ```
 
+The owner saved the copy in `/data/local/tmp`. That folder is writable by the ADB shell user, so
+keep root-made copies in a root-only folder such as `/data/misc/adb/`, as above.
 The `/data/media/0/...` path is the one the root shell can read, as on the SI006. After
 `adb kill-server`, the frame showed as `device`. This lasts until the next boot.
 
@@ -157,7 +159,7 @@ Userdata was not backed up. No offline restore was tested.
 
 Both changes were made in one script, with `daemonsu` stopped, that first checked the current
 contents (the factory `adb_keys` equal to the saved original, and `build.prop` by MD5), saved
-copies to `/data/local/tmp`, remounted `/system` read-write, rewrote the files with `cat >` so
+copies to `/data/local/tmp` (better: a root-only folder, see above), remounted `/system` read-write, rewrote the files with `cat >` so
 owner, mode and SELinux label stayed the same, remounted read-only, and compared the result.
 
 1. `/system/etc/security/adb_keys` = the factory key, a newline, and the host's public key.

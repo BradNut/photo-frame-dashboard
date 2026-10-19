@@ -110,14 +110,16 @@ Read as root over ADB, everything before `userdata`:
 adb shell su 0 dd if=/dev/block/mmcblk0 of=/data/local/tmp/pre-userdata.img bs=512 count=2842624
 adb shell su 0 chmod 644 /data/local/tmp/pre-userdata.img   # adb pull runs as the shell user
 adb pull /data/local/tmp/pre-userdata.img
+adb shell su 0 rm /data/local/tmp/pre-userdata.img   # don't leave a readable firmware copy on the frame
 ```
 
 Checks that passed: length exactly **1,455,423,488 bytes** (2,842,624 x 512); the device's `md5sum`
 of the image equals the host MD5; and `kernel`, `boot`, `recovery` and all of `system` re-read from
 the frame match the corresponding slices of the pulled image.
 
-This is a **partial backup**: it excludes `userdata`, so it does not meet the repo's complete-device
-rule, and restore is untested. It covers every partition this record writes to (this record writes
+This is a **partial backup**: it excludes `userdata`, and its checks (MD5, with no gzip readback and
+no `0xCC` scan) are weaker than README rule 2 asks for, so it does not meet that rule. Restore is
+untested. It covers every partition this record writes to (this record writes
 only to `/data`). Partition-level reads for cross-checking another unit:
 
 | Partition | Size (bytes) | MD5 |
@@ -168,8 +170,8 @@ Wi-Fi keeps its address, and the dashboard renders fully.
 
 | Change | Undo |
 | --- | --- |
-| Vendor packages disabled | `su 0 pm enable-user --user 0 <package>` |
-| Frameo disabled | `su 0 pm enable-user --user 0 net.frameo.frame` |
+| Vendor packages disabled | `su 0 pm enable <package>` |
+| Frameo disabled | `su 0 pm enable net.frameo.frame` |
 | Kiosk installed | `adb uninstall com.wesbos.homehq` |
 | Rootless Pixel Launcher | `adb uninstall amirz.rootless.nexuslauncher` |
 | Navigation buttons | Settings → Accessibility → Home HQ navigation off; `settings put secure accessibility_enabled 0` |
@@ -177,6 +179,7 @@ Wi-Fi keeps its address, and the dashboard renders fully.
 
 ## Not tested
 
+- Check for `/system/bin/iotv` and a `run_iotv` service: the [Runxion RK3126](runxion-zn-dp1002-rk3126.md#hidden-root-agent-iotv) shares this partition layout and ships that hidden root agent. Not checked on this unit.
 - Whether a fresh host ADB key gets an authorization prompt.
 - USB-C to USB-C cable, and why a first attempt can enumerate nothing.
 - Loader mode, stock recovery and fastboot.

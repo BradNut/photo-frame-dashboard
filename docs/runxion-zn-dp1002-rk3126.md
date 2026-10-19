@@ -36,7 +36,7 @@ direction. See [Hidden root agent: iotv](#hidden-root-agent-iotv).
 | Android | 6.0.1, API 23, security patch 2016-07-05, `user` build, `ro.debuggable=0`, `ro.secure=1`, `ro.adb.secure=1`; `ro.config.low_ram` not set |
 | SELinux | Permissive (`getenforce`) |
 | Display | 1280x800, 160 dpi |
-| RAM / storage | 1 GB (`MemTotal: 1023552 kB`), zram swap; 32 GB eMMC (`mmcblk0`, 30,310,400 sectors), `/data` 27 GB |
+| RAM / storage | 1 GB (`MemTotal: 1023552 kB`), zram swap; 32 GB eMMC (`mmcblk0`, 60,620,800 sectors; `userdata` ends there), `/data` 27 GB |
 | WebView | `com.google.android.webview` **107.0.5304.36** in `/system/app/webview` |
 | Wi-Fi | Onboard, driver module `rk915` (the same as the Akimart RK3126 profile) |
 | SystemUI | `com.android.systemui` is **disabled** (`enabled=2`): no status or navigation bar |
@@ -97,7 +97,7 @@ Found on 2026-10-15 while checking which processes use the network, after Frameo
 | Started by | `init.rk30board.rc` (in the boot image): `service run_iotv /system/bin/sh /system/bin/run_iotv.sh`, `class main`, `oneshot`, `disabled`, and `on property:sys.boot_completed=1` → `start run_iotv` |
 | `run_iotv.sh` | `/system/bin/iotv -MAC $(… < /sys/class/net/wlan0/address …)`: the Wi-Fi MAC address is its only argument |
 | Runs as | root (uid 0) |
-| Connection | TCP to `172.235.49.87:8086`, an Akamai/Linode cloud machine (`172-235-49-87.ip.linodeusercontent.com`), reconnecting every few seconds; seen in `/proc/net/tcp`, owner found through `/proc/<pid>/fd` |
+| Connection | TCP to `<vendor server>:8086`, an Akamai/Linode cloud machine (a hard-coded vendor server; IP withheld here), reconnecting every few seconds; seen in `/proc/net/tcp`, owner found through `/proc/<pid>/fd` |
 | Traffic | `xt_qtaguid` for uid 0 on `wlan0`: about 180 MB received and 178 MB sent in the first 3 hours after boot. The kiosk used 3 MB and 0.5 MB in the same time. Nothing else on the frame used the network |
 
 What it sends could not be read: the program is packed and the traffic was not decrypted. The even
@@ -113,7 +113,9 @@ started by `init`, not by `iotv`). Kill by the PID from `ps` instead.
 
 Read from `/sys/block/mmcblk0/mmcblk0p*/start` and `size` and `/dev/block/platform/*/by-name`, in
 512-byte sectors. The layout differs from the Akimart RK3126 profile (there, `recovery` starts at
-122880, `system` at 630784 and `userdata` at 2859008).
+122880, `system` at 630784 and `userdata` at 2859008). The partition starts match the
+[Rollei 107](rollei-smartframe-107.md#partition-table-emmc-mmcblk0-512-byte-sectors) and the
+[Denver PFF-1015](denver-pff-1015.md) (`userdata` at 2842624); only the `userdata` size differs.
 
 | Node | Name | Start | Size |
 | --- | --- | --- | --- |
@@ -155,6 +157,10 @@ has not been tested.
 
 ## Setup performed
 
+> **Record, not a procedure.** The `/system` removals and the replacement `run_iotv.sh` firewall
+> below were done by hand on one unit; the script is not in this repo. They were done after a
+> verified backup, with copies of every removed file on the host.
+
 Each step was approved separately by the owner, after the verified backup. The dashboard address is
 written `https://<dashboard>/` below.
 
@@ -162,13 +168,13 @@ written `https://<dashboard>/` below.
 | --- | --- | --- | --- |
 | Factory reset (wipes `userdata` only) | `su -c 'mkdir -p /cache/recovery; printf -- "--wipe_data\n--locale=en_US\n" > /cache/recovery/command; sync; reboot recovery'` | Back in about 2 minutes with no input needed; Frameo's data was new (about 1 MB) and `adb_keys` gone; USB ADB still on and accepted (see above) | None needed |
 | Wi-Fi | `am start -a android.settings.WIFI_SETTINGS`; network chosen and password typed on the panel | Connected; the dashboard host resolved and answered `ping` | Forget the network |
-| Time zone | `su -c 'setprop persist.sys.timezone America/Chicago; service call alarm 3 s16 America/Chicago'` | The build shipped set to Pacific time; network time (`auto_time=1`) was already on | The same with the old zone |
+| Time zone | `su -c 'setprop persist.sys.timezone <zone>; service call alarm 3 s16 <zone>'` | The build shipped set to Pacific time; network time (`auto_time=1`) was already on | The same with the old zone |
 | Kiosk | `adb install -r dashboard/kiosk/build/homehq.apk` | Installed (v1.1); WebView 107 rendered the dashboard | `adb uninstall com.wesbos.homehq` |
 | Kiosk URL and HOME | `am start -n com.wesbos.homehq/.MainActivity --es url https://<dashboard>/ --ez home true` | Saved URL is the plain address (checked in `shared_prefs/kiosk.xml`) | `--ez home false` |
 | Sign-in | `am start -a android.intent.action.VIEW -d 'https://<dashboard>/?key=…' -n com.wesbos.homehq/.MainActivity`, then `logcat -c` | A VIEW link is shown, not saved, so the key is not stored on the frame; the site's session cookie is. After `am force-stop` and a restart the dashboard still opened signed in | Clear the kiosk's data |
 | Navigation buttons | On the panel: two-finger hold → Android settings → Accessibility → Home HQ navigation → on. Then `pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS` | Floating Back and Dashboard buttons. **Way back proven by hand:** Settings → Apps reached and Dashboard returned, before anything was removed | Turn the service off; `pm revoke` the same |
 | Remove vendor code from `/system` | Files copied to the host first (22 files, MD5 checked against the frame). Then `su -c 'mount -o rw,remount /system; rm -rf /system/priv-app/Frameo.apk /system/lib/Frameo /system/app/FotaUpdate /system/app/FotaUpdateReboot /system/app/RKUpdateService /system/priv-app/DeviceTest /system/priv-app/StressTest; sync'`, reboot | After the reboot `/system` mounted `ro`; none of `net.frameo.frame`, `com.adups.fota`, `com.adups.fota.sysoper`, `android.rockchip.update.service`, `com.DeviceTest`, `com.cghs.stresstest` was listed, and Android had removed their data directories. The kiosk was the only HOME app and came up on its own; Wi-Fi rejoined by itself (unlike [the S101 Frameo](frameo-rk3326-s101.md#frameo-and-wi-fi)); time zone and navigation service kept | Copy the saved files back the same way (`mount -o rw,remount /system`, `cp`, `chmod 644`, reboot), or write `system` back from the verified backup |
-| Remove `iotv` | `iptables -I OUTPUT 1 -d 172.235.49.87 -j REJECT`, then `kill <pid from ps>`; files copied to the host first (MD5 checked); `mount -o rw,remount /system; rm /system/bin/iotv` | After a reboot no `iotv` process and no connection to port 8086 | Copy the file back the same way, or write `system` back from the verified backup |
+| Remove `iotv` | `iptables -I OUTPUT 1 -d <vendor server> -j REJECT`, then `kill <pid from ps>`; files copied to the host first (MD5 checked); `mount -o rw,remount /system; rm /system/bin/iotv` | After a reboot no `iotv` process and no connection to port 8086 | Copy the file back the same way, or write `system` back from the verified backup |
 | Firewall at boot | The boot image keeps starting `run_iotv.sh` as root, so that file was replaced (not deleted) with a script that adds an `OUTPUT` chain: loopback, the kiosk's uid, DNS, DHCP, ICMP, and network time and Android's connection check for the system uid are allowed; everything else is logged (`hq_out refused:` in `dmesg`) and refused. IPv4 and IPv6 | Survived a reboot; root still worked. In 10 minutes afterwards only the kiosk talked to the dashboard (104 KB in, 18 KB out), the system uid renewed DHCP, and uid 0 used 8 KB in and 6 KB out (DNS). Nothing was refused | `iptables -D OUTPUT -j hq_out` (and `ip6tables`); put the original `run_iotv.sh` back |
 | Disable the file manager | `pm disable com.android.rk` (as root) | `enabled="2"` in `/data/system/users/0/package-restrictions.xml`. A first attempt was lost because the frame rebooted within seconds, before Android saved the setting | `pm enable com.android.rk` |
 
@@ -198,7 +204,9 @@ certificate fails as not yet valid (`SslError` 4, `SSL_DATE_INVALID`). The kiosk
 screen. Seen once by chance (the first reboot after the removal), then reproduced on purpose
 (`settings put global auto_time 0; su -c 'date 010112002020'`).
 
-Fixed in the kiosk: a certificate error that is about the date, or that comes within 10 minutes of
+The owner fixed this in a local kiosk build; the repo's kiosk got its own fix for date errors after
+a power cut in #138 (it shows "Setting the clock…" and retries every 5 s). The owner's version:
+a certificate error that is about the date, or that comes within 10 minutes of
 boot, now shows "Setting the clock…" and retries every 15 s, and a clock or time-zone change
 retries at once. The error is still never bypassed (`handler.cancel()`). A second bug made this
 miss the first load after start: the error arrives before `onPageStarted`, so the kiosk did not yet

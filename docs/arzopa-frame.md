@@ -22,7 +22,7 @@ Same platform build as the [YIAISIGN 10X1](yiaisign-10x1.md) and the
 | Home app | Arzopa, `com.arzopa.frame.server` (`/system/app/Jvshi`) | `com.shenju.biuframe` | `com.zeasn.frame` |
 | ADB | On, but `unauthorized` until the app's ADB toggle is enabled with a code (below) | Prompt shown | Prompt hidden behind the kiosk |
 | Wi-Fi | AICSemi AIC8800 (`aic8800_fdrv`) | Realtek SDIO | not recorded |
-| Partition layout | userdata at loader `0x2C9000` (`radical_update` and `custom` partitions) | userdata at 2,846,720 | same as YIAISIGN |
+| Partition layout | userdata at loader `0x2C9000` (`radical_update` and `custom` partitions) | userdata at sector 2,846,720 (loader `0x2B5000`) | same as YIAISIGN (loader `0x2B5000`) |
 
 ## Identity
 
@@ -74,9 +74,11 @@ authorized yet. Owners of this firmware can skip straight to the code.
   Loader mode showed up for about 4 seconds on the way.
 - From recovery, **Reboot to bootloader** reliably gave loader mode (`2207:310d`), and it
   stayed there until `rkdeveloptool rd`.
-- Windows host: usbipd-win with an AutoBind policy for `2207:310d`, attached to WSL2 Ubuntu.
+- Windows host: usbipd-win with an AutoBind policy for `2207:310d`, attached to WSL2 Ubuntu. The
+  policy stays active afterwards; remove it with `usbipd policy remove` when done.
   Ubuntu's `rkdeveloptool` package (1.32+pine64) takes the `rl` length in **bytes**, not sectors.
-  `scripts/backup-flash.py` was run through a one-line wrapper that multiplies by 512.
+  `scripts/backup-flash.py` was run through a one-line wrapper that multiplies by 512. The wrapper
+  is not in this repo; this is a record of what one owner did.
 - The first read in one session hung, after which even `rci` timed out; a power cycle and a fresh
   loader session fixed it. Later reads ran at about 20 MiB/s.
 - Reads above 32 MiB returned real data, as on the BIUFRAME.

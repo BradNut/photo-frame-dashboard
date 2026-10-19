@@ -29,7 +29,7 @@ This is distinct from both:
 
 - The [Modern10 Charm](dragontouch-modern10-charm.md), which shares the platform and
   stock photo app package but has a different model and firmware.
-- The **Classic10 Charm / Frameo** unit in [PR #165](https://github.com/wesbos/photo-frame-dashboard/pull/165):
+- The [Classic10 Charm / Frameo](dragontouch-classic10-charm.md) unit:
   model `Classic10 charm`, firmware `Classic10 charm_A33M_20260323-1608_V01`, stock
   Frameo and WebView 106, with root ADB obtained over Wi-Fi. That report's access method
   and setup steps are not evidence for this unit.
@@ -82,8 +82,10 @@ three native libraries were read back after copying. The original WebView direct
 including its compiled artifacts, was saved first; `/system` was returned to read-only.
 After reboot, WebViewFactory reported version 106 and Home HQ displayed the dashboard.
 
-This is an observed outcome, **not an installation recipe**: the precise download and
-its pinned checksum are not included. Do not replace WebView using an arbitrary APK
+This is a **record, not an installation recipe**: the precise download and its pinned
+checksum were not recorded, and the rollback was never run. The PF1007L guide's
+[WebView step](allwinner-a33-pf1007l.md#6-upgrade-webview-before-using-the-kiosk) pins a
+LineageOS 106 build by SHA-256. Do not replace WebView using an arbitrary APK
 or another device's system layout. The prepared WebView rollback was not exercised.
 
 ## Kiosk and reboot behavior
@@ -96,7 +98,7 @@ and dashboard reload. See the [kiosk guide](../dashboard/kiosk/README.md).
 The frame initially reset its clock to January 1970 after reboot. The original NTP
 server, `2.android.pool.ntp.org`, did not restore the time during the first trial.
 With automatic time enabled, `time.google.com` configured as the NTP server and the
-`Europe/Paris` timezone selected, a second reboot restored the time in about 38 seconds
+local time zone selected, a second reboot restored the time in about 38 seconds
 and opened Home HQ automatically. HTTPS certificate checks were not bypassed.
 
 Those are results from this unit and network, not a guarantee of boot timing. Incorrect
