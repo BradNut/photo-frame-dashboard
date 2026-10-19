@@ -63,9 +63,10 @@ tool), [allwinner-a33-sdcard-adb-wifi.md](allwinner-a33-sdcard-adb-wifi.md) (B) 
 
 What this tells you:
 
-- **Test ADB first** (T3, T3b). Some units ship with root ADB on (#8, #102), even with the same
-  firmware and boot image as units that don't.
-- **Two eMMC sizes.** The larger 30,777,344-sector eMMC is now the common one. It is behind most
+- **Test ADB first** (T3, T3b). Some units ship with root ADB on (#8, #102, #129, #148), even with
+  the same firmware and boot image as units that don't.
+- **Three eMMC sizes.** The larger 30,777,344-sector eMMC is now the common one; 30,535,680 and
+  30,310,400 sectors (#164) also occur. It is behind most
   of the U-Boot `ums` problems, see [U-Boot settings](#u-boot-settings-that-fixed-ums-problems).
 - **Route U** checks the boot image's structure, not a fixed hash, so it has worked on every
   firmware it was tried on (all but `20260416`). **Route S** accepts only the January boot image.
@@ -115,7 +116,8 @@ adapter; direct power fixed it (#110).
 Other things that hid USB data:
 
 - **A charge-only cable.** Use a cable that you know carries data, for example one that works
-  with a phone.
+  with a phone. The cable in the box was charge-only on several units (#120 comment, #129, #141,
+  #148, #172).
 - **A USB 3 hub without its USB 2.0 half.** The frame is USB 2.0 only. On macOS, check that a
   "USB2.0 Hub" appears in the USB tree. Moving the hub to a different port fixed it. Then
   power-cycle the frame.
@@ -229,8 +231,11 @@ specific firmware, not stock ADB or a read-only test.
 UID 0; restore DNS and stop the helpers. Then back up and follow the existing
 post-root setup guides with `adb -s <frame-ip>:5555`. The January-only fingerprint
 check in T7 does not apply to this report. A reboot ends this temporary access.
-Other firmware variants remain untested for this route. January `20260113` runs the same AiMOR
-6.0.78 with the same command path, so it may work there too.
+T3c has also worked on January `20260113` (#182), April `20260410` (#83, #187), `20260416`
+(#190), May `20260519` (#123) and May `20260529` (#117, #163), and on a PF1006 with AiMOR 6.0.26 /
+`20240910` (#160). On #187 the temporary Wi-Fi ADB dropped about a minute after T3c, so run the
+`setprop` below right away. Per-client router DNS is keyed on the frame's MAC, which changes at
+every boot (#187).
 
 **While this access is active, port 5555 is root ADB with no key check, open to your whole
 network.** Run it on a network you control, finish the T8 lock-down in the same session, then
@@ -328,7 +333,7 @@ On Linux, `sha256sum` replaces `shasum -a 256`. Route S also prints this hash as
 | Partition starts (sectors) | env 139264, **boot 172032**, system 237568, recovery 2400256 |
 | Boot image | `ANDROID!` header, 2048-byte page, 15,886,336 bytes |
 | Boot image SHA-256 | January: `d71c313ddaa4693948acb20af7740ccb56c88bf9376746a47fce2d00c14fc6a4`. Others: the first 8 digits in [the firmware table](#known-firmware-and-units) |
-| eMMC size | 30,535,680 sectors (15,634,268,160 bytes) or 30,777,344 sectors (15,758,000,128 bytes) |
+| eMMC size | 30,535,680 sectors (15,634,268,160 bytes) or 30,777,344 sectors (15,758,000,128 bytes), or 30,310,400 sectors (15,518,924,800 bytes, #164) |
 
 `check-dump.py` and `emmc-macos.py` print the partition table. `boot-patch.py` (Route U) refuses a
 sector that is not a partition start.
@@ -438,10 +443,14 @@ Do section 8 of [aimor-remote-root-shell.md](aimor-remote-root-shell.md): block 
 launcher, then disable `com.efercro.os.aimor`, `com.yhk.qeota` and `com.DeviceTest`. Wait until
 `package-restrictions.xml` shows `enabled="2"`, then reboot.
 
-After T3b, forget the Wi-Fi network on the frame (or `svc wifi disable` over ADB): one `20260416`
-unit had silently rejoined the network it used for T3b, and AiMOR already had an established
-connection to `:7806` when T8 started (#119). #113's January unit was caught online the same way,
-mid-backup.
+After T3b, forget the Wi-Fi network on the frame: one `20260416` unit had silently rejoined the
+network it used for T3b, and AiMOR already had an established connection to `:7806` when T8 started
+(#119). #113's January unit was caught online the same way, mid-backup. `svc wifi disable` did not
+survive a reboot on #182 (`wifi_on` was 1 at every boot), so forget the network instead. One unit
+already had a factory Wi-Fi network saved in `wpa_supplicant.conf` (#172): check for it.
+
+AiMOR relaunched over the launcher after a force-stop on #182, and disabling it cleared the
+"Always" Home choice on #187: set the Home app again after the reboot.
 
 ```sh
 adb shell 'netstat -an | grep :7806'
@@ -475,7 +484,7 @@ launcher, WebView 106, kiosk and memory. Known differences on these units, from
 ## For agents
 
 - First, [check for new issues and pull requests](../README.md#check-for-updates-and-send-back-what-you-find).
-  The firmware table was last updated on 2026-10-17. A newer report may cover your unit.
+  The firmware table was last updated on 2026-10-19. A newer report may cover your unit.
 - Run T1 to T6 in order. They are read-only for the frame's eMMC. Do not start T4 or T5 until
   T3 (USB ADB) and T3b (network ADB) have both failed. T4 and T5 write only to a spare
   SD card, and only with the owner's approval.
