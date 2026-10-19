@@ -10,7 +10,7 @@ flash recipe. Follow that guide from the beginning and stop on any mismatch.
 
 ```text
 About-screen model: PF1007L
-About-screen firmware: YHK.F-null-A33-1001-D1024-PF1007L-FL-AIMOR-SO.0.20260519
+About-screen firmware: YHK.F-null-A33-1001-D1024-PF1007L-FL-AIMOR-SO.0.20260519   (as read; other 20260519 units show FL-AIMOR-OS)
 Frame ID: omitted
 Android model / product / device: AEEZO / astar_m86_8723cs / astar-m86_8723cs
 Android: 6.0.1, SDK 23, armeabi-v7a
@@ -27,7 +27,7 @@ Android model property by itself is not a board identification.
 
 ## What worked on this unit
 
-1. A 64 GB SDHC card was formatted as MBR/FAT32 (`FRAMEBOOT`) using an external
+1. A 64 GB SDXC card was formatted as MBR/FAT32 (`FRAMEBOOT`) using an external
    USB card reader. The macOS FEL-card script backed up the first 4 MiB and wrote
    the verified 8 KiB upstream Allwinner FEL stub at byte offset 8 KiB. The script
    read the prefix back and confirmed that only those 8 KiB changed.
@@ -48,13 +48,14 @@ never reuse a disk number, sector offset, boot image or backup from another fram
 ## Other observations
 
 - Tapping the model entry five times opened AiMOR's “Open test app” password
-  prompt. No password was found, and that screen was not needed for the successful
+  prompt. The password was not known at the time (other units use `YHK88888888`,
+  [#135](https://github.com/wesbos/photo-frame-dashboard/issues/135)), and that screen was not needed for the successful
   root route.
 - During startup a brief screen offered a “debug mode” action with a countdown.
   Its role in the successful route was not established; do not assume it is needed.
 - The frame had previously been disconnected from Wi-Fi during the recovery work.
 - The 64 GB card worked for the FEL stub route on this unit. This does not establish
-  that every PF1007L accepts every SDHC card or partition layout.
+  that every PF1007L accepts every SDXC card or partition layout.
 
 ## Limits and safety
 
