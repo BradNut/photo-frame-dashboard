@@ -61,7 +61,8 @@ firmware. **Any app on the frame can probably get root without asking.**
 **`daemonsu` restart loop.** `/init.rc:747` runs `service daemonsu /system/xbin/daemonsu
 --auto-daemon`. A `daemonsu:master` from an earlier start is already running, so each new start
 exits, and init restarts it about every 5 s (`init.svc.daemonsu=restarting`). Each start remounts
-`/system` read-write and back, and touches `/system/xbin/su` and `daemonsu`:
+`/system` read-write and back, and touches `/system/xbin/su` and `daemonsu`. **`/system` is
+mounted read-write for a moment every few seconds, so a power cut at the wrong time can damage it.**
 
 - The ext4 mount count of `system` went from 12,046 to 12,381 in about 30 minutes, 3 more every
   15 s, with or without ADB activity.
@@ -185,11 +186,13 @@ needed for the demo URL.
 
 - `su` gives root with no prompt, so any app installed on this frame can take root. Install nothing
   untrusted.
-- With ADB on, **anyone on the same network can connect on port 5555** and get a root shell. Keep
-  the frame on a guest or IoT network.
+- With ADB on, network ADB listens on port 5555 with root `su`. Whether unknown keys are rejected
+  is untested, and `adb_keys` already holds a factory host's key, so **treat 5555 as open to the
+  factory and possibly to anyone on the network.** Keep the frame on an isolated guest or IoT network.
 - Android 6.0.1 with a 2016-07 security patch; SELinux is permissive.
 - Frameo self-updates while online and runs root shells. Disabling it stops both; re-enabling it
   (or a factory reset) brings them back.
+- Check for `/system/bin/iotv` and a `run_iotv` service: the [Runxion RK3126](runxion-zn-dp1002-rk3126.md#hidden-root-agent-iotv) shares this partition layout and ships that hidden root agent. Not checked on this unit.
 
 ## Host note
 
