@@ -66,7 +66,8 @@ stick on an OTG adapter, and it's unknown whether the USB-C port does host mode.
 ## What the vendor left on it
 
 - **A saved factory Wi-Fi network**, `A8-20` (WPA2/WPA3), before any Wi-Fi setup. The frame
-  would join it whenever it's in range. Removed with `adb shell cmd wifi forget-network 0`; it
+  would join it whenever it's in range. Removed with `adb shell cmd wifi forget-network <id>`, using the ID that
+  `adb shell cmd wifi list-networks` shows for it (it was `0` here); it
   stayed gone after reboots.
 - **AiMOR** (`com.efercro.os.aimor`, in `/system/system_ext/priv-app/AUMIOS_MoShare`) runs as the
   `system` user and was the Home app (`cn.nineox.robot.aimor.activity.NavigationActivity`). Its
@@ -162,6 +163,8 @@ The kiosk from `dashboard/kiosk` (built unchanged, targetSdk 23) doesn't install
 Failure [INSTALL_FAILED_DEPRECATED_SDK_VERSION: App package must target at least SDK version 24, but found 23]
 ```
 
+This was the kiosk before #169. Since #169 the kiosk targets SDK 28 and installs normally (next
+paragraph); `--bypass-low-target-sdk-block` is only for older builds.
 `adb install --bypass-low-target-sdk-block` installs it. The first launch shows Android's "This
 app was built for an older version of Android" dialog; it didn't come back after a force-stop or
 a reboot. After **OK**, the kiosk runs full screen and showed its "Connect to Wi-Fi?" screen (the
