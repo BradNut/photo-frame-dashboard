@@ -108,18 +108,26 @@ complete-device backup rule. Restore of anything other than `boot` is untested.
 [`scripts/krnl-add-adb-key.py`](../scripts/krnl-add-adb-key.py) only edits a file; it never touches the
 device. It checks the `KRNL` magic and CRC, refuses a ramdisk that already has `/adb_keys`, appends one
 cpio entry (`root:root`, `0644`) before `TRAILER!!!`, keeps every other entry byte for byte,
-recompresses, recomputes the CRC and pads back to the input size. `ro.adb.secure` was left alone, so
+recompresses, recomputes the CRC and keeps the input's size. It refuses to overwrite an existing
+output file and drops the key's `user@host` comment. `ro.adb.secure` was left alone, so
 other computers still need authorization.
 
+Run it as one block, so any failed check stops before the write:
+
 ```sh
+bash -euc '
+STOCK=179e4fe85f63d0dd11c2357389347854b40126e44aaabdf41caa5dcc14840c9e
 rkdeveloptool rl 0x14000 0x8000 boot.img
-sha256sum boot.img                     # stop unless it matches the stock partition hash above
-python3 scripts/krnl-add-adb-key.py boot.img ~/.android/adbkey.pub boot-patched.img
+python3 scripts/krnl-add-adb-key.py --expect-sha256 "$STOCK" boot.img ~/.android/adbkey.pub boot-patched.img
 rkdeveloptool wl 0x14000 boot-patched.img
 rkdeveloptool rl 0x14000 0x8000 readback.img
-cmp readback.img boot-patched.img && echo "readback matches"   # stop here if this fails
-rkdeveloptool rd
+cmp readback.img boot-patched.img
+echo "readback matches; now: rkdeveloptool rd"
+'
 ```
+
+`--expect-sha256` stops unless the partition read matches the stock hash above. Tested on one unit;
+the script is the one in this repo, the commands are as the owner ran them.
 
 Before writing, the patched image was unpacked again and its file tree compared with the stock
 ramdisk: the only difference was the new `adb_keys`. The loader does not check signatures.
@@ -134,7 +142,19 @@ adb shell su -c id → uid=0(root)
 
 Authorized ADB survived later reboots.
 
-**Undo:** Loader mode, then `rkdeveloptool wl 0x14000 boot.img` with the stock backup.
+**Undo:** Loader mode, then, with the stock backup:
+
+```sh
+bash -euc '
+echo "179e4fe85f63d0dd11c2357389347854b40126e44aaabdf41caa5dcc14840c9e  boot.img" | sha256sum -c -
+rkdeveloptool wl 0x14000 boot.img
+rkdeveloptool rl 0x14000 0x8000 readback-undo.img
+cmp readback-undo.img boot.img
+echo "stock boot restored; now: rkdeveloptool rd"
+'
+```
+
+(On macOS use `shasum -a 256 -c -`.)
 
 ## Kiosk (owner's own app)
 
