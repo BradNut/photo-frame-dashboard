@@ -31,6 +31,11 @@ but no ADB control was found. Stock TCP port 5555 refused connection.
 
 ## Backup and boot change
 
+> **Record, not a procedure.** The FEL stub, loaders and guarded writer used here are not in this
+> repo. The published equivalent is Route U in
+> [the A33 mainline U-Boot notes](allwinner-a33-mainline-uboot.md), which makes the same
+> `init.sun8i.usb.rc` change.
+
 An 8 KiB FEL stub in a microSD card's boot gap entered `1f3a:efe8` without finding
 a reset button. The card boot area was backed up before modification. The general
 approach is documented in [the A33 mainline U-Boot notes](allwinner-a33-mainline-uboot.md).
@@ -94,6 +99,10 @@ granted for the floating navigation service; the service was observed bound.
 The owner physically tested Settings → Apps → Dashboard, then confirmed automatic
 dashboard startup after a full power cycle without USB or the microSD.
 Rootless and the vendor apps were retained. The demo contains sample data.
+
+**T8 was not done:** AiMOR is still enabled and on Wi-Fi, and AiMOR gives the vendor's server a root
+shell. With persistent root USB ADB in place it is now safe to follow
+[T8](pf1007l-start-here.md#t8-lock-it-down-before-the-frame-stays-online) and disable it.
 
 ## Recovery retained and limits
 
