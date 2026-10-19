@@ -16,7 +16,7 @@ page.
 
 **Also sold as 112K.** A second unit, sold as a "112K", reports the same `102K` product, firmware
 and fingerprint and has a byte-identical boot partition. It differs in eMMC size. See
-[Second unit, sold as 112K](#second-unit-sold-as-112k).
+[Units sold as 112K](#units-sold-as-112k).
 
 ## Identity
 
