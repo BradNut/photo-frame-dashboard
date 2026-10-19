@@ -158,6 +158,9 @@ kill-on-pause did not show: the stock Browser survived pressing Home. Settings w
 No command in this session disabled it. No status or navigation bar was visible at any point.
 Not explained.
 
+**Keep the authorized computer's `~/.android/adbkey`.** With SystemUI disabled, a new computer may
+never see the "Allow USB debugging?" prompt, so that key may be the only way back in over ADB.
+
 ### Wi-Fi
 
 - The XR819 sees 2.4 GHz only. A network that is 5/6 GHz only, or WPA3 only, doesn't appear or
@@ -175,14 +178,15 @@ Not explained.
 | Change | How | Undo |
 | --- | --- | --- |
 | Adups FOTA off, before going further online | `su 0 pm disable com.adups.fota`; `enabled="2"` in `package-restrictions.xml` before rebooting; still off after three reboots | `su 0 pm enable com.adups.fota` |
-| Time zone Europe/Paris | `su 1000 service call alarm 3 s16 Europe/Paris` (`IAlarmManager.setTimeZone`). Frameo reset it at boot until Frameo was disabled | Same call with the old zone |
+| Time zone | `su 1000 service call alarm 3 s16 <local zone>` (`IAlarmManager.setTimeZone`). Frameo reset it at boot until Frameo was disabled | Same call with the old zone |
 | Rootless Pixel Launcher 3.9.1, Firefox 143.0.4 | `adb install`, APKs pinned by the SHA-256 values in [biuframe-setup-guide.md](biuframe-setup-guide.md) | `adb uninstall amirz.rootless.nexuslauncher`, `adb uninstall org.mozilla.firefox` |
 | Dashboard as a Firefox web app | In Firefox: menu → **Add app to Home screen** on the dashboard (its manifest has `display: fullscreen`). Then the dashboard opens with no address bar and no status bar from `am start -a mozilla.components.feature.pwa.VIEW_PWA -d <url> -p org.mozilla.firefox` (`ExternalAppBrowserActivity`) | Remove the web app shortcut, or uninstall Firefox |
 | A small Home app | Owner-local app, not in this repo: Home activity that waits for a network connection, counts down 5 s, then sends the `VIEW_PWA` intent. It shows **Open now**, **Launcher** and **Android settings** buttons, which are the way back. Chosen with the Home chooser → **Always** | Settings → Apps → the app → Clear defaults, or `adb uninstall` |
+| Screen always on | `settings put system screen_off_timeout 2147483647` | `settings put system screen_off_timeout 60000` (or the value read before) |
 | Frameo off | `su 0 pm disable net.frameo.frame`, after the owner checked **by hand on the panel** that the Home app reaches Android Settings → Apps (README rule 9). Then the Home chooser once more (the set of Home apps changed) | `su 0 pm enable net.frameo.frame` |
 
 Result, verified after `adb reboot` with no input: the dashboard is full screen in Firefox about
-**151 s** after the reboot command. The time zone stayed on Paris, Frameo and Adups stayed
+**151 s** after the reboot command. The time zone stayed set, Frameo and Adups stayed
 disabled, and `screen_off_timeout` is `2147483647`, so the screen stays on.
 
 Firefox showing the demo dashboard used about 169 MB (PSS) of the 1 GB.
