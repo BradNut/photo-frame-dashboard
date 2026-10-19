@@ -39,8 +39,11 @@ On Windows, set `$env:KIOSK_SITE` before `.\build.ps1`.
 Home HQ answers `http://127.0.0.1:8765/` from those files itself. Nothing listens on the port, no
 other machine is needed, and the page loads without Wi-Fi. Every other URL, including the page's
 own API calls, goes to the network as usual. ES modules work, which a `file://` page can't do, and
-`localStorage` belongs to the `http://127.0.0.1:8765` origin. A query string such as API keys
-(`http://127.0.0.1:8765/?key=...`) reaches the page unchanged; quote the URL in `adb shell`.
+`localStorage` belongs to the `http://127.0.0.1:8765` origin. A query string
+(`http://127.0.0.1:8765/?room=kitchen`) reaches the page unchanged; quote the URL in `adb shell`.
+Don't put API keys or tokens in the bundled files or the saved URL: anyone with ADB on the frame
+can read them, and so can any page shown at that origin. Keep them on a server
+([building-for-the-frame.md](../../docs/building-for-the-frame.md)).
 To change the page, rebuild and `adb install -r`. Without `KIOSK_SITE` the APK bundles nothing
 and the address answers 404.
 
@@ -164,7 +167,7 @@ On frames without a navigation bar (most PF1007L units), set up the navigation s
 ## Time zone
 
 After changing the frame's time zone over ADB (`setprop persist.sys.timezone <zone>` and
-`service call alarm 3 s16 <zone>`), restart the kiosk. Until then the page keeps the old zone,
+`service call alarm 3 s16 <zone>` on Android 6; the transaction number differs on other versions), restart the kiosk. Until then the page keeps the old zone,
 while `date` on the frame already shows the new one:
 
 ```sh

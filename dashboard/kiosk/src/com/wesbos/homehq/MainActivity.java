@@ -85,6 +85,7 @@ public class MainActivity extends Activity {
   private final float[] exitY = new float[2];
   private boolean exitArmed;
   private String retryUrl;
+  private String mainUrl;
   private boolean pageFailed;
   // A retry is queued: keep the offline screen up until it runs, even if the failed load "finishes".
   private boolean retryPending;
@@ -174,6 +175,7 @@ public class MainActivity extends Activity {
       @Override
       public void onPageStarted(WebView view, String url, Bitmap icon) {
         pageFailed = false;
+        mainUrl = url;
       }
 
       @Override
@@ -209,6 +211,12 @@ public class MainActivity extends Activity {
         // after a power cut, so every certificate looks invalid until network time arrives. Treat
         // it as a failed load and retry the saved page until the clock is right.
         h.cancel();
+        // Images and scripts report certificate errors here too. Android 6 doesn't trust every
+        // CA, so one such image must not cover a working page; only the page itself counts.
+        if (mainUrl != null && !mainUrl.equals(error.getUrl())) {
+          Log.w(TAG, "Certificate error " + error.getPrimaryError() + " on a subresource; blocked");
+          return;
+        }
         Log.w(TAG, "Certificate error " + error.getPrimaryError() + ", retrying in " + RETRY_MS + " ms");
         pageFailed = true;
         showOffline();
@@ -217,7 +225,7 @@ public class MainActivity extends Activity {
           offlineTitle.setText("Setting the clock\u2026");
           offlineText.setText("The frame's date is wrong after a power cut. It reloads once the time is set.");
         }
-        if (retryUrl == null) retryUrl = savedUrl();
+        retryUrl = error.getUrl() != null ? error.getUrl() : savedUrl();
         handler.removeCallbacks(retry);
         handler.removeCallbacks(stall);
         retryPending = true;
