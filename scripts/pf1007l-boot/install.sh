@@ -14,6 +14,12 @@
 
 set -euo pipefail
 
+# Git Bash rewrites arguments that look like POSIX paths before calling adb.exe (#185).
+# Exclude frame-side paths; local paths are still converted for adb push.
+case "$(uname -s)" in
+  MINGW*|MSYS*) export MSYS2_ARG_CONV_EXCL="${MSYS2_ARG_CONV_EXCL:+$MSYS2_ARG_CONV_EXCL;}/sbin/;/system/;/data/;/sys/;/proc/" ;;
+esac
+
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 CONF="$HERE/frame-boot.conf"
@@ -34,6 +40,10 @@ die() { printf '    FAIL: %s\n' "$*" >&2; exit 1; }
 sh_dev() { adb shell "$@" | tr -d '\r'; }
 sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
 dev_sha() { sh_dev "/sbin/busybox sha256sum $1" | cut -d' ' -f1; }
+# A CRLF script passes the SHA-256 checks (both copies have the CRs) but cannot run on the frame
+# and breaks Wi-Fi (#185). Git Bash's grep hides CRs, so count them with tr.
+no_cr() { [ -z "$(tr -cd '\r' < "$1")" ] ||
+  die "$1 has CRLF line endings. Re-check out with LF: git rm -r -q --cached . && git reset --hard"; }
 
 # Run a script on the frame. It is pushed as a file to avoid quoting problems.
 root_script() {
@@ -111,6 +121,9 @@ mac_from_serial() {
 
 cmd_apply() {
   [ -f "$CONF" ] || die "$CONF not found. Copy frame-boot.conf.example to frame-boot.conf and edit it."
+  local f
+  for f in "${SCRIPTS[@]}" wpa_supplicant-wrapper.sh; do no_cr "$HERE/device/$f"; done
+  no_cr "$CONF"
   cmd_backup
   local tmp mac s
   tmp="$(mktemp -d)"
