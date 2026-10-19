@@ -286,7 +286,7 @@ in these commands prevents a `dd` status footer from contaminating the image.
 
 To read the whole eMMC in chunks (`/dev/block/mmcblk0` with `skip=`), use
 `/sbin/busybox dd`. The stock `dd` returned **0 bytes, with no error**, for every chunk
-that starts at 2 GiB or later (firmware 20260529, observed). `busybox dd` read those
+that starts at 2 GiB or later (firmware 20260529, observed; also `20260416`, #190). `busybox dd` read those
 chunks, and gave the same bytes as the stock `dd` below 2 GiB. Check each chunk's size,
 not only its hash: an empty chunk has the same MD5 on the frame and on the host.
 
