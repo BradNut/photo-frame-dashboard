@@ -77,7 +77,7 @@ on the stock WebView 106 with no changes, and its `.Home` alias works as HOME wi
 | --- | --- | --- |
 | Disable Adups FOTA | `pm disable-user --user 0 com.adups.fota` | `pm default-state --user 0 com.adups.fota` |
 | Disable Rockchip updater | `pm disable-user --user 0 android.rockchip.update.service` | `pm default-state --user 0 android.rockchip.update.service` |
-| Install Home HQ | `adb install kiosk/build/homehq.apk` | `adb uninstall com.wesbos.homehq` (restore another Home app first) |
+| Install Home HQ | `adb install dashboard/kiosk/build/homehq.apk` | `adb uninstall com.wesbos.homehq` (restore another Home app first) |
 | Home HQ as HOME | `am start -n com.wesbos.homehq/.MainActivity --ez home true`<br>`cmd package set-home-activity com.wesbos.homehq/.Home` | `cmd package set-home-activity net.frameo.frame/.ui.activities.AWaitForDeferredInitCompleted` |
 | Floating Back / Dashboard buttons | `pm grant com.wesbos.homehq android.permission.WRITE_SECURE_SETTINGS`<br>`settings put secure enabled_accessibility_services com.wesbos.homehq/.NavigationService`<br>`settings put secure accessibility_enabled 1` | `pm revoke` the same permission, `settings delete secure enabled_accessibility_services`, `settings put secure accessibility_enabled 0` |
 | Disable Frameo | `pm disable-user --user 0 net.frameo.frame`, then wait (below) | `pm default-state --user 0 net.frameo.frame` |
@@ -90,7 +90,7 @@ returned without a prompt, and Frameo and both updaters stayed `enabled="3"` wit
 The first Frameo disable did not survive a reboot sent within a second of `pm disable-user`:
 Frameo came back enabled and running. PackageManager wrote the change to
 `package-restrictions.xml` about 10 s later. After waiting until the file showed `enabled="3"`,
-the disable survived a reboot. [PR #124](https://github.com/wesbos/photo-frame-dashboard/pull/124)
+the disable survived a reboot. [The Dxmart unit](akimart-zn-dp1002.md#second-unit-dxmart-zn-dp1002-2026-10-15-macos)
 reports the same on another unit of this board. Check before rebooting:
 
 ```sh
