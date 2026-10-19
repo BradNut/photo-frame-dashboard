@@ -71,11 +71,10 @@ The owner confirmed the rear-label model is **PF1007** and that USB ADB returned
 
 The actual boot partition is 65,536 sectors, while the shared January report template hashes only its first **31,028 sectors / 15,886,336 bytes**. Both lengths must be explicit when comparing hashes.
 
-A read-only attempt to stream the full boot partition through `adb exec-out dd` returned only **93,184 bytes**, instead of 33,554,432. The host rejected that transfer; subsequent `adb devices -l` was empty. The connection returned on retry. Device-side BusyBox SHA-256 then completed successfully for both ranges:
+A read-only attempt to stream the full boot partition through `adb exec-out dd` returned only **93,184 bytes**, instead of 33,554,432. The host rejected that transfer; subsequent `adb devices -l` was empty. The connection returned on retry. Device-side BusyBox SHA-256 then completed successfully. The hash of the whole 32 MiB partition, which includes the slack after the image and matches nothing else, is left out:
 
 | Measured range | SHA-256 |
 | --- | --- |
-| Full boot partition, 33,554,432 bytes | `835a62c73d3ad7ebfea12a03208fcd41e738c69c88caae1dd24148e76c9efd04` |
 | First 31,028 sectors, 15,886,336 bytes | `d71c313ddaa4693948acb20af7740ccb56c88bf9376746a47fce2d00c14fc6a4` |
 
 The template-range measurement matches the published January stock hash. These are actual checksums computed on this unit, not values copied from another report. However, a separate full-image USB stream returned only **53,248 bytes** and was also rejected. **No complete host-side boot image, independent host hash verification, or verified firmware backup is claimed.** The cause of the raw-transfer truncation/disconnection has not been established.

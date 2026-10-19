@@ -4,7 +4,8 @@ One USB-C-only unit on April `20260416` firmware, tested from macOS. Stock ADB w
 ADB was refused, and the FEL stub card darkened the screen but never produced a FEL device.
 [T3c](pf1007l-start-here.md#t3c-temporary-adb-through-the-aimor-connection) then gave temporary
 root ADB over Wi-Fi, and `setprop persist.sys.usb.config mass_storage,adb` made root USB ADB
-survive a cold boot. Nothing was written to the eMMC outside `/data`.
+survive a cold boot. Nothing was written to the eMMC outside `/data` to get access; the WebView
+swap and boot fixes later wrote `/system`.
 
 ## Unit report
 
@@ -60,7 +61,8 @@ Undo: `setprop persist.sys.usb.config mass_storage`.
 ## Backup over ADB: `dd` stops at 2 GiB
 
 The full eMMC was backed up before any further change, in MD5-checked chunks with on-device
-`gzip -1`. The stock `dd` (`/system/bin/dd`) returns **zero bytes** for any read that starts past
+`gzip -1`. There was no independent re-read, no `0xCC` check and no SHA-256 of the whole image,
+so this backup does not meet the [backup rule](../README.md#rules-we-learned-the-hard-way). The stock `dd` (`/system/bin/dd`) returns **zero bytes** for any read that starts past
 2 GiB, on `/dev/block/mmcblk0` and on the 13 GB `/data` partition alike, with no error. Comparing
 on-device and host MD5s does not catch this, because both sides hash the same empty stream:
 check the byte count too. `/sbin/busybox dd` reads past 2 GiB correctly.
@@ -94,8 +96,9 @@ images failed with `net_error -202`, as the guide warns.
 
 **Run the two `mv` commands once.** Here the swap command was run twice by accident: the second
 run moved the new live tree *into* `/system/homehq-stock-webview/webview` and left no
-`/system/app/webview` at all. It was fixed with one `mv` back before rebooting. Refuse to run
-the swap if `/system/homehq-stock-webview` already exists.
+`/system/app/webview` at all. It was fixed with one `mv` back before rebooting. Step 4 of the
+[guide's swap](allwinner-a33-pf1007l.md#6-upgrade-webview-before-using-the-kiosk) already says to
+refuse existing staging or rollback paths; follow it.
 
 ## Boot fixes
 
