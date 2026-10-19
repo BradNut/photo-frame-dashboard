@@ -11,6 +11,7 @@ Built one? Add it in a pull request (one row, a link to your post, and optionall
 
 | Build&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Who |
 | --- | --- |
+| <img src="images/community/frankhinek-91.jpg" width="200" alt="Build by @frankhinek"><br>[Demo dashboard on a 15.6" Anna Bella frame (PF1508) that ships with Android 15](https://x.com/frankhinek/status/2112185071562272858) | [@frankhinek](https://x.com/frankhinek) |
 | <img src="images/community/dwkns-45.jpg" width="200" alt="Build by @dwkns"><br>[Bin-day and weather screen](https://x.com/dwkns/status/2110138322894860377) | [@dwkns](https://x.com/dwkns) |
 | [$19.99 frame](https://x.com/itsyigitgungor/status/2110138004614353316), rooted with the [Uhale SI006 guide](si006-uhale.md) | [@itsyigitgungor](https://x.com/itsyigitgungor) |
 | <img src="images/community/_KevinTang-67.jpg" width="200" alt="Build by @_KevinTang"><br>[Root shell on an Amazon frame](https://x.com/_KevinTang/status/2110133721798172829) | [@_KevinTang](https://x.com/_KevinTang) |
