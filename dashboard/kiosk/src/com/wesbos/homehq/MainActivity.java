@@ -14,6 +14,7 @@ import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -26,6 +27,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -72,12 +74,15 @@ public class MainActivity extends Activity {
   private boolean exitArmed;
   private String retryUrl;
   private boolean pageFailed;
+  // A retry is queued: keep the offline screen up until it runs, even if the failed load "finishes".
+  private boolean retryPending;
   private LinearLayout offline;
   private TextView offlineTitle, offlineText;
 
   private final Runnable retry = new Runnable() {
     @Override
     public void run() {
+      retryPending = false;
       if (retryUrl == null) return;
       web.loadUrl(retryUrl);
       // A retry started while Wi-Fi is joining can hang for about a minute with no error and no
@@ -102,10 +107,11 @@ public class MainActivity extends Activity {
     @Override
     public void onReceive(Context context, Intent intent) {
       if (retryUrl == null || offline.getVisibility() != View.VISIBLE || !wifiConnected()) return;
-      Log.i(TAG, "Wi-Fi connected, retrying now");
+      Log.i(TAG, "Wi-Fi connected or clock changed, retrying now");
       showOffline();
       handler.removeCallbacks(retry);
       handler.removeCallbacks(stall);
+      retryPending = true;
       handler.post(retry);
     }
   };
@@ -161,7 +167,7 @@ public class MainActivity extends Activity {
 
       @Override
       public void onPageFinished(WebView view, String url) {
-        if (!pageFailed) {
+        if (!pageFailed && !retryPending) {
           offline.setVisibility(View.GONE);
           handler.removeCallbacks(stall);
         }
@@ -176,6 +182,28 @@ public class MainActivity extends Activity {
         retryUrl = failingUrl;
         handler.removeCallbacks(retry);
         handler.removeCallbacks(stall);
+        retryPending = true;
+        handler.postDelayed(retry, RETRY_MS);
+      }
+
+      @Override
+      public void onReceivedSslError(WebView view, SslErrorHandler h, SslError error) {
+        // Never bypass a certificate error. Frames without a clock battery boot with an old date
+        // after a power cut, so every certificate looks invalid until network time arrives. Treat
+        // it as a failed load and retry the saved page until the clock is right.
+        h.cancel();
+        Log.w(TAG, "Certificate error " + error.getPrimaryError() + ", retrying in " + RETRY_MS + " ms");
+        pageFailed = true;
+        showOffline();
+        if (error.hasError(SslError.SSL_NOTYETVALID) || error.hasError(SslError.SSL_EXPIRED)
+            || error.hasError(SslError.SSL_DATE_INVALID)) {
+          offlineTitle.setText("Setting the clock\u2026");
+          offlineText.setText("The frame's date is wrong after a power cut. It reloads once the time is set.");
+        }
+        if (retryUrl == null) retryUrl = savedUrl();
+        handler.removeCallbacks(retry);
+        handler.removeCallbacks(stall);
+        retryPending = true;
         handler.postDelayed(retry, RETRY_MS);
       }
     });
@@ -188,6 +216,7 @@ public class MainActivity extends Activity {
     web.loadUrl(url != null ? url : savedUrl());
     @SuppressWarnings("deprecation")
     IntentFilter connectivity = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+    connectivity.addAction(Intent.ACTION_TIME_CHANGED); // network time arrived after a power cut
     registerReceiver(networkChange, connectivity);
   }
 
@@ -214,6 +243,7 @@ public class MainActivity extends Activity {
     if (url != null) {
       handler.removeCallbacks(retry);
       handler.removeCallbacks(stall);
+      retryPending = false;
       retryUrl = url;
       web.loadUrl(url);
     }
