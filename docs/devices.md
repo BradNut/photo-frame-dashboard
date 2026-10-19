@@ -65,11 +65,6 @@ welcome. Missing yours? See the README's
 | <a href="https://amzn.to/4zwU6e0"><img src="images/devices/B0GCCFPHZ4.jpg" width="120" alt="15.6 inch Frameo frame"></a><br>15.6" Frameo | Not documented yet | Not documented yet | Not documented yet | Confirmed working; no write-up yet | [15.6" Frameo, 1920x1080](https://amzn.to/4zwU6e0) |
 | Whale Framely 15.6" (`RAM_S915`, build `RAM_S915_15.6_20260623`), board `BND-S915-C A1.0` | Rockchip RK3326-S, PMIC RK817-6, 1 GB DDR, Android version not confirmed | **No.** USB enumerates as MTP (`2207:0001`) or PTP (`2207:0002`) only, through a USB-A host adapter on the computer side. No ADB interface, no open network ports, no working gestures or WebADB | Not reached. Vendor app `com.zeasn.frame`, updater `com.adups.fota` | [whale-framely-ram-s915.md](whale-framely-ram-s915.md). The unit's storage is readable over MTP; UART pads are unprobed | Not recorded |
 
-Additional PF1007L success report:
-[May firmware, TF-card FEL to a standalone Home Assistant panel](pf1007l-tf-card-20260529-home-assistant-report.md).
-This unit used the card to enter FEL, then Route U over USB; it did not boot a
-replacement Android system from the card.
-
 ## Details: the first three frames
 
 |                    | Skylight Calendar 15" (150-CAL)                                | BIUFRAME 10.1" picture frame (in the video)      | PF1007L 10.1" picture frame (BIUFRAME and others)                                   |

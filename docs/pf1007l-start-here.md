@@ -28,6 +28,7 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [January with ADB already on, full setup over USB](pf1007l-windows-20260113-adb-on-report.md),
 [January, smaller eMMC, on macOS](pf1007l-macos-20260113-smaller-emmc-report.md),
+[January microSD factory-menu unlock](pf1007l-20260113-marker-file-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),
 [May `20260519` on Linux](pf1007l-20260519-linux-report.md),
@@ -37,6 +38,23 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
+
+## Password-free factory-menu entry (one January unit)
+
+Before attempting a boot patch, owners with working stock AiMOR and a touchscreen can try the
+[empty-file microSD method](pf1007l-20260113-marker-file-report.md#confirmed-microsd-entry-procedure).
+On a rear-labelled PF1007 with January `20260113` PF1007L firmware / AiMOR 6.0.78, an empty
+`license.properties` on a normal FAT microSD opened the manufacturer screen. Five taps in its
+top-left corner within 2.5 seconds opened the factory test app without its password. Switching
+**“is closed” to “is open”** enabled root USB ADB (`1f3a:1002`); the owner confirmed ADB returned
+after reboot with the card removed. No boot patch, FEL payload or firmware flash was needed.
+
+This changes the Android debugging setting; it is not a firmware rewrite or a read-only test.
+Keep the marker file empty and avoid manufacturer registration/logout controls. Other PF1007L
+firmware variants remain untested for this route. Root USB ADB has no key check on this unit;
+keep the vendor access/recovery precautions below. A verified firmware backup is still required
+before later firmware changes. USB flash-drive entry was confirmed on the separate PF1506,
+not this PF1007, which has no USB-A socket.
 
 ## Known firmware and units
 
