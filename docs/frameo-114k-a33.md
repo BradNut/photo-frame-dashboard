@@ -439,10 +439,9 @@ the **user** store instead, which needs no `/system` write.
 | Folder | `cacerts-added` did not exist; created as `system`, `0755` |
 
 `/data/misc/user/0` belongs to `system`, so `su 1000` is used for it (`su 0` gets `Permission
-denied` listing the folder). Apps that target API 23 or lower trust the user store by default, and
-the repo's kiosk targeted 23 at the time. **Since #169 it targets 28, and apps that target 24 or
-higher ignore the user store unless they opt in, so this route may not work with the current
-kiosk** (not tested). The `/system` route in the BIUFRAME guide doesn't depend on the target. After a kiosk force-stop the dashboard
+denied` listing the folder). Android 6 apps trust the user store whatever SDK they target, and the repo's kiosk also opts in
+on newer Android through its network security config. The `/system` route in the BIUFRAME guide
+works too. After a kiosk force-stop the dashboard
 loaded with no X509 errors in `logcat`. Undo: `su 1000 rm` the file (and `rmdir` the folder), then
 force-stop the kiosk. ISRG Root X2 was not added; X1 was enough for these sites.
 

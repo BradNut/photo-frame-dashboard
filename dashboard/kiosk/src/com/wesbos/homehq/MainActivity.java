@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
     public void run() {
       retryPending = false;
       if (retryUrl == null) return;
-      web.loadUrl(retryUrl);
+      load(retryUrl);
       // A retry started while Wi-Fi is joining can hang for about a minute with no error and no
       // finish, so no further retry is posted. Start a new one if it is still pending.
       handler.removeCallbacks(stall);
@@ -238,7 +238,7 @@ public class MainActivity extends Activity {
     setContentView(root);
 
     String url = urlFrom(getIntent());
-    web.loadUrl(url != null ? url : savedUrl());
+    load(url != null ? url : savedUrl());
     @SuppressWarnings("deprecation")
     IntentFilter connectivity = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
     connectivity.addAction(Intent.ACTION_TIME_CHANGED); // network time arrived after a power cut
@@ -270,7 +270,7 @@ public class MainActivity extends Activity {
       handler.removeCallbacks(stall);
       retryPending = false;
       retryUrl = url;
-      web.loadUrl(url);
+      load(url);
     }
   }
 
@@ -300,6 +300,13 @@ public class MainActivity extends Activity {
     boolean hidden = u.getEncodedUserInfo() != null || u.getEncodedQuery() != null
         || u.getEncodedFragment() != null;
     return u.getScheme() + "://" + u.getHost() + port + path + (hidden ? " (query, fragment or user info not logged)" : "");
+  }
+
+  // Some WebViews report the page's certificate error before onPageStarted, so remember the
+  // page here too.
+  private void load(String url) {
+    mainUrl = url;
+    web.loadUrl(url);
   }
 
   private String savedUrl() {
