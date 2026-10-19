@@ -28,13 +28,17 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [January with ADB already on, full setup over USB](pf1007l-windows-20260113-adb-on-report.md),
 [January, smaller eMMC, on macOS](pf1007l-macos-20260113-smaller-emmc-report.md),
+[January, larger eMMC, on Apple silicon](pf1007l-macos-20260113-apple-silicon-larger-emmc-report.md),
+[April `20260416` on macOS](pf1007l-macos-20260416-report.md),
 [January microSD factory-menu unlock](pf1007l-20260113-marker-file-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),
 [May `20260519` on Linux](pf1007l-20260519-linux-report.md),
 [May `20260519` T3c on macOS](pf1007l-macos-20260519-t3c-report.md),
 [May `20260529` on macOS](pf1007l-macos-20260529-report.md),
-[May `20260529` on Windows + WSL](pf1007l-windows-20260529-report.md).
+[May `20260529` on Windows + WSL](pf1007l-windows-20260529-report.md),
+[May `20260529` from a TF card, with Home Assistant](pf1007l-tf-card-20260529-home-assistant-report.md),
+[PF1009 July `20260708` on Windows](pf1009-20260708-windows-report.md).
 
 Follow the [repository rules](../README.md#rules-we-learned-the-hard-way): the owner approves each
 write, a verified backup comes first, and dumps stay private.
