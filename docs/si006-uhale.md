@@ -9,6 +9,11 @@ This frame uses Spreadtrum hardware. The
 [PF1007L start guide](pf1007l-start-here.md) is for Allwinner A33 hardware; its FEL,
 U-Boot, partition offsets, and boot patches do not apply to this unit.
 
+For model `HSB`, firmware `F10_V1.01_20260826_195506`, see the separate
+[HSB / F10 report](uhale-hsb-f10.md). That unit's hidden tap menus did not open;
+USB keyboard input provided browser access before ADB. Its partition layout,
+WebView and ADB authorization behavior differ from the SI006 described here.
+
 ## Confirmed identity
 
 | Field | Observed value |
