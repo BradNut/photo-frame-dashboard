@@ -237,7 +237,7 @@ Undo: `setprop persist.sys.usb.config mass_storage`. Check USB ADB after a reboo
 it as persistent ADB in T8. Don't use the Wi-Fi equivalent (`persist.adb.tcp.port`) except briefly
 on a network you control: it opens root ADB with no key check at every boot. See the
 [report](pf1007l-linkdaze-20260410-report.md). T3c itself is also confirmed on `20260529` from
-Windows (#117), using a local DNS record instead of `dns.py`, which cannot run on Windows.
+Windows (#117), using a local DNS record instead of `dns.py`. `dns.py` runs on Windows since #183.
 
 ### T4. Route U: FEL test (non-destructive to the frame)
 

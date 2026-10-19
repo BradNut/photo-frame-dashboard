@@ -88,6 +88,8 @@ digest = hashlib.sha256(boot).hexdigest()
 row = "January 20260113 (full hash)" if digest == JANUARY else BOOT.get(digest[:8])
 print(f"T6 boot SHA-256 (172032, 31028 sectors): {digest}")
 print(f"  firmware table: {row or 'NOT IN THE TABLE - untested, report it before any write'}")
+if row and digest != JANUARY:
+    print("  (matched on the first 8 hex digits only; T6 in pf1007l-start-here.md is the gate)")
 
 magic, kernel_size, _, ramdisk_size, _, _, _, _, page = struct.unpack_from("<8s8I", boot, 0)
 if magic != b"ANDROID!":
