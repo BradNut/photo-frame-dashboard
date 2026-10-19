@@ -27,6 +27,7 @@ Unit reports with more detail: [unit A's custom tool](allwinner-a33-boot-access.
 [macOS report for AiMOR `20260519`](pf1007l-aimor-20260519-macos-root-report.md),
 [January on Windows](pf1007l-windows-20260113-usb-adb-report.md),
 [January with ADB already on, full setup over USB](pf1007l-windows-20260113-adb-on-report.md),
+[January, smaller eMMC, on macOS](pf1007l-macos-20260113-smaller-emmc-report.md),
 [`OS-PF1009` units E and F](pf1007l-pf1009-20260417.md),
 [May `20260519` on Windows + WSL](pf1007l-windows-wsl-20260519-report.md),
 [May `20260519` on Linux](pf1007l-20260519-linux-report.md),
@@ -352,7 +353,7 @@ so each one is a local change to the U-Boot source, and its reports are the refe
 | Symptom | What fixed it | Reports |
 | --- | --- | --- |
 | Read errors, `ums` drops, slow or failing backup, or no USB device at all after U-Boot starts while an SD-only `ums 0 mmc 0` script enumerates | eMMC **4-bit at 26 MHz** ([patch](patches/pf1007l-v2025.10-emmc-4bit-26mhz.patch)), or 8-bit at 25 MHz | #16, #18, #24, #27, #29, #6 (8-bit high speed hung), #81 (8-bit dropped 42–172 MB in; 4-bit at 26 MHz with START STOP finished two passes), #96 (Pastigio ZC002, no USB device at 8-bit: [report](pastigio-zc002.md#second-pastigio-unit)) |
-| The disk disappears when the computer sends "eject" or "stop" | Ignore START STOP UNIT unless it is a real unload: [patch](patches/pf1007l-v2025.10-start-stop.patch) | #28, #16, #24, #81 |
+| The disk disappears when the computer sends "eject" or "stop" | Ignore START STOP UNIT unless it is a real unload: [patch](patches/pf1007l-v2025.10-start-stop.patch) | #28, #16, #24, #81, [January smaller eMMC](pf1007l-macos-20260113-smaller-emmc-report.md#the-ums-drops) |
 | Drops through a bus-powered hub | Direct port or powered hub; low-power build (`CONFIG_SUNXI_NO_PMIC=y`, CPU at 408 MHz) | #16, #24, #29 |
 | Single read errors | Retry each read up to 8 times | #24 |
 | Route S dump fails | eMMC at 12 MHz. On May `20260519` a 12 MHz dump could still reset about a minute in | #24 comment, #61 (January), #62, #68 |
