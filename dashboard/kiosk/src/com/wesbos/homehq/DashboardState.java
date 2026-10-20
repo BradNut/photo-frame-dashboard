@@ -40,6 +40,17 @@ final class DashboardState {
     return saved;
   }
 
+  /** The name of the dashboard a page belongs to, for the offline screen; null if none. */
+  String nameFor(String url) {
+    int i = dashboards.indexOf(url);
+    if (i >= 0) return dashboards.get(i).name;
+    String site = Dashboards.site(url);
+    for (Dashboards.Entry e : dashboards.entries()) {
+      if (site != null && site.equals(Dashboards.site(e.url))) return e.name;
+    }
+    return null;
+  }
+
   /** Why the add (index -1) or edit form can't save url, or null if it can. */
   String problem(int index, String url) {
     if (!Dashboards.isWebUrl(url)) return "Start with http:// or https://";

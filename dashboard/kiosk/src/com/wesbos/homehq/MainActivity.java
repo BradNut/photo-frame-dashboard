@@ -831,7 +831,8 @@ public class MainActivity extends Activity {
       offlineTitle.setText("Sign in to Wi-Fi");
       offlineText.setText("This Wi-Fi shows a page where you accept its terms before the frame can go online.");
     } else if (wifi) {
-      offlineTitle.setText("Can't reach the dashboard");
+      String name = state().nameFor(mainUrl);
+      offlineTitle.setText("Can't reach " + (name != null ? name : "the dashboard"));
       offlineText.setText("Wi-Fi is connected. Retrying every few seconds.");
     } else {
       offlineTitle.setText("Connect to Wi-Fi?");
