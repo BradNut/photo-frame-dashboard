@@ -107,6 +107,17 @@ final class Dashboards {
     }
   }
 
+  /** Scheme, host and port, e.g. "http://192.168.1.20:8000"; null if url has no host. */
+  static String site(String url) {
+    try {
+      URI u = new URI(url);
+      if (u.getHost() == null) return null;
+      return u.getScheme().toLowerCase(Locale.ROOT) + "://" + u.getHost().toLowerCase(Locale.ROOT) + ":" + u.getPort();
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   private static String cleanName(String name, String url) {
     String n = name == null ? "" : name.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').trim();
     return n.isEmpty() ? defaultName(url) : n;

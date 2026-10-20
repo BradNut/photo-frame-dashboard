@@ -103,6 +103,14 @@ public class DashboardStateHarness {
             && "new.example".equals(s.dashboards().get(3).name));
     check("adb --es url with a listed URL: no duplicate, it becomes current",
         G.equals(s.saveFromAdb(G)) && s.dashboards().size() == 4 && s.isCurrent(2));
+
+    s = three();
+    check("offline screen: a dashboard's URL is called by its name", "Baby".equals(s.nameFor(B)));
+    check("offline screen: another page on the same site gets that dashboard's name",
+        "Baby".equals(s.nameFor("http://192.168.1.20:8000/children/1/")));
+    check("offline screen: a page on a site that isn't a dashboard has no name",
+        s.nameFor("https://accounts.example.org/login") == null && s.nameFor("http://192.168.1.20:9000/") == null
+            && s.nameFor(null) == null);
   }
 }
 '''

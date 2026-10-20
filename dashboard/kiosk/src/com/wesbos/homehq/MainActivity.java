@@ -531,7 +531,8 @@ public class MainActivity extends Activity {
 
   private void showOffline() {
     if (wifiConnected()) {
-      offlineTitle.setText("Can't reach the dashboard");
+      String name = state().nameFor(mainUrl);
+      offlineTitle.setText("Can't reach " + (name != null ? name : "the dashboard"));
       offlineText.setText("Wi-Fi is connected. Retrying every few seconds.");
     } else {
       offlineTitle.setText("Connect to Wi-Fi?");
