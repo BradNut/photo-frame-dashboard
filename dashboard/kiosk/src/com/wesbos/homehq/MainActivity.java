@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -20,6 +21,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.InputType;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -27,6 +29,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -34,26 +37,32 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /**
  * Full-screen kiosk WebView for the Home HQ wall tablet.
  * - Immersive mode hides the status + navigation bars (true 1280x800).
- * - Controls: hold two fingers still on the screen for 1.5s for launcher/settings/Wi-Fi/reload.
+ * - Controls: hold two fingers still on the screen for 1.5s to switch dashboards, manage the
+ *   list, or open the launcher/settings/Wi-Fi/reload.
  * - Offline: a failed page load shows a native screen instead of WebView's error page (which
  *   prints the full URL, including any token in it). With no Wi-Fi it offers Wi-Fi settings.
  * - Remote debugging is OFF unless launched with the debug extra (every app on this device
  *   gets root, so the devtools socket should only exist while actively debugging):
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez debug true
  * - Launch with a URL: adb shell am start -a android.intent.action.VIEW -d <url> -n com.wesbos.homehq/.MainActivity
- * - Set the saved URL, used on every later launch: adb shell am start -n com.wesbos.homehq/.MainActivity --es url <url>
+ * - Set the saved URL, used on every later launch (and added to the dashboards if it's new):
+ *     adb shell am start -n com.wesbos.homehq/.MainActivity --es url <url>
  * - A site bundled at build time (KIOSK_SITE) is answered at http://127.0.0.1:8765/ from the
  *   APK's assets/site/, with no server; every other URL goes to the network as usual.
  * - Offer the kiosk as a Home app (--ez home false undoes it), then pick it:
@@ -64,7 +73,8 @@ public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
   static final String DEFAULT_URL = "https://home-dashboard.wesbos.workers.dev/";
   static final String PREFS = "kiosk";
-  static final String PREF_URL = "url";
+  static final String PREF_URL = "url"; // the current dashboard; set-kiosk-url.sh reads it
+  static final String PREF_DASHBOARDS = "dashboards";
   static final long EXIT_HOLD_MS = 1500;
   static final int CANCEL_POINTER_IDS = 10; // touch ids 0-9
   static final long RETRY_MS = 5000;
@@ -135,16 +145,7 @@ public class MainActivity extends Activity {
       exitArmed = false;
       Log.i(TAG, "Two-finger hold: opening controls");
       cancelPageTouches();
-      new AlertDialog.Builder(MainActivity.this)
-          .setTitle("Home HQ")
-          .setItems(new String[] {"Open launcher", "Android settings", "Wi-Fi settings", "Reload dashboard"},
-              (dialog, which) -> {
-                if (which == 0) openLauncher();
-                else if (which == 1) startActivity(new Intent(Settings.ACTION_SETTINGS));
-                else if (which == 2) openWifiSettings();
-                else web.reload();
-              })
-          .setNegativeButton("Back to dashboard", null).show();
+      openControls();
     }
   };
 
@@ -265,28 +266,26 @@ public class MainActivity extends Activity {
     applyDebugFlag(intent);
     applyHomeFlag(intent);
     String url = urlFrom(intent);
-    if (url != null) {
-      handler.removeCallbacks(retry);
-      handler.removeCallbacks(stall);
-      retryPending = false;
-      retryUrl = url;
-      load(url);
-    }
+    if (url != null) show(url);
   }
 
-  /** A "url" extra is saved for later launches. A VIEW link from another app is shown, not saved. */
+  /**
+   * A "url" extra is saved for later launches and added to the dashboards if it's new. A VIEW link
+   * from another app is shown, not saved.
+   */
   private String urlFrom(Intent intent) {
     String saved = intent.getStringExtra(PREF_URL);
     if (saved == null) return intent.getDataString();
     // The activity is exported, so only save web URLs: never file:, content: or javascript:.
-    String scheme = Uri.parse(saved).getScheme();
-    if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-      Log.w(TAG, "Ignoring non-web kiosk URL (scheme " + scheme + ")");
+    if (!Dashboards.isWebUrl(saved)) {
+      Log.w(TAG, "Ignoring non-web kiosk URL (scheme " + Uri.parse(saved).getScheme() + ")");
       return null;
     }
-    getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_URL, saved).apply();
+    DashboardState st = state();
+    String load = st.saveFromAdb(saved);
+    apply(st, null); // onCreate and onNewIntent load it
     Log.i(TAG, "Saved kiosk URL: " + forLog(saved));
-    return saved;
+    return load;
   }
 
   /**
@@ -309,8 +308,142 @@ public class MainActivity extends Activity {
     web.loadUrl(url);
   }
 
+  /** Loads a page the owner chose, dropping any retry of the page that was showing. */
+  private void show(String url) {
+    handler.removeCallbacks(retry);
+    handler.removeCallbacks(stall);
+    retryPending = false;
+    retryUrl = url;
+    load(url);
+  }
+
+  private SharedPreferences prefs() {
+    return getSharedPreferences(PREFS, MODE_PRIVATE);
+  }
+
   private String savedUrl() {
-    return getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_URL, DEFAULT_URL);
+    return prefs().getString(PREF_URL, DEFAULT_URL);
+  }
+
+  private DashboardState state() {
+    return new DashboardState(prefs().getString(PREF_DASHBOARDS, null), prefs().getString(PREF_URL, null),
+        DEFAULT_URL);
+  }
+
+  /** Stores the change, then loads what it returned (null: the page on screen stays). */
+  private void apply(DashboardState st, String load) {
+    SharedPreferences.Editor e = prefs().edit().putString(PREF_DASHBOARDS, st.storedList());
+    if (st.savedUrl() != null) e.putString(PREF_URL, st.savedUrl());
+    else e.remove(PREF_URL);
+    e.apply();
+    if (load != null) {
+      Log.i(TAG, "Showing dashboard: " + forLog(load));
+      show(load);
+    }
+  }
+
+  /** The dashboards first (the current one ticked), then the device controls. */
+  private void openControls() {
+    DashboardState st = state();
+    Dashboards d = st.dashboards();
+    List<String> items = new ArrayList<>();
+    for (int i = 0; i < d.size(); i++) items.add((st.isCurrent(i) ? "\u2713  " : "     ") + d.get(i).name);
+    int n = d.size();
+    items.addAll(Arrays.asList("Manage dashboards\u2026", "Open launcher", "Android settings", "Wi-Fi settings",
+        "Reload dashboard"));
+    new AlertDialog.Builder(this)
+        .setTitle("Home HQ")
+        .setItems(items.toArray(new String[0]), (dialog, which) -> {
+          if (which < n) apply(st, st.switchTo(which));
+          else if (which == n) manageDashboards();
+          else if (which == n + 1) openLauncher();
+          else if (which == n + 2) startActivity(new Intent(Settings.ACTION_SETTINGS));
+          else if (which == n + 3) openWifiSettings();
+          else web.reload();
+        })
+        .setNegativeButton("Back to dashboard", null).show();
+  }
+
+  private void manageDashboards() {
+    Dashboards d = state().dashboards();
+    String[] items = new String[d.size() + 1];
+    for (int i = 0; i < d.size(); i++) items[i] = d.get(i).name;
+    items[d.size()] = "Add dashboard\u2026";
+    new AlertDialog.Builder(this)
+        .setTitle("Dashboards")
+        .setItems(items, (dialog, which) -> editDashboard(which < d.size() ? which : -1))
+        .setNegativeButton("Done", null).show();
+  }
+
+  /**
+   * Add (index -1) or edit a dashboard. Adding starts from the page on screen, so following a link
+   * and tapping Save keeps it.
+   */
+  private void editDashboard(int index) {
+    Dashboards d = state().dashboards();
+    boolean adding = index < 0;
+    String here = web.getUrl();
+
+    LinearLayout form = new LinearLayout(this);
+    form.setOrientation(LinearLayout.VERTICAL);
+    form.setPadding(dp(24), dp(16), dp(24), 0);
+    EditText name = formField(form, "Name", "Blank uses the site's address");
+    EditText url = formField(form, "URL", "https://");
+    url.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    url.setImeOptions(EditorInfo.IME_ACTION_DONE);
+    if (adding) {
+      url.setText(Dashboards.isWebUrl(here) ? here : "https://");
+    } else {
+      name.setText(d.get(index).name);
+      url.setText(d.get(index).url);
+    }
+
+    AlertDialog.Builder b = new AlertDialog.Builder(this)
+        .setTitle(adding ? "Add dashboard" : "Edit dashboard")
+        .setView(form)
+        .setPositiveButton("Save", null)
+        .setNegativeButton("Cancel", null);
+    if (!adding) b.setNeutralButton("Delete", null);
+    AlertDialog dialog = b.create();
+    dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    dialog.show();
+
+    // Set after show() so a bad URL keeps the dialog open instead of closing it.
+    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+      String u = url.getText().toString().trim();
+      DashboardState st = state();
+      String problem = st.problem(index, u);
+      if (problem != null) {
+        url.setError(problem);
+        return;
+      }
+      String n = name.getText().toString();
+      apply(st, adding ? st.add(n, u, here) : st.edit(index, n, u));
+      dialog.dismiss();
+    });
+    if (!adding) {
+      dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v ->
+          new AlertDialog.Builder(this)
+              .setMessage("Delete " + d.get(index).name + "?")
+              .setPositiveButton("Delete", (confirm, which) -> {
+                DashboardState st = state();
+                apply(st, st.delete(index));
+                dialog.dismiss();
+              })
+              .setNegativeButton("Cancel", null).show());
+    }
+  }
+
+  private EditText formField(LinearLayout form, String label, String hint) {
+    TextView l = new TextView(this);
+    l.setText(label);
+    form.addView(l);
+    EditText field = new EditText(this);
+    field.setSingleLine(true);
+    field.setHint(hint);
+    form.addView(field);
+    return field;
   }
 
   /**

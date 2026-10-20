@@ -4,6 +4,8 @@ Hold two fingers still on the dashboard for 1.5 seconds to open the native contr
 fingers at least an inch (about 2.5 cm) apart: on PF1007L frames the `gslX680` touchscreen reads
 closer fingers as one touch.
 
+- Your **dashboards** are listed first, the current one ticked. Tap one to switch to it.
+- **Manage dashboards** adds, edits and deletes them (below).
 - **Open launcher** opens another installed Home app, such as Rootless Launcher.
   If none is available, it opens Android Settings.
 - **Android settings** opens the device's Settings app.
@@ -24,6 +26,23 @@ URL when run without one.
 
 Every later launch, including after a reboot, opens the saved URL. Links that other apps open
 in the kiosk, such as a sign-in page, are shown but not saved.
+
+## Several dashboards
+
+The kiosk keeps a list of dashboards, and the saved URL is always the current one. Each URL saved
+with the command above is added to the list if it isn't there yet. On the frame, open the controls
+and tap **Manage dashboards**:
+
+- **Add dashboard** starts with the page on screen, so you can follow a link and tap **Save**. A
+  blank name uses the site's address. The new dashboard becomes the current one.
+- Tap a dashboard to change its name or URL, or to **Delete** it. Deleting the current dashboard
+  switches to the first one left, or to the default page if none is.
+
+Switching loads the dashboard's saved URL. Every site keeps its own cookies, so each one stays
+signed in. After updating from a kiosk without the list, the saved URL is the first dashboard.
+`python3 test-dashboards.py` and `python3 test-dashboard-state.py` check the list on a computer;
+`scripts/test-kiosk-dashboards-on-device.py` checks it on a connected frame and restores its
+settings afterwards.
 
 ## A page bundled in the APK (no server)
 
