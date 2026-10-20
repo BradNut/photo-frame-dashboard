@@ -37,6 +37,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -75,6 +76,9 @@ public class MainActivity extends Activity {
   static final String PREFS = "kiosk";
   static final String PREF_URL = "url"; // the current dashboard; set-kiosk-url.sh reads it
   static final String PREF_DASHBOARDS = "dashboards";
+  static final String PREF_HOME = "home";
+  static final String PREF_IDLE_MINUTES = "idle_minutes";
+  static final int[] IDLE_CHOICES = {0, 5, 10, 30};
   static final long EXIT_HOLD_MS = 1500;
   static final int CANCEL_POINTER_IDS = 10; // touch ids 0-9
   static final long RETRY_MS = 5000;
@@ -136,6 +140,17 @@ public class MainActivity extends Activity {
       handler.removeCallbacks(stall);
       retryPending = true;
       handler.post(retry);
+    }
+  };
+
+  // Nobody touched the frame for the chosen time: back to the home dashboard.
+  private final Runnable idleHome = new Runnable() {
+    @Override
+    public void run() {
+      DashboardState st = state();
+      if (st.idleMs() == 0) return;
+      Log.i(TAG, "Idle, returning to the home dashboard");
+      apply(st, st.goHome(web.getUrl()));
     }
   };
 
@@ -327,7 +342,7 @@ public class MainActivity extends Activity {
 
   private DashboardState state() {
     return new DashboardState(prefs().getString(PREF_DASHBOARDS, null), prefs().getString(PREF_URL, null),
-        DEFAULT_URL);
+        prefs().getString(PREF_HOME, null), prefs().getInt(PREF_IDLE_MINUTES, 0), DEFAULT_URL);
   }
 
   /** Stores the change, then loads what it returned (null: the page on screen stays). */
@@ -335,6 +350,9 @@ public class MainActivity extends Activity {
     SharedPreferences.Editor e = prefs().edit().putString(PREF_DASHBOARDS, st.storedList());
     if (st.savedUrl() != null) e.putString(PREF_URL, st.savedUrl());
     else e.remove(PREF_URL);
+    if (st.homeUrl() != null) e.putString(PREF_HOME, st.homeUrl());
+    else e.remove(PREF_HOME);
+    e.putInt(PREF_IDLE_MINUTES, st.idleMinutes());
     e.apply();
     if (load != null) {
       Log.i(TAG, "Showing dashboard: " + forLog(load));
@@ -365,14 +383,35 @@ public class MainActivity extends Activity {
   }
 
   private void manageDashboards() {
-    Dashboards d = state().dashboards();
-    String[] items = new String[d.size() + 1];
+    DashboardState st = state();
+    Dashboards d = st.dashboards();
+    String[] items = new String[d.size() + 2];
     for (int i = 0; i < d.size(); i++) items[i] = d.get(i).name;
     items[d.size()] = "Add dashboard\u2026";
+    items[d.size() + 1] = st.returnHomeLabel();
     new AlertDialog.Builder(this)
         .setTitle("Dashboards")
-        .setItems(items, (dialog, which) -> editDashboard(which < d.size() ? which : -1))
+        .setItems(items, (dialog, which) -> {
+          if (which <= d.size()) editDashboard(which < d.size() ? which : -1);
+          else chooseIdleTime();
+        })
         .setNegativeButton("Done", null).show();
+  }
+
+  /** Off, 5, 10 or 30 minutes without a touch before going back to the home dashboard. */
+  private void chooseIdleTime() {
+    DashboardState st = state();
+    String[] labels = {"Off", "5 minutes", "10 minutes", "30 minutes"};
+    int checked = 0;
+    for (int i = 0; i < IDLE_CHOICES.length; i++) if (IDLE_CHOICES[i] == st.idleMinutes()) checked = i;
+    new AlertDialog.Builder(this)
+        .setTitle(st.homeIndex() < 0 ? "Return home after (tick Home on a dashboard too)" : "Return home after")
+        .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+          st.setIdleMinutes(IDLE_CHOICES[which]);
+          apply(st, null);
+          dialog.dismiss();
+        })
+        .setNegativeButton("Cancel", null).show();
   }
 
   /**
@@ -391,6 +430,10 @@ public class MainActivity extends Activity {
     EditText url = formField(form, "URL", "https://");
     url.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
     url.setImeOptions(EditorInfo.IME_ACTION_DONE);
+    CheckBox home = new CheckBox(this);
+    home.setText("Home dashboard (return here when nobody touches the frame)");
+    home.setChecked(!adding && index == state().homeIndex());
+    form.addView(home);
     if (adding) {
       url.setText(Dashboards.isWebUrl(here) ? here : "https://");
     } else {
@@ -419,7 +462,11 @@ public class MainActivity extends Activity {
         return;
       }
       String n = name.getText().toString();
-      apply(st, adding ? st.add(n, u, here) : st.edit(index, n, u));
+      String load = adding ? st.add(n, u, here) : st.edit(index, n, u);
+      int saved = adding ? st.dashboards().size() - 1 : index;
+      if (home.isChecked()) st.setHome(saved);
+      else if (st.homeIndex() == saved) st.setHome(-1);
+      apply(st, load);
       dialog.dismiss();
     });
     if (!adding) {
@@ -671,6 +718,7 @@ public class MainActivity extends Activity {
   public boolean dispatchTouchEvent(MotionEvent e) {
     switch (e.getActionMasked()) {
       case MotionEvent.ACTION_DOWN:
+        restartIdle();
         // Android sends DOWN only when every earlier finger has lifted. If the page still holds a
         // touch from before (see cancelPageTouches), clear it first so this tap is not read as a
         // second finger. With no stale touch the cancel is a no-op.
@@ -747,8 +795,20 @@ public class MainActivity extends Activity {
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);
-    if (hasFocus) hideSystemUi();
-    else cancelPageTouches(); // a dialog or another app took over mid-touch
+    if (hasFocus) {
+      hideSystemUi();
+      restartIdle();
+    } else {
+      cancelPageTouches(); // a dialog or another app took over mid-touch
+      handler.removeCallbacks(idleHome); // no going home under the controls or in Settings
+    }
+  }
+
+  /** Starts the wait for idle return over; does nothing when it's off. */
+  private void restartIdle() {
+    handler.removeCallbacks(idleHome);
+    long ms = state().idleMs();
+    if (ms > 0) handler.postDelayed(idleHome, ms);
   }
 
   private void hideSystemUi() {

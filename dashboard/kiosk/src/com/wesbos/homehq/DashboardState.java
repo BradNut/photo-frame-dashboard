@@ -9,11 +9,29 @@ final class DashboardState {
   private final Dashboards dashboards;
   private String saved; // null: no dashboard chosen, the kiosk shows its default page
   private final String defaultUrl;
+  private String home; // the home dashboard's URL, or null
+  private int idleMinutes; // 0: off
 
   DashboardState(String storedList, String savedUrl, String defaultUrl) {
+    this(storedList, savedUrl, null, 0, defaultUrl);
+  }
+
+  DashboardState(String storedList, String savedUrl, String homeUrl, int idleMinutes, String defaultUrl) {
     dashboards = Dashboards.parse(storedList, savedUrl);
     saved = savedUrl;
+    home = homeUrl;
+    this.idleMinutes = idleMinutes;
     this.defaultUrl = defaultUrl;
+  }
+
+  /** The URL to keep in the "home" pref, or null to remove it. */
+  String homeUrl() {
+    return homeIndex() < 0 ? null : home;
+  }
+
+  /** The value to keep in the "idle_minutes" pref; 0 is off. */
+  int idleMinutes() {
+    return idleMinutes;
   }
 
   Dashboards dashboards() {
@@ -38,6 +56,41 @@ final class DashboardState {
   String switchTo(int i) {
     saved = dashboards.get(i).url;
     return saved;
+  }
+
+  /** Marks dashboard i as the one to return to when nobody touches the frame; -1 for none. */
+  void setHome(int i) {
+    home = i < 0 ? null : dashboards.get(i).url;
+  }
+
+  /** How long without a touch before going home, in ms; 0 when idle return is off. */
+  long idleMs() {
+    return homeIndex() < 0 ? 0 : idleMinutes * 60 * 1000L;
+  }
+
+  /** The home dashboard's index, or -1 if none is marked (or it was deleted). */
+  int homeIndex() {
+    return home == null ? -1 : dashboards.indexOf(home);
+  }
+
+  /** The Manage dashboards row. */
+  String returnHomeLabel() {
+    if (idleMinutes == 0) return "Return home: off";
+    if (homeIndex() < 0) return "Return home: off (no home dashboard)";
+    return "Return home after " + idleMinutes + " min: " + dashboards.get(homeIndex()).name;
+  }
+
+  void setIdleMinutes(int minutes) {
+    idleMinutes = minutes;
+  }
+
+  /**
+   * Nobody touched the frame for a while. showing is the page on screen. Returns the URL to load,
+   * or null when the home page is already showing.
+   */
+  String goHome(String showing) {
+    String url = switchTo(dashboards.indexOf(home));
+    return url.equals(showing) ? null : url;
   }
 
   /** The name of the dashboard a page belongs to, for the offline screen; null if none. */
@@ -76,6 +129,7 @@ final class DashboardState {
   /** Returns the URL to load if the current dashboard's URL changed, else null. */
   String edit(int i, String name, String url) {
     boolean reload = isCurrent(i) && !url.equals(saved);
+    if (i == homeIndex()) home = url;
     dashboards.set(i, name, url);
     return reload ? switchTo(i) : null;
   }
@@ -86,6 +140,7 @@ final class DashboardState {
    */
   String delete(int i) {
     boolean wasCurrent = isCurrent(i);
+    if (i == homeIndex()) home = null;
     dashboards.remove(i);
     if (!wasCurrent) return null;
     if (dashboards.size() > 0) return switchTo(0);

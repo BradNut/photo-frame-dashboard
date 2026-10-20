@@ -38,6 +38,15 @@ and tap **Manage dashboards**:
 - Tap a dashboard to change its name or URL, or to **Delete** it. Deleting the current dashboard
   switches to the first one left, or to the default page if none is.
 
+### Return home when nobody touches the frame
+
+Tick **Home dashboard** when adding or editing one dashboard, then set **Return home after** in
+**Manage dashboards** to 5, 10 or 30 minutes. That long after the last touch, the kiosk goes back
+to the home dashboard's saved URL, which also becomes the current one. Nothing reloads if it's
+already showing. Pages refreshing themselves don't count as a touch, and the wait pauses while the
+controls, a dialog or another app is open. Deleting the home dashboard turns this off until you
+tick another one.
+
 Switching loads the dashboard's saved URL. Every site keeps its own cookies, so each one stays
 signed in. After updating from a kiosk without the list, the saved URL is the first dashboard.
 `python3 test-dashboards.py` and `python3 test-dashboard-state.py` check the list on a computer;

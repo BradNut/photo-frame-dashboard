@@ -111,6 +111,46 @@ public class DashboardStateHarness {
     check("offline screen: a page on a site that isn't a dashboard has no name",
         s.nameFor("https://accounts.example.org/login") == null && s.nameFor("http://192.168.1.20:9000/") == null
             && s.nameFor(null) == null);
+
+    // Return home when nobody touches the frame.
+    s = three();
+    s.setHome(0);
+    s.switchTo(1);
+    check("idle on another dashboard: home loads and is current",
+        Y.equals(s.goHome(B)) && s.isCurrent(0) && Y.equals(s.savedUrl()));
+    check("idle on the home page itself: nothing reloads", s.goHome(Y) == null && s.isCurrent(0));
+    check("idle deeper inside home: home's saved URL loads", Y.equals(s.goHome(Y + "recipes/12")));
+    check("idle return is off until a time is chosen", new DashboardState(null, Y, DEF).idleMs() == 0);
+    s = three();
+    s.setHome(0);
+    s.setIdleMinutes(10);
+    check("home plus 10 minutes: goes home after 10 minutes untouched", s.idleMs() == 10 * 60 * 1000);
+    s.delete(0);
+    check("delete the home dashboard: idle return is off", s.idleMs() == 0 && s.homeIndex() == -1);
+    s.add("Yuvomi", Y, Y);
+    check("re-adding the deleted home URL doesn't make it home again", s.homeIndex() == -1);
+    s = three();
+    s.setHome(1);
+    s.edit(1, "Baby", B + "timeline/");
+    check("edit the home dashboard's URL: it stays home", s.homeIndex() == 1);
+    s.setHome(2);
+    check("marking another dashboard home moves it (only one home)", s.homeIndex() == 2);
+    s.setHome(-1);
+    check("unticking Home leaves no home dashboard", s.homeIndex() == -1);
+    s = three();
+    s.setHome(2);
+    s.setIdleMinutes(30);
+    rebooted = new DashboardState(s.storedList(), s.savedUrl(), s.homeUrl(), s.idleMinutes(), DEF);
+    check("after a reboot: same home dashboard and idle time",
+        rebooted.homeIndex() == 2 && rebooted.idleMs() == 30 * 60 * 1000);
+    check("Manage row: names the home dashboard and the time",
+        "Return home after 30 min: Grafana".equals(rebooted.returnHomeLabel()));
+    rebooted.setIdleMinutes(0);
+    check("Manage row: off", "Return home: off".equals(rebooted.returnHomeLabel()));
+    rebooted.setIdleMinutes(5);
+    rebooted.setHome(-1);
+    check("Manage row: a time but no home dashboard is off, and says why",
+        "Return home: off (no home dashboard)".equals(rebooted.returnHomeLabel()));
   }
 }
 '''
