@@ -177,6 +177,40 @@ Host regression checks cover late errors, probe completion and retry ordering. F
 captive-portal recovery on this revision, and other Android versions, remain untested on hardware.
 Keep a working Settings route and the existing signing key when updating an installed kiosk.
 
+## Screen off at night
+
+Some frames have a **Scheduled power on and off** setting that can turn the frame off but never
+back on. On a Pastigio FRAME156 the clock chip (`hym8563`) doesn't answer (`dmesg`: `could not
+init device, -6`) and the kernel has no driver for the PMIC's clock, so there is no `/dev/rtc0`
+to hold a wake alarm. Logcat shows `RTCPoweron ... Unable to open /dev/rtc0` every minute. Turn
+that setting off and let Home HQ turn the screen off and on instead, with the frame still running.
+
+In the controls, tap **Screen off at night** to turn the schedule on or off and pick the
+**Screen off at** and **Screen on at** times (24-hour clock; times across midnight work).
+Over ADB, set the same thing with `off` or a schedule:
+
+```sh
+adb shell am start -n com.wesbos.homehq/.MainActivity --es night 21:00-07:00
+```
+
+To turn the screen fully off, Home HQ needs a device admin with one policy, force-lock. Turn it
+on once, with **Allow turning the screen fully off** in the same dialog, or with:
+
+```sh
+adb shell dpm set-active-admin com.wesbos.homehq/.ScreenOffAdmin
+```
+
+Without it, Home HQ only covers the screen with black at the lowest brightness, and on some panels
+the backlight stays dimly lit. An active device admin can't be uninstalled; turn it off first in
+Settings → Security → Device admin apps. `adb install -r` updates still work.
+
+In the morning Home HQ turns the screen on and reloads the dashboard. At night the power button
+(or a touch on the black screen) lights it up, and it goes off again after 5 minutes without a
+touch. A frame that boots during the night does the same. Frames without a clock battery start
+in 1969 after a power cut, so the alarms are set again when network time arrives, and each alarm
+checks the schedule before it acts. `python3 test-night-schedule.py` checks the schedule on a
+computer.
+
 ## Screen density
 
 The dashboard is laid out for 1280×800 at density 160. On wider screens, such as 1920×1080 frames,

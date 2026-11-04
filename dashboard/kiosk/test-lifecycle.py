@@ -72,7 +72,8 @@ public class Activity extends Context {
 import java.util.*;
 class NavigationService { static boolean visible; static void setDashboardVisible(boolean v) { visible=v; }}
 class WebView {
-  boolean timersPaused, paused;
+  boolean timersPaused, paused; int reloads;
+  void reload() { reloads++; }
   void resumeTimers() { timersPaused=false; } void onResume() { paused=false; }
   void onPause() { paused=true; } void pauseTimers() { timersPaused=true; }
 }
@@ -117,6 +118,7 @@ public class MainActivity extends Activity {
   final View offline=new View(this);
   final Label portalText=new Label(), offlineTitle=new Label(), offlineText=new Label();
   final Runnable portalCheck=this::checkPortal;
+  boolean reloadOnResume; // night schedule: morning reload waits for onResume
   boolean resumed, retryPending, probing, portalMode, portalFound, portalDismissed, portalFailed, pageFailed;
   long portalSince; String retryUrl, mainUrl; boolean wifi=true; int loads, opened, left, clockNudges;
   void nudgeNetworkTime() { clockNudges++; }
@@ -179,6 +181,12 @@ __MEMBERS__
     a.onPause(); a.portalMode=false; a.offline.visibility=View.GONE; a.onResume();
     a.checkPortal(); a.destroyed=true; Thread.pending.run(); a.handler.runNext();
     LifecycleHarness.check(a.opened==0, "destroyed dashboard ignores late probe result");
+    MainActivity m=new MainActivity();
+    m.reloadOnResume=true; m.onResume();
+    LifecycleHarness.check(m.web.reloads==1 && !m.web.timersPaused && !m.reloadOnResume,
+        "morning reload runs once the page's timers are running again");
+    m.onPause(); m.onResume();
+    LifecycleHarness.check(m.web.reloads==1, "a later return doesn't reload again");
   }
 }
 """.replace("__MEMBERS__", MEMBERS),

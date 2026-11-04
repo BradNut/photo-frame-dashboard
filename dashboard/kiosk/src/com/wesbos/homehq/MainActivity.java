@@ -2,6 +2,8 @@ package com.wesbos.homehq;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.TimePickerDialog;
+import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -54,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * Full-screen kiosk WebView for the Home HQ wall tablet.
@@ -79,6 +82,8 @@ import java.util.Map;
  *     adb shell am start -n com.wesbos.homehq/.MainActivity --ez boot true
  * - Wi-Fi with a sign-in page (captive portal): when the dashboard can't load on Wi-Fi, the kiosk
  *   checks for one and shows it, so the terms can be accepted; then it returns to the dashboard.
+ * - Screen off at night (NightSchedule, NightReceiver); "off" turns it off:
+ *     adb shell am start -n com.wesbos.homehq/.MainActivity --es night 21:00-07:00
  */
 public class MainActivity extends Activity {
   static final String TAG = "HomeHQ";
@@ -91,6 +96,10 @@ public class MainActivity extends Activity {
   static final String PREF_HOME = "home";
   static final String PREF_IDLE_MINUTES = "idle_minutes";
   static final int[] IDLE_CHOICES = {0, 5, 10, 30};
+  static final String PREF_NIGHT = "night";
+  // At night, a screen woken by hand (or a boot during the night) goes off again after this long
+  // without a touch.
+  static final long NIGHT_IDLE_MS = 5 * 60 * 1000L;
   static final long EXIT_HOLD_MS = 1500;
   static final int CANCEL_POINTER_IDS = 10; // touch ids 0-9
   static final long RETRY_MS = 5000;
@@ -127,6 +136,8 @@ public class MainActivity extends Activity {
   private boolean retryPending;
   private boolean resumed;
   private LinearLayout offline;
+  private View nightCover; // the black screen at night when the kiosk can't turn the screen off
+  private boolean reloadOnResume; // morning: reload once the page is running again (see onPause)
   private TextView offlineTitle, offlineText;
   private Button signIn;
   // Captive portal: found by the last probe, on screen, closed by the owner, or its page failed.
@@ -185,6 +196,24 @@ public class MainActivity extends Activity {
       if (st.idleMs() == 0) return;
       Log.i(TAG, "Idle, returning to the home dashboard");
       apply(st, st.goHome(web.getUrl()));
+    }
+  };
+
+  // Clock or time zone changed (network time arrives after boot): the night alarms move.
+  private final BroadcastReceiver clockChange = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      NightReceiver.arm(context);
+      restartIdle();
+    }
+  };
+
+  private final Runnable nightIdle = new Runnable() {
+    @Override
+    public void run() {
+      if (!isNightNow()) return;
+      Log.i(TAG, "Night and nobody touched the frame, screen off");
+      sleepScreen();
     }
   };
 
@@ -339,6 +368,7 @@ public class MainActivity extends Activity {
     menuPosition.setMargins(dp(12), dp(12), dp(12), dp(12));
     root.addView(menuButton, menuPosition);
     applyMenuButtonFlag(getIntent());
+    root.addView(buildNightCover());
     setContentView(root);
 
     String url = urlFrom(getIntent());
@@ -347,6 +377,12 @@ public class MainActivity extends Activity {
     IntentFilter connectivity = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
     connectivity.addAction(Intent.ACTION_TIME_CHANGED); // network time arrived after a power cut
     registerReceiver(networkChange, connectivity);
+    IntentFilter clock = new IntentFilter(Intent.ACTION_TIME_CHANGED);
+    clock.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+    registerReceiver(clockChange, clock);
+    applyNightExtra(getIntent());
+    NightReceiver.arm(this);
+    handleNightEvent(getIntent());
   }
 
   @Override
@@ -355,6 +391,10 @@ public class MainActivity extends Activity {
     resumed = true;
     web.resumeTimers();
     web.onResume();
+    if (reloadOnResume) {
+      reloadOnResume = false;
+      web.reload();
+    }
     NavigationService.setDashboardVisible(true);
     if (portalMode) {
       handler.removeCallbacks(portalCheck);
@@ -390,8 +430,10 @@ public class MainActivity extends Activity {
     applyBootFlag(intent);
     applyMenuButtonFlag(intent);
     applyBootanimFlag(intent);
+    applyNightExtra(intent);
     String url = urlFrom(intent);
     if (url != null) show(url);
+    handleNightEvent(intent);
   }
 
   /**
@@ -488,16 +530,17 @@ public class MainActivity extends Activity {
     List<String> items = new ArrayList<>();
     for (int i = 0; i < d.size(); i++) items.add((st.isCurrent(i) ? "\u2713  " : "     ") + d.get(i).name);
     int n = d.size();
-    items.addAll(Arrays.asList("Manage dashboards\u2026", "Open launcher", "Android settings", "Wi-Fi settings",
-        "Reload dashboard"));
+    items.addAll(Arrays.asList("Manage dashboards\u2026", "Screen off at night\u2026", "Open launcher",
+        "Android settings", "Wi-Fi settings", "Reload dashboard"));
     new AlertDialog.Builder(this)
         .setTitle("Home HQ")
         .setItems(items.toArray(new String[0]), (dialog, which) -> {
           if (which < n) apply(st, st.switchTo(which));
           else if (which == n) manageDashboards();
-          else if (which == n + 1) openLauncher();
-          else if (which == n + 2) startActivity(new Intent(Settings.ACTION_SETTINGS));
-          else if (which == n + 3) openWifiSettings();
+          else if (which == n + 1) nightSettings();
+          else if (which == n + 2) openLauncher();
+          else if (which == n + 3) startActivity(new Intent(Settings.ACTION_SETTINGS));
+          else if (which == n + 4) openWifiSettings();
           else web.reload();
         })
         .setNegativeButton("Back to dashboard", null).show();
@@ -533,6 +576,120 @@ public class MainActivity extends Activity {
           dialog.dismiss();
         })
         .setNegativeButton("Cancel", null).show();
+  }
+
+  private NightSchedule night() {
+    return NightSchedule.parse(prefs().getString(PREF_NIGHT, null));
+  }
+
+  private boolean isNightNow() {
+    return night().isNight(System.currentTimeMillis(), TimeZone.getDefault());
+  }
+
+  private void saveNight(NightSchedule n) {
+    SharedPreferences.Editor e = prefs().edit();
+    if (n.stored() != null) e.putString(PREF_NIGHT, n.stored());
+    else e.remove(PREF_NIGHT);
+    e.commit(); // NightReceiver.arm reads it right away
+    Log.i(TAG, n.label());
+    NightReceiver.arm(this);
+    restartIdle();
+  }
+
+  /** The "night" extra: "21:00-07:00" sets the schedule, "off" (or anything unreadable) clears it. */
+  private void applyNightExtra(Intent intent) {
+    if (intent == null || !intent.hasExtra(PREF_NIGHT)) return;
+    saveNight(NightSchedule.parse(intent.getStringExtra(PREF_NIGHT)));
+  }
+
+  /** From NightReceiver. Checked against the schedule, since any app can start the kiosk. */
+  private void handleNightEvent(Intent intent) {
+    String event = intent == null ? null : intent.getStringExtra(NightReceiver.EXTRA_NIGHT_EVENT);
+    if (event == null) return;
+    intent.removeExtra(NightReceiver.EXTRA_NIGHT_EVENT); // not again when the activity is recreated
+    if ("sleep".equals(event) && isNightNow()) {
+      sleepScreen();
+    } else if ("wake".equals(event) && !isNightNow()) {
+      hideNightCover();
+      // The page sat still all night. Its timers stay paused until onResume, so reload then.
+      if (resumed) web.reload();
+      else reloadOnResume = true;
+      restartIdle();
+    }
+  }
+
+  /** Screen off with device admin; otherwise a black screen at the lowest backlight. */
+  private void sleepScreen() {
+    handler.removeCallbacks(nightIdle);
+    if (NightReceiver.lockScreen(this)) return;
+    nightCover.setVisibility(View.VISIBLE);
+    WindowManager.LayoutParams lp = getWindow().getAttributes();
+    lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_OFF;
+    getWindow().setAttributes(lp);
+  }
+
+  private void hideNightCover() {
+    if (nightCover.getVisibility() != View.VISIBLE) return;
+    nightCover.setVisibility(View.GONE);
+    WindowManager.LayoutParams lp = getWindow().getAttributes();
+    lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+    getWindow().setAttributes(lp);
+  }
+
+  private View buildNightCover() {
+    nightCover = new View(this);
+    nightCover.setBackgroundColor(Color.BLACK);
+    nightCover.setVisibility(View.GONE);
+    // A touch lights the screen without reaching the page; it goes dark again after NIGHT_IDLE_MS.
+    nightCover.setOnTouchListener((v, e) -> {
+      if (e.getActionMasked() == MotionEvent.ACTION_DOWN) hideNightCover();
+      return true;
+    });
+    return nightCover;
+  }
+
+  /** Turn the schedule on or off, and pick the times. */
+  private void nightSettings() {
+    NightSchedule n = night();
+    boolean canLock = NightReceiver.canLock(this);
+    List<String> items = new ArrayList<>(Arrays.asList(
+        n.enabled ? "Turn the night schedule off" : "Turn the night schedule on",
+        "Screen off at " + NightSchedule.clock(n.offMinute) + "\u2026",
+        "Screen on at " + NightSchedule.clock(n.onMinute) + "\u2026"));
+    if (!canLock) items.add("Allow turning the screen fully off\u2026");
+    new AlertDialog.Builder(this)
+        .setTitle(n.label() + (n.enabled && !canLock ? " (black screen)" : ""))
+        .setItems(items.toArray(new String[0]), (dialog, which) -> {
+          if (which == 0) saveNight(n.withEnabled(!n.enabled));
+          else if (which == 1) pickTime(n.offMinute, m -> saveNight(night().withOff(m)));
+          else if (which == 2) pickTime(n.onMinute, m -> saveNight(night().withOn(m)));
+          else askForScreenOff();
+        })
+        .setNegativeButton("Done", null).show();
+  }
+
+  private interface MinutePicked {
+    void picked(int minute);
+  }
+
+  private void pickTime(int minute, MinutePicked then) {
+    new TimePickerDialog(this, (view, h, m) -> {
+      then.picked(h * 60 + m);
+      nightSettings();
+    }, minute / 60, minute % 60, true).show();
+  }
+
+  /** Android's screen for turning on ScreenOffAdmin (force-lock only). */
+  private void askForScreenOff() {
+    Intent i = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+        .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, NightReceiver.admin(this))
+        .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+            "Without this, the night schedule can only black out the screen; the backlight may stay dimly lit.");
+    try {
+      startActivity(i);
+    } catch (Exception e) {
+      Log.w(TAG, "No device admin screen", e);
+    }
   }
 
   /**
@@ -989,6 +1146,7 @@ public class MainActivity extends Activity {
   @Override
   protected void onDestroy() {
     unregisterReceiver(networkChange);
+    unregisterReceiver(clockChange);
     handler.removeCallbacksAndMessages(null);
     if (web != null) web.destroy();
     super.onDestroy();
@@ -1186,14 +1344,18 @@ public class MainActivity extends Activity {
     } else {
       cancelPageTouches(); // a dialog or another app took over mid-touch
       handler.removeCallbacks(idleHome); // no going home under the controls or in Settings
+      handler.removeCallbacks(nightIdle);
     }
   }
 
-  /** Starts the wait for idle return over; does nothing when it's off. */
+  /** Starts the waits for idle return and (at night) screen off over; each does nothing when off. */
   private void restartIdle() {
     handler.removeCallbacks(idleHome);
+    handler.removeCallbacks(nightIdle);
+    if (!hasWindowFocus()) return; // focus coming back starts them
     long ms = state().idleMs();
     if (ms > 0) handler.postDelayed(idleHome, ms);
+    if (isNightNow()) handler.postDelayed(nightIdle, NIGHT_IDLE_MS);
   }
 
   private void hideSystemUi() {

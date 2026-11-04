@@ -9,6 +9,8 @@
   <!-- Only used by BootReceiver, which is disabled until turned on with adb (see its class comment). -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <!-- Turns the screen back on in the morning (night schedule). -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
 
   <application
       android:label="Home HQ"
@@ -27,6 +29,20 @@
       <meta-data android:name="android.accessibilityservice"
           android:resource="@xml/navigation_service" />
     </service>
+    <!-- Night schedule alarms; only the kiosk's own PendingIntents reach it. -->
+    <receiver android:name=".NightReceiver" android:exported="false" />
+    <!-- Optional device admin (force-lock only) so the night schedule can turn the screen off.
+         Off until the owner turns it on; see the kiosk README. -->
+    <receiver android:name=".ScreenOffAdmin"
+        android:label="@string/screen_off_label"
+        android:description="@string/screen_off_description"
+        android:permission="android.permission.BIND_DEVICE_ADMIN"
+        android:exported="true">
+      <meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin" />
+      <intent-filter>
+        <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+      </intent-filter>
+    </receiver>
     <activity
         android:name=".MainActivity"
         android:launchMode="singleTask"
