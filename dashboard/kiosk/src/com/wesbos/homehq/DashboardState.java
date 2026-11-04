@@ -73,7 +73,7 @@ final class DashboardState {
     return home == null ? -1 : dashboards.indexOf(home);
   }
 
-  /** The Manage dashboards row. */
+  /** The Settings row. */
   String returnHomeLabel() {
     if (idleMinutes == 0) return "Return home: off";
     if (homeIndex() < 0) return "Return home: off (no home dashboard)";

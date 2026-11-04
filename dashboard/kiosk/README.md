@@ -4,14 +4,18 @@ Hold two fingers still on the dashboard for 1.5 seconds to open the native contr
 fingers at least an inch (about 2.5 cm) apart: on PF1007L frames the `gslX680` touchscreen reads
 closer fingers as one touch.
 
-- Your **dashboards** are listed first, the current one ticked. Tap one to switch to it.
-- **Manage dashboards** adds, edits and deletes them (below).
-- **Open launcher** opens another installed Home app, such as Rootless Launcher.
-  If none is available, it opens Android Settings.
-- **Android settings** opens the device's Settings app.
-- **Wi-Fi settings** opens Android's Wi-Fi list directly.
+- Your **dashboards** are listed, the current one ticked. Tap one to switch to it.
 - **Reload dashboard** reloads the current URL.
 - **Back to dashboard** dismisses the controls.
+- **Settings** opens what you set once. Each row shows its current value, and **Back** in any
+  of them returns to Settings:
+  - **Dashboards** adds, edits and deletes them (below).
+  - **Return home** sets how long until the kiosk goes back to the home dashboard (below).
+  - **Screen off at night** sets the night schedule (below).
+  - **Wi-Fi settings** opens Android's Wi-Fi list directly.
+  - **Android settings** opens the device's Settings app.
+  - **Open launcher** opens another installed Home app, such as Rootless Launcher.
+    If none is available, it opens Android Settings.
 
 ## Optional single-tap Menu button
 
@@ -65,7 +69,7 @@ in the kiosk, such as a sign-in page, are shown but not saved.
 
 The kiosk keeps a list of dashboards, and the saved URL is always the current one. Each URL saved
 with the command above is added to the list if it isn't there yet. On the frame, open the controls
-and tap **Manage dashboards**:
+and tap **Settings**, then **Dashboards**:
 
 - **Add dashboard** starts with the page on screen, so you can follow a link and tap **Save**. A
   blank name uses the site's address. The new dashboard becomes the current one.
@@ -74,8 +78,8 @@ and tap **Manage dashboards**:
 
 ### Return home when nobody touches the frame
 
-Tick **Home dashboard** when adding or editing one dashboard, then set **Return home after** in
-**Manage dashboards** to 5, 10 or 30 minutes. That long after the last touch, the kiosk goes back
+Tick **Home dashboard** when adding or editing one dashboard, then set the **Return home** row in
+**Settings** to 5, 10 or 30 minutes. That long after the last touch, the kiosk goes back
 to the home dashboard's saved URL, which also becomes the current one. Nothing reloads if it's
 already showing. Pages refreshing themselves don't count as a touch, and the wait pauses while the
 controls, a dialog or another app is open. Deleting the home dashboard turns this off until you
@@ -185,7 +189,7 @@ init device, -6`) and the kernel has no driver for the PMIC's clock, so there is
 to hold a wake alarm. Logcat shows `RTCPoweron ... Unable to open /dev/rtc0` every minute. Turn
 that setting off and let Home HQ turn the screen off and on instead, with the frame still running.
 
-In the controls, tap **Screen off at night** to turn the schedule on or off and pick the
+In the controls, tap **Settings**, then **Screen off at night**, to turn the schedule on or off and pick the
 **Screen off at** and **Screen on at** times (24-hour clock; times across midnight work).
 Over ADB, set the same thing with `off` or a schedule:
 

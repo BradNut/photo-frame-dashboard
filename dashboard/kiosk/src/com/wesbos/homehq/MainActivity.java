@@ -523,43 +523,52 @@ public class MainActivity extends Activity {
     }
   }
 
-  /** The dashboards first (the current one ticked), then the device controls. */
+  /** What's used every day: the dashboards (the current one ticked) and Reload. The rest is in Settings. */
   private void openControls() {
     DashboardState st = state();
     Dashboards d = st.dashboards();
     List<String> items = new ArrayList<>();
     for (int i = 0; i < d.size(); i++) items.add((st.isCurrent(i) ? "\u2713  " : "     ") + d.get(i).name);
     int n = d.size();
-    items.addAll(Arrays.asList("Manage dashboards\u2026", "Screen off at night\u2026", "Open launcher",
-        "Android settings", "Wi-Fi settings", "Reload dashboard"));
+    items.add("Reload dashboard");
     new AlertDialog.Builder(this)
         .setTitle("Home HQ")
         .setItems(items.toArray(new String[0]), (dialog, which) -> {
           if (which < n) apply(st, st.switchTo(which));
-          else if (which == n) manageDashboards();
-          else if (which == n + 1) nightSettings();
-          else if (which == n + 2) openLauncher();
-          else if (which == n + 3) startActivity(new Intent(Settings.ACTION_SETTINGS));
-          else if (which == n + 4) openWifiSettings();
           else web.reload();
         })
+        .setNeutralButton("Settings", (dialog, which) -> openSettings())
         .setNegativeButton("Back to dashboard", null).show();
   }
 
-  private void manageDashboards() {
+  /** What's set once. Each row shows its current value; Back in a sub-dialog returns here. */
+  private void openSettings() {
     DashboardState st = state();
-    Dashboards d = st.dashboards();
-    String[] items = new String[d.size() + 2];
-    for (int i = 0; i < d.size(); i++) items[i] = d.get(i).name;
-    items[d.size()] = "Add dashboard\u2026";
-    items[d.size() + 1] = st.returnHomeLabel();
+    String[] items = {"Dashboards\u2026", st.returnHomeLabel(), night().label(), "Wi-Fi settings",
+        "Android settings", "Open launcher"};
     new AlertDialog.Builder(this)
-        .setTitle("Dashboards")
+        .setTitle("Settings")
         .setItems(items, (dialog, which) -> {
-          if (which <= d.size()) editDashboard(which < d.size() ? which : -1);
-          else chooseIdleTime();
+          if (which == 0) manageDashboards();
+          else if (which == 1) chooseIdleTime();
+          else if (which == 2) nightSettings();
+          else if (which == 3) openWifiSettings();
+          else if (which == 4) startActivity(new Intent(Settings.ACTION_SETTINGS));
+          else openLauncher();
         })
         .setNegativeButton("Done", null).show();
+  }
+
+  /** Tap one to edit or delete it (and tick Home), or add one. */
+  private void manageDashboards() {
+    Dashboards d = state().dashboards();
+    String[] items = new String[d.size() + 1];
+    for (int i = 0; i < d.size(); i++) items[i] = d.get(i).name;
+    items[d.size()] = "Add dashboard\u2026";
+    new AlertDialog.Builder(this)
+        .setTitle("Dashboards")
+        .setItems(items, (dialog, which) -> editDashboard(which < d.size() ? which : -1))
+        .setNegativeButton("Back", (dialog, which) -> openSettings()).show();
   }
 
   /** Off, 5, 10 or 30 minutes without a touch before going back to the home dashboard. */
@@ -574,8 +583,9 @@ public class MainActivity extends Activity {
           st.setIdleMinutes(IDLE_CHOICES[which]);
           apply(st, null);
           dialog.dismiss();
+          openSettings();
         })
-        .setNegativeButton("Cancel", null).show();
+        .setNegativeButton("Back", (dialog, which) -> openSettings()).show();
   }
 
   private NightSchedule night() {
@@ -660,12 +670,15 @@ public class MainActivity extends Activity {
     new AlertDialog.Builder(this)
         .setTitle(n.label() + (n.enabled && !canLock ? " (black screen)" : ""))
         .setItems(items.toArray(new String[0]), (dialog, which) -> {
-          if (which == 0) saveNight(n.withEnabled(!n.enabled));
+          if (which == 0) {
+            saveNight(n.withEnabled(!n.enabled));
+            nightSettings();
+          }
           else if (which == 1) pickTime(n.offMinute, m -> saveNight(night().withOff(m)));
           else if (which == 2) pickTime(n.onMinute, m -> saveNight(night().withOn(m)));
           else askForScreenOff();
         })
-        .setNegativeButton("Done", null).show();
+        .setNegativeButton("Back", (dialog, which) -> openSettings()).show();
   }
 
   private interface MinutePicked {
